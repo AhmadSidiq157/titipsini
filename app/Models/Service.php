@@ -4,20 +4,24 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Order; // <-- TAMBAHKAN INI
 
 class Service extends Model
 {
     use HasFactory;
 
-    protected $guarded = []; // Asumsikan Anda menggunakan ini atau $fillable
+    protected $guarded = [];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
-    // TAMBAHKAN BLOK KODE INI
     protected $casts = [
         'features' => 'array',
     ];
+
+    /**
+     * Dapatkan semua order untuk service ini.
+     * * TAMBAHKAN FUNGSI INI
+     */
+    public function orders()
+    {
+        return $this->morphMany(Order::class, 'orderable');
+    }
 }

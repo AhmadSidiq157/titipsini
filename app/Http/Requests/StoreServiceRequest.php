@@ -16,6 +16,7 @@ class StoreServiceRequest extends FormRequest
         return [
             'title' => 'required|string|max:255',
             'description' => 'required|string',
+            'price' => 'required|numeric|min:0', // <-- TAMBAHKAN BARIS INI
             'illustration' => 'required|string', // Nanti bisa kita ubah jadi 'image' jika ingin upload file
             'features' => 'required|array',
             'features.*' => 'required|string', // Validasi setiap item di dalam array features

@@ -6,6 +6,15 @@ import { Head, Link } from "@inertiajs/react";
 import AddServiceModal from "./Partials/AddServiceModal";
 import EditServiceModal from "./Partials/EditServiceModal";
 
+// + TAMBAHKAN HELPER INI
+const formatRupiah = (number) => {
+    return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+    }).format(number);
+};
+
 export default function Index({ auth, services, flash }) {
     // State untuk mengontrol modal mana yang sedang aktif
     const [isAddModalOpen, setAddModalOpen] = useState(false);
@@ -69,6 +78,10 @@ export default function Index({ auth, services, flash }) {
                                             <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
                                                 Judul
                                             </th>
+                                            {/* + TAMBAHKAN KOLOM HEADER INI */}
+                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                                Harga
+                                            </th>
                                             <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
                                                 Fitur
                                             </th>
@@ -88,6 +101,12 @@ export default function Index({ auth, services, flash }) {
                                                 </td>
                                                 <td className="py-3 px-4 border-b text-gray-700 font-medium">
                                                     {service.title}
+                                                </td>
+                                                {/* + TAMBAHKAN KOLOM DATA INI */}
+                                                <td className="py-3 px-4 border-b text-gray-700 font-semibold text-green-700">
+                                                    {formatRupiah(
+                                                        service.price
+                                                    )}
                                                 </td>
                                                 <td className="py-3 px-4 border-b text-gray-700">
                                                     <ul className="list-disc list-inside space-y-1">

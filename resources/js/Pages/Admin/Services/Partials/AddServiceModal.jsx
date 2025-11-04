@@ -8,6 +8,7 @@ export default function AddServiceModal({ show, onClose }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         title: "",
         description: "",
+        price: 0, // <-- 1. DITAMBAHKAN
         illustration: "/images/placeholder.jpg", // default value
         features: [""], // Mulai dengan satu input fitur
     });
@@ -67,6 +68,31 @@ export default function AddServiceModal({ show, onClose }) {
                             </p>
                         )}
                     </div>
+
+                    {/* --- 2. BLOK INPUT HARGA DITAMBAHKAN --- */}
+                    <div>
+                        <label
+                            htmlFor="price"
+                            className="block text-sm font-medium text-gray-700"
+                        >
+                            Harga
+                        </label>
+                        <input
+                            type="number"
+                            id="price"
+                            value={data.price}
+                            onChange={(e) => setData("price", e.target.value)}
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                            placeholder="Contoh: 100000 (Isi 0 jika gratis)"
+                        />
+                        {errors.price && (
+                            <p className="text-sm text-red-600 mt-1">
+                                {errors.price}
+                            </p>
+                        )}
+                    </div>
+                    {/* --- AKHIR BLOK --- */}
+
                     <div>
                         <label
                             htmlFor="description"

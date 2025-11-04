@@ -5,10 +5,6 @@ return [
     |--------------------------------------------------------------------------
     | Tentukan apakah Ziggy harus di-cache
     |--------------------------------------------------------------------------
-    |
-    | Menentukan apakah file route JavaScript Ziggy harus di-cache. Disarankan
-    | untuk diatur ke `false` saat development dan `true` di production.
-    |
     */
     'cache' => false,
 
@@ -17,19 +13,13 @@ return [
     | Whitelist/Blacklist Route
     |--------------------------------------------------------------------------
     |
-    | Atur filter untuk route mana yang akan dimasukkan dalam file JavaScript
-    | yang dihasilkan. Anda bisa menggunakan 'only' (hanya masukkan ini) atau
-    | 'except' (masukkan semua kecuali ini). Jangan gunakan keduanya bersamaan.
+    | Kita tidak akan menggunakan 'only' atau 'except' global lagi.
+    | Kita akan membaginya ke dalam 'groups'.
     |
     */
-    'only' => [
-        // 'home',
-        // 'posts.index',
-        // 'posts.show',
-    ],
-
+    'only' => null,
     'except' => [
-        // 'admin.*', // <-- INI DIA MASALAHNYA
+        // Tetap kecualikan ini secara global
         '_ignition.*',
         'sanctum.*',
     ],
@@ -39,12 +29,16 @@ return [
     | Grup Route
     |--------------------------------------------------------------------------
     |
-    | Definisikan grup route yang bisa Anda panggil dengan nama tertentu.
-    | Ini berguna jika Anda ingin memuat set route yang berbeda di halaman yang berbeda.
+    | Definisikan grup route yang akan kita panggil secara terpisah.
     |
     */
     'groups' => [
-        // 'admin' => ['admin.*'],
-        // 'public' => ['home', 'posts.*'],
+        // Grup 'admin' akan berisi SEMUA rute yang
+        // berawalan 'admin.'
+        'admin' => ['admin.*'],
+
+        // Grup 'public' akan berisi SEMUA rute
+        // KECUALI (tanda !) yang berawalan 'admin.'
+        'public' => ['!admin.*'],
     ],
 ];

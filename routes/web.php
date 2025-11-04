@@ -12,6 +12,8 @@ use App\Http\Controllers\InternshipPageController;
 use App\Http\Controllers\JobVacancyController;
 use App\Http\Controllers\LayananPageController;
 use App\Http\Controllers\ProgramPageController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\UserVerificationController;
 
 use App\Http\Controllers\MitraController;
 
@@ -26,6 +28,7 @@ use App\Http\Controllers\Admin\InternshipPositionController;
 use App\Http\Controllers\Admin\InternshipProjectController;
 use App\Http\Controllers\Admin\CareerProgramController;
 use App\Http\Controllers\Admin\CurriculumController;
+use App\Http\Controllers\Admin\OrderManagementController;
 
 /*
 |--------------------------------------------------------------------------
@@ -67,6 +70,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // --- RUTE ORDER (MODIFIKASI) ---
+    // Middleware 'isVerified' dihapus dari grup agar modal bisa me-load data (GET)
+    Route::prefix('order')->name('order.')->group(function () {
+        // Rute GET ini dibiarkan terbuka untuk di-fetch oleh modal.
+        Route::get('/create', [OrderController::class, 'create'])->name('create');
+        Route::get('/{order}/payment', [OrderController::class, 'payment'])->name('payment');
+        Route::get('/{order}/success', [OrderController::class, 'success'])->name('success');
+
+        // Rute POST ini WAJIB dilindungi middleware 'isVerified'
+        // Ini adalah lapisan keamanan backend.
+        Route::post('/', [OrderController::class, 'store'])->name('store')->middleware('isVerified');
+        Route::post('/{order}/payment', [OrderController::class, 'submitPayment'])->name('submitPayment')->middleware('isVerified');
+    });
+
+    // --- RUTE VERIFIKASI KTP (TETAP SAMA) ---
+    // Rute ini harus bisa diakses oleh user yg 'belum terverifikasi', jadi JANGAN tambahkan 'isVerified'
+    Route::prefix('verification')->name('verification.')->group(function () {
+        Route::get('/create', [UserVerificationController::class, 'create'])->name('create');
+        Route::post('/', [UserVerificationController::class, 'store'])->name('store');
+        Route::get('/pending', [UserVerificationController::class, 'pending'])->name('pending');
+    });
 });
 
 
@@ -93,6 +118,14 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
         Route::resource('internship-projects', InternshipProjectController::class);
         Route::resource('career-programs', CareerProgramController::class);
         Route::resource('curricula', CurriculumController::class);
+
+        // Manajemen Pesanan Admin
+        Route::prefix('orders')->name('orders.')->group(function () {
+            Route::get('/', [OrderManagementController::class, 'index'])->name('index');
+            Route::get('/{order}', [OrderManagementController::class, 'show'])->name('show');
+            Route::post('/{order}/approve', [OrderManagementController::class, 'approvePayment'])->name('approve');
+            Route::post('/{order}/reject', [OrderManagementController::class, 'rejectPayment'])->name('reject');
+        });
 
         // Pengaturan Situs
         Route::prefix('settings')->name('settings.')->group(function () {

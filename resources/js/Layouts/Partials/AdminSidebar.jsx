@@ -17,6 +17,7 @@ import {
     Library,
     Home, // Tambahan ikon untuk Halaman Depan
     FileText, // Tambahan ikon untuk Halaman Layanan
+    ShieldCheck,
 } from "lucide-react";
 
 // --- KOMPONEN-KOMPONEN KECIL (HELPER) ---
@@ -144,6 +145,14 @@ export default function AdminSidebar() {
                     Dashboard
                 </SidebarLink>
 
+                <SidebarLink
+                    href={route("admin.orders.index")}
+                    active={route().current("admin.orders.*")}
+                    icon={<ClipboardList className="h-5 w-5" />}
+                >
+                    Manajemen Pesanan
+                </SidebarLink>
+
                 {/* --- Dropdown Manajemen Halaman Depan --- */}
                 <SidebarDropdown
                     title="Halaman Depan"
@@ -236,7 +245,14 @@ export default function AdminSidebar() {
                     Manajemen User
                 </SidebarLink>
 
-                {/* --- Dropdown Pengaturan --- */}
+                <SidebarLink
+                    href={route("admin.verification.index")}
+                    active={route().current("admin.verification.*")}
+                    icon={<ShieldCheck className="h-5 w-5" />}
+                >
+                    Verifikasi User
+                </SidebarLink>
+
                 <SidebarDropdown
                     title="Pengaturan"
                     icon={<Settings className="h-5 w-5" />}

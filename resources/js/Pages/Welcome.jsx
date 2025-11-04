@@ -15,20 +15,22 @@ import {
 import GuestLayout from "../Layouts/GuestLayout";
 import CountUp from "react-countup";
 import { useInView } from "react-intersection-observer";
-import { usePage } from "@inertiajs/react"; // <-- DITAMBAHKAN
+import { usePage, Link, router } from "@inertiajs/react"; // <-- DITAMBAHKAN 'router'
+import OrderModal from "@/Pages/Order/Partials/OrderModal"; // <-- 1. IMPORT MODAL BARU
+
+// Helper function
+const formatRupiah = (number) => {
+    return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+    }).format(number);
+};
 
 // Komponen untuk setiap kartu layanan
-const ServiceCard = ({ illustration, title, description, features }) => {
-    // --- Logika WhatsApp Ditambahkan ---
-    const { settings } = usePage().props;
-    const phoneNumber = settings.contact_phone
-        ? settings.contact_phone.replace(/\D/g, "")
-        : "";
-    const message = settings.whatsapp_message
-        ? encodeURIComponent(settings.whatsapp_message)
-        : "";
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-    // --- Akhir Logika WhatsApp ---
+// DIROMBAK TOTAL
+const ServiceCard = ({ service, onOrderClick }) => {
+    const { id, illustration, title, description, features, price } = service;
 
     return (
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 border border-gray-100">
@@ -43,7 +45,15 @@ const ServiceCard = ({ illustration, title, description, features }) => {
                 <h3 className="text-2xl font-bold text-gray-800 mb-2">
                     {title}
                 </h3>
-                <p className="text-gray-600 mb-6 flex-grow">{description}</p>
+                <p className="text-gray-600 mb-4 flex-grow">{description}</p>
+
+                <div className="mb-4">
+                    <span className="text-gray-500 text-sm">Mulai dari</span>
+                    <p className="text-2xl font-bold text-green-600">
+                        {formatRupiah(price)}
+                    </p>
+                </div>
+
                 <ul className="space-y-3 mb-6">
                     {features.map((feature, index) => (
                         <li
@@ -55,15 +65,15 @@ const ServiceCard = ({ illustration, title, description, features }) => {
                         </li>
                     ))}
                 </ul>
-                {/* --- Tombol diubah menjadi <a> tag ke WhatsApp --- */}
-                <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+
+                {/* --- TOMBOL DIGANTI JADI <button> --- */}
+                <button
+                    onClick={() => onOrderClick(service)} // Panggil handler dari parent
                     className="mt-auto w-full bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 text-center"
+                    disabled={price <= 0} // Nonaktifkan jika harga 0
                 >
-                    Pilih Layanan
-                </a>
+                    {price <= 0 ? "Tidak Tersedia" : "Pilih Layanan"}
+                </button>
             </div>
         </div>
     );
@@ -202,8 +212,8 @@ const Hero = () => {
     );
 };
 
-const Services = ({ services }) => {
-    // Terima props 'services'
+// --- KOMPONEN SERVICES DIROMBAK ---
+const Services = ({ services, onOrderClick }) => {
     return (
         <section className="py-16 bg-white">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -214,15 +224,16 @@ const Services = ({ services }) => {
                     <p className="mt-2 text-gray-600 max-w-2xl mx-auto">
                         Kami menyediakan layanan penitipan barang yang lengkap
                         dan fleksibel, mulai dari barang kecil hingga kendaraan.
-                        Tersedia pilihan harian dan bulanan, plus layanan
-                        pengiriman untuk kemudahan Anda.
                     </p>
                 </div>
 
-                {/* Langsung map dari props, tidak perlu state atau loading check */}
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {services.map((service) => (
-                        <ServiceCard key={service.id} {...service} />
+                        <ServiceCard
+                            key={service.id}
+                            service={service}
+                            onOrderClick={onOrderClick} // <-- Kirim handler
+                        />
                     ))}
                 </div>
             </div>
@@ -272,37 +283,34 @@ const WhyUs = () => {
             icon: <ShieldCheck size={24} className="text-green-600" />,
             title: "Keamanan Terjamin",
             description:
-                "Sistem keamanan 24/7 dengan CCTV dan akses terkontrol untuk melindungi Barang Anda.",
+                "Sistem keamanan 24/7 dengan CCTV dan akses terkontrol.",
         },
         {
             icon: <Clock size={24} className="text-green-600" />,
             title: "Fleksibilitas Waktu",
             description:
-                "Penitipan harian hingga bulanan sesuai kebutuhan dengan tarif yang kompetitif.",
+                "Penitipan harian hingga bulanan sesuai kebutuhan Anda.",
         },
         {
             icon: <MapPin size={24} className="text-green-600" />,
             title: "Lokasi Strategis",
-            description:
-                "Berada di lokasi yang mudah dijangkau dengan akses transportasi yang baik.",
+            description: "Mudah dijangkau dengan akses transportasi yang baik.",
         },
         {
             icon: <Car size={24} className="text-green-600" />,
             title: "Layanan Antar Jemput",
-            description:
-                "Tersedia layanan pengiriman untuk kemudahan pengambilan barang Anda.",
+            description: "Tersedia layanan pengiriman untuk kemudahan Anda.",
         },
         {
             icon: <Users size={24} className="text-green-600" />,
             title: "Tim Profesional",
-            description:
-                "Didukung tim yang berpengalaman dan terlatih dalam penanganan berbagai jenis barang.",
+            description: "Didukung tim yang berpengalaman dan terlatih.",
         },
         {
             icon: <Star size={24} className="text-green-600" />,
             title: "Kepercayaan Pelanggan",
             description:
-                "Telah dipercaya ribuan pelanggan dengan rating kepuasan tinggi.",
+                "Telah dipercaya ribuan pelanggan dengan rating tinggi.",
         },
     ];
     return (
@@ -312,10 +320,6 @@ const WhyUs = () => {
                     <h2 className="text-3xl font-bold text-gray-800">
                         Mengapa Pilih Titipsini?
                     </h2>
-                    <p className="mt-2 text-gray-600 max-w-2xl mx-auto">
-                        Kami berkomitmen memberikan layanan penitipan barang
-                        terbaik dengan standar keamanan dan kenyamanan tinggi.
-                    </p>
                 </div>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {features.map((feature, index) => (
@@ -331,40 +335,33 @@ const WhyUs = () => {
 const Testimonials = () => {
     const testimonials = [
         {
-            quote: "Sangat membantu saat pindah kost! Barang-barang saya aman tersimpan selama 2 minggu. Harga terjangkau dan pelayanan ramah.",
+            quote: "Sangat membantu saat pindah kost! Barang-barang saya aman.",
             name: "Andi Pratama",
             title: "Mahasiswa",
             image: "https://i.pravatar.cc/150?u=andi",
         },
         {
-            quote: "Saya titip motor di sini selama mudik lebaran. Pulang-pulang motor bersih dan akinya tetap bagus. Recommended banget!",
+            quote: "Saya titip motor di sini selama mudik lebaran. Recommended!",
             name: "Budi Santoso",
             title: "Karyawan Swasta",
             image: "https://i.pravatar.cc/150?u=budi",
         },
         {
-            quote: "Sebagai traveler, Titipsini ini penyelamat. Bisa titip koper besar dan ambil kapan saja. Fleksibel dan lokasinya strategis.",
+            quote: "Titipsini ini penyelamat. Bisa titip koper besar dan ambil kapan saja.",
             name: "Citra Lestari",
             title: "Travel Blogger",
             image: "https://i.pravatar.cc/150?u=citra",
         },
     ];
-
     const [currentIndex, setCurrentIndex] = useState(0);
-
-    const goToPrevious = () => {
-        const isFirstSlide = currentIndex === 0;
-        const newIndex = isFirstSlide
-            ? testimonials.length - 1
-            : currentIndex - 1;
-        setCurrentIndex(newIndex);
-    };
-
-    const goToNext = () => {
-        const isLastSlide = currentIndex === testimonials.length - 1;
-        const newIndex = isLastSlide ? 0 : currentIndex + 1;
-        setCurrentIndex(newIndex);
-    };
+    const goToPrevious = () =>
+        setCurrentIndex((prev) =>
+            prev === 0 ? testimonials.length - 1 : prev - 1
+        );
+    const goToNext = () =>
+        setCurrentIndex((prev) =>
+            prev === testimonials.length - 1 ? 0 : prev + 1
+        );
 
     return (
         <section className="py-16 bg-white">
@@ -373,10 +370,6 @@ const Testimonials = () => {
                     <h2 className="text-3xl font-bold text-gray-800">
                         Testimoni Pelanggan
                     </h2>
-                    <p className="mt-2 text-gray-600 max-w-2xl mx-auto">
-                        Kepercayaan pelanggan adalah aset terbesar kami. Simak
-                        pengalaman mereka.
-                    </p>
                 </div>
                 <div className="max-w-3xl mx-auto relative">
                     <div className="absolute top-1/2 -translate-y-1/2 left-0 md:-left-16">
@@ -447,24 +440,24 @@ const FAQ = () => {
     const faqs = [
         {
             question: "Apa saja jenis barang yang bisa dititipkan?",
-            answer: "Kami menerima berbagai jenis barang mulai dari pakaian, elektronik, furniture, dokumen penting, hingga kendaraan seperti motor. Barang yang tidak diperbolehkan adalah barang berbahaya, mudah terbakar, dan barang ilegal.",
+            answer: "Kami menerima berbagai jenis barang mulai dari pakaian, elektronik, furniture, dokumen penting, hingga kendaraan seperti motor.",
         },
         {
             question: "Bagaimana sistem keamanan di Titipsini?",
-            answer: "Keamanan adalah prioritas kami. Kami memiliki CCTV 24 jam, akses terbatas, dan staf keamanan yang berjaga untuk memastikan barang Anda aman.",
+            answer: "Keamanan adalah prioritas kami. Kami memiliki CCTV 24 jam, akses terbatas, dan staf keamanan.",
         },
         {
             question: "Berapa lama minimal dan maksimal penitipan?",
-            answer: "Anda bisa menitipkan barang mulai dari 1 hari hingga tahunan. Kami menawarkan paket harian, mingguan, bulanan, dan tahunan yang fleksibel.",
+            answer: "Anda bisa menitipkan barang mulai dari 1 hari hingga tahunan. Kami menawarkan paket harian, mingguan, dan bulanan.",
         },
         {
             question: "Apakah ada layanan antar jemput barang?",
-            answer: "Ya, kami menyediakan layanan antar jemput dengan biaya tambahan yang terjangkau untuk memudahkan Anda, terutama untuk barang besar atau jika Anda tidak punya waktu.",
+            answer: "Ya, kami menyediakan layanan antar jemput dengan biaya tambahan yang terjangkau.",
         },
     ];
-    const handleFaqClick = (index) => {
+    const handleFaqClick = (index) =>
         setOpenFaqIndex(openFaqIndex === index ? null : index);
-    };
+
     return (
         <section className="py-16 bg-gray-50">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -472,10 +465,6 @@ const FAQ = () => {
                     <h2 className="text-3xl font-bold text-gray-800">
                         Pertanyaan Umum
                     </h2>
-                    <p className="mt-2 text-gray-600 max-w-2xl mx-auto">
-                        Temukan jawaban atas pertanyaan yang sering diajukan
-                        tentang layanan penitipan barang kami.
-                    </p>
                 </div>
                 <div className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md">
                     {faqs.map((faq, index) => (
@@ -493,22 +482,72 @@ const FAQ = () => {
 };
 
 // --- Komponen Utama Halaman Welcome ---
-const Welcome = ({
-    services,
-    canLogin,
-    canRegister,
-    laravelVersion,
-    phpVersion,
-}) => {
+// DIROMBAK TOTAL
+const Welcome = (props) => {
+    const { services } = props;
+    const { auth, userVerificationStatus } = usePage().props;
+
+    // --- 2. STATE UNTUK MODAL ---
+    const [isOrderModalOpen, setOrderModalOpen] = useState(false);
+    const [selectedService, setSelectedService] = useState(null);
+
+    // --- 3. LOGIKA UTAMA (4 KASUS) ---
+    const handleOrderClick = (service) => {
+        // Kasus 1: User adalah tamu (belum login)
+        if (!auth.user) {
+            // Kita pakai 'router.get' agar Inertia bisa intercept,
+            // tapi 'window.location.href' juga bisa
+            router.get(route("login"));
+            return;
+        }
+
+        // User sudah login, cek status verifikasi KTP-nya
+
+        // Kasus 2: Belum terverifikasi (null) atau Ditolak (rejected)
+        if (
+            userVerificationStatus === null ||
+            userVerificationStatus === "rejected"
+        ) {
+            // Redirect ke HALAMAN form KTP
+            router.get(route("verification.create"));
+            return;
+        }
+
+        // Kasus 3: Masih ditinjau (pending)
+        if (userVerificationStatus === "pending") {
+            // Redirect ke HALAMAN tunggu
+            router.get(route("verification.pending"));
+            return;
+        }
+
+        // Kasus 4: Sudah disetujui (approved)
+        if (userVerificationStatus === "approved") {
+            // BUKA MODAL PEMESANAN!
+            setSelectedService(service);
+            setOrderModalOpen(true);
+        }
+    };
+
     return (
         <>
             <Hero />
-            {/* Sekarang variabel 'services' sudah pasti ada dan bisa digunakan */}
-            <Services services={services} />
+            <Services
+                services={services}
+                onOrderClick={handleOrderClick} // <-- Kirim handler ke <Services>
+            />
             <Stats />
             <WhyUs />
             <Testimonials />
             <FAQ />
+
+            {/* --- 4. RENDER MODAL --- */}
+            {/* Modal ini akan di-render di sini tapi tersembunyi, 
+                dia akan mengambil data service saat 'isOrderModalOpen' jadi true */}
+            <OrderModal
+                show={isOrderModalOpen}
+                onClose={() => setOrderModalOpen(false)}
+                service={selectedService}
+            />
         </>
     );
 };

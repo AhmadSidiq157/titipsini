@@ -4,8 +4,9 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
-use App\Models\Setting;      // <-- TAMBAHKAN
-use Illuminate\Support\Facades\Cache; // <-- TAMBAHKAN
+use App\Models\Setting;
+use Illuminate\Support\Facades\Cache;
+// use Tightenco\Ziggy\Ziggy; // <-- 1. KITA HAPUS IMPORT INI
 
 class HandleInertiaRequests extends Middleware
 {
@@ -36,13 +37,22 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
-            // --- BLOK BARU UNTUK SETTINGS & FLASH ---
             'settings' => Cache::rememberForever('settings', function () {
                 return Setting::all()->pluck('value', 'key');
             }),
             'flash' => [
                 'success' => fn() => $request->session()->get('success'),
             ],
+
+            'ziggy' => function () use ($request) {
+                $ziggy = app('ziggy'); // <-- PASTIKAN KODE ANDA SEPERTI INI
+
+                if ($request->is('admin/*') || $request->is('admin')) {
+                    return $ziggy->group('admin');
+                }
+                return $ziggy->group('public');
+            },
+            // --- AKHIR BLOK ---
         ];
     }
 }

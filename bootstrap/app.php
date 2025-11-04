@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Daftarkan alias middleware di sini
         $middleware->alias([
             'isAdmin' => \App\Http\Middleware\IsAdmin::class,
+            'isVerified' => \App\Http\Middleware\EnsureUserIsVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

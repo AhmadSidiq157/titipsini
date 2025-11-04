@@ -45,7 +45,7 @@ class DatabaseSeeder extends Seeder
         // Anda juga bisa membuat user biasa jika perlu
         User::factory()->create([
             'name' => 'Test User',
-            'email' => 'test@example.com',
+            'email' => 'test@gmail.com',
             'password' => 'password',
         ]);
     }

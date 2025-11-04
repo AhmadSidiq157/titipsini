@@ -8,6 +8,7 @@ export default function EditServiceModal({ show, onClose, service }) {
     const { data, setData, put, processing, errors, reset } = useForm({
         title: "",
         description: "",
+        price: 0, // <-- 1. DITAMBAHKAN
         illustration: "",
         features: [],
     });
@@ -17,6 +18,7 @@ export default function EditServiceModal({ show, onClose, service }) {
             setData({
                 title: service.title,
                 description: service.description,
+                price: service.price, // <-- 2. DITAMBAHKAN
                 illustration: service.illustration,
                 features: service.features || [""],
             });
@@ -79,6 +81,31 @@ export default function EditServiceModal({ show, onClose, service }) {
                             </p>
                         )}
                     </div>
+
+                    {/* --- 3. BLOK INPUT HARGA DITAMBAHKAN --- */}
+                    <div>
+                        <label
+                            htmlFor="price"
+                            className="block text-sm font-medium text-gray-700"
+                        >
+                            Harga
+                        </label>
+                        <input
+                            type="number"
+                            id="price"
+                            value={data.price}
+                            onChange={(e) => setData("price", e.target.value)}
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                            placeholder="Contoh: 100000"
+                        />
+                        {errors.price && (
+                            <p className="text-sm text-red-600 mt-1">
+                                {errors.price}
+                            </p>
+                        )}
+                    </div>
+                    {/* --- AKHIR BLOK --- */}
+
                     <div>
                         <label
                             htmlFor="description"
