@@ -13,15 +13,27 @@ return [
     | Whitelist/Blacklist Route
     |--------------------------------------------------------------------------
     |
-    | Kita tidak akan menggunakan 'only' atau 'except' global lagi.
-    | Kita akan membaginya ke dalam 'groups'.
+    | Kita gunakan 'only' di level atas.
+    | Ini adalah cara standar untuk Inertia.
     |
     */
-    'only' => null,
+    'only' => [
+        // TAMBAHKAN SEMUA POLA ROUTE YANG KAMU BUTUHKAN DI FRONTEND
+        'admin.*', // Ini akan menyelesaikan error 'admin.verification.index'
+        // 'login', // Mungkin kamu butuh ini
+        // 'register', // Mungkin kamu butuh ini
+        // 'dashboard', // Jika ada route 'dashboard'
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pengecualian Global
+    |--------------------------------------------------------------------------
+    */
     'except' => [
-        // Tetap kecualikan ini secara global
         '_ignition.*',
         'sanctum.*',
+        // 'debugbar.*', // Tambahkan ini jika pakai Debugbar
     ],
 
     /*
@@ -29,16 +41,8 @@ return [
     | Grup Route
     |--------------------------------------------------------------------------
     |
-    | Definisikan grup route yang akan kita panggil secara terpisah.
+    | Kita biarkan kosong saja karena kita sudah pakai 'only' di atas.
     |
     */
-    'groups' => [
-        // Grup 'admin' akan berisi SEMUA rute yang
-        // berawalan 'admin.'
-        'admin' => ['admin.*'],
-
-        // Grup 'public' akan berisi SEMUA rute
-        // KECUALI (tanda !) yang berawalan 'admin.'
-        'public' => ['!admin.*'],
-    ],
+    'groups' => [],
 ];

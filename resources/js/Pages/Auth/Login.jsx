@@ -69,7 +69,7 @@ export default function Login({ status, canResetPassword }) {
                                 setData("remember", e.target.checked)
                             }
                         />
-                        <span className="ms-2 text-sm text-gray-600">
+                        <span className="ms-2 text-sm text-gray-600 dark:text-gray-400">
                             Remember me
                         </span>
                     </label>
@@ -79,13 +79,25 @@ export default function Login({ status, canResetPassword }) {
                     {canResetPassword && (
                         <Link
                             href={route("password.request")}
-                            className="text-sm text-indigo-600 hover:underline"
+                            className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
                         >
                             Forgot your password?
                         </Link>
                     )}
                     <PrimaryButton disabled={processing}>Log in</PrimaryButton>
                 </div>
+
+                {/* --- INI BLOK YANG SAYA MODIFIKASI --- */}
+                <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+                    {"Belum punya akun? "}
+                    <Link
+                        href={route("register")}
+                        className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                    >
+                        Buat akun baru
+                    </Link>
+                </div>
+                {/* --- AKHIR BLOK MODIFIKASI --- */}
             </form>
         </AuthenticatedLayout>
     );

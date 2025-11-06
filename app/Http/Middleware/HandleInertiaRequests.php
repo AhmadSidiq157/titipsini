@@ -45,14 +45,10 @@ class HandleInertiaRequests extends Middleware
             ],
 
             'ziggy' => function () use ($request) {
-                $ziggy = app('ziggy'); // <-- PASTIKAN KODE ANDA SEPERTI INI
-
-                if ($request->is('admin/*') || $request->is('admin')) {
-                    return $ziggy->group('admin');
-                }
-                return $ziggy->group('public');
-            },
-            // --- AKHIR BLOK ---
+             return array_merge((new \Tighten\Ziggy\Ziggy)->toArray(), [
+                'location' => $request->url(),
+    ]);
+},
         ];
     }
 }

@@ -111,6 +111,16 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
         Route::get('users/{user}/make-admin', [UserManagementController::class, 'makeAdmin'])->name('users.makeAdmin');
         Route::get('users/{user}/remove-admin', [UserManagementController::class, 'removeAdmin'])->name('users.removeAdmin');
 
+        // ===================================================================
+        // Rute Verifikasi
+        Route::get('verifications', [UserManagementController::class, 'verificationIndex'])->name('verification.index');
+        Route::get('verifications/{userVerification}', [UserManagementController::class, 'verificationShow'])->name('verification.show');
+        
+        // --- INI DUA BARIS YANG DITAMBAHKAN UNTUK MEMPERBAIKI ERROR ---
+        Route::post('verifications/{userVerification}/approve', [UserManagementController::class, 'verificationApprove'])->name('verification.approve');
+        Route::post('verifications/{userVerification}/reject', [UserManagementController::class, 'verificationReject'])->name('verification.reject');
+        // ===================================================================
+
         // Resources untuk Layanan & Paket
         Route::resource('services', ServiceController::class);
         Route::resource('moving-packages', MovingPackageController::class);
@@ -141,3 +151,4 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
 
 
 require __DIR__ . '/auth.php';
+

@@ -24,7 +24,7 @@ export default function Index({ auth, verifications, filters }) {
         <AdminLayout
             user={auth.user}
             header={
-                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
+                <h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                     Verifikasi User (KTP)
                 </h2>
             }
@@ -44,31 +44,31 @@ export default function Index({ auth, verifications, filters }) {
                         </div>
                     )}
 
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            <h3 className="text-2xl font-bold text-gray-800 mb-6">
+                    <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                        <div className="p-6 text-gray-900 dark:text-gray-100">
+                            <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">
                                 Daftar Pengajuan Verifikasi
                             </h3>
 
                             {/* TODO: Tambahkan Navigasi Filter (Pending, Approved, Rejected, All) */}
 
                             <div className="overflow-x-auto">
-                                <table className="min-w-full bg-white">
-                                    <thead className="bg-gray-100">
+                                <table className="min-w-full bg-white dark:bg-gray-800">
+                                    <thead className="bg-gray-100 dark:bg-gray-700">
                                         <tr>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                            <th className="py-3 px-4 border-b dark:border-gray-600 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase">
                                                 User
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                            <th className="py-3 px-4 border-b dark:border-gray-600 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase">
                                                 Tipe ID
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                            <th className="py-3 px-4 border-b dark:border-gray-600 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase">
                                                 Status
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                            <th className="py-3 px-4 border-b dark:border-gray-600 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase">
                                                 Tanggal
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                            <th className="py-3 px-4 border-b dark:border-gray-600 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase">
                                                 Aksi
                                             </th>
                                         </tr>
@@ -77,20 +77,20 @@ export default function Index({ auth, verifications, filters }) {
                                         {verifications.data.map((v) => (
                                             <tr
                                                 key={v.id}
-                                                className="hover:bg-gray-50"
+                                                className="hover:bg-gray-50 dark:hover:bg-gray-700"
                                             >
-                                                <td className="py-3 px-4 border-b text-gray-700">
+                                                <td className="py-3 px-4 border-b dark:border-gray-600 text-gray-700 dark:text-gray-200">
                                                     <div className="font-medium">
                                                         {v.user.name}
                                                     </div>
-                                                    <div className="text-sm text-gray-500">
+                                                    <div className="text-sm text-gray-500 dark:text-gray-400">
                                                         {v.user.email}
                                                     </div>
                                                 </td>
-                                                <td className="py-3 px-4 border-b text-gray-700">
+                                                <td className="py-3 px-4 border-b dark:border-gray-600 text-gray-700 dark:text-gray-200">
                                                     {v.id_card_type}
                                                 </td>
-                                                <td className="py-3 px-4 border-b text-gray-700">
+                                                <td className="py-3 px-4 border-b dark:border-gray-600 text-gray-700 dark:text-gray-200">
                                                     <span
                                                         className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
                                                             v.status
@@ -99,14 +99,14 @@ export default function Index({ auth, verifications, filters }) {
                                                         {v.status}
                                                     </span>
                                                 </td>
-                                                <td className="py-3 px-4 border-b text-gray-700">
+                                                <td className="py-3 px-4 border-b dark:border-gray-600 text-gray-700 dark:text-gray-200">
                                                     {new Date(
                                                         v.updated_at
                                                     ).toLocaleDateString(
                                                         "id-ID"
                                                     )}
                                                 </td>
-                                                <td className="py-3 px-4 border-b text-gray-700">
+                                                <td className="py-3 px-4 border-b dark:border-gray-600 text-gray-700 dark:text-gray-200">
                                                     <Link
                                                         href={route(
                                                             "admin.verification.show",
