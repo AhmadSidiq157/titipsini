@@ -58,6 +58,7 @@ Route::post('/contact', [ContactPageController::class, 'store'])->name('contact.
 Route::get('/internship', [InternshipPageController::class, 'show'])->name('internship.show');
 Route::get('/layanan', [LayananPageController::class, 'show'])->name('layanan.show');
 Route::get('/lowongan-kerja', [JobVacancyController::class, 'publicIndex'])->name('careers.index');
+
 Route::get('/Mitra/index', [MitraController::class, 'index'])->name('mitra.index');
 
 // --- RUTE UNTUK PENGGUNA TERAUTENTIKASI ---
@@ -114,7 +115,7 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
         // Rute Verifikasi
         Route::get('verifications', [UserManagementController::class, 'verificationIndex'])->name('verification.index');
         Route::get('verifications/{userVerification}', [UserManagementController::class, 'verificationShow'])->name('verification.show');
-
+        
         // --- INI DUA BARIS YANG DITAMBAHKAN UNTUK MEMPERBAIKI ERROR ---
         Route::post('verifications/{userVerification}/approve', [UserManagementController::class, 'verificationApprove'])->name('verification.approve');
         Route::post('verifications/{userVerification}/reject', [UserManagementController::class, 'verificationReject'])->name('verification.reject');
@@ -150,3 +151,4 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
 
 
 require __DIR__ . '/auth.php';
+

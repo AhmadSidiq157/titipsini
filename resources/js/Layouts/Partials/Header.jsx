@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, usePage } from "@inertiajs/react";
-import SearchModal from "./SearchModal";
-import { Search, Menu, X, ChevronDown, User } from "lucide-react";
+// import SearchModal from "./SearchModal"; // <-- [DIHAPUS] Search dihilangkan
+import { Menu, X, ChevronDown, User } from "lucide-react"; // <-- [DIHAPUS] Search dihilangkan dari import
 
 export default function Header() {
-    // State untuk semua fungsionalitas interaktif di header
+    // ... (kode state, refs, props, handlers, useEffect tidak berubah) ...
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    // const [isSearchOpen, setIsSearchOpen] = useState(false); // <-- [DIHAPUS] Search dihilangkan
     const [openDropdown, setOpenDropdown] = useState(null);
     const [isAccountDropdownOpen, setAccountDropdownOpen] = useState(false);
 
@@ -20,15 +20,8 @@ export default function Header() {
         props: { auth, settings },
     } = usePage();
 
-    // --- LOGIKA WHATSAPP DITAMBAHKAN ---
-    const phoneNumber = settings.contact_phone
-        ? settings.contact_phone.replace(/\D/g, "")
-        : "";
-    const message = settings.whatsapp_message
-        ? encodeURIComponent(settings.whatsapp_message)
-        : "";
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-    // --- AKHIR LOGIKA WHATSAPP ---
+    // --- LOGIKA WHATSAPP TIDAK KITA PAKAI LAGI ---
+    // ...
 
     // Konfigurasi link navigasi
     const navLinks = [
@@ -36,15 +29,15 @@ export default function Header() {
         { label: "Pindahan", href: "/layanan" },
         { label: "Tentang Kami", href: "/tentang-kami" },
         { label: "Kontak", href: "/contact" },
-        {
-            label: "Karir & Program",
-            isDropdown: true,
-            items: [
-                { label: "Lowongan Kerja", href: "/lowongan-kerja" },
-                { label: "Internship", href: "/internship" },
-                { label: "Program Kami", href: "/program-kami" },
-            ],
-        },
+        // { <-- [DIHAPUS] Bagian "Karir & Program" dihilangkan sesuai permintaan
+        //     label: "Karir & Program",
+        //     isDropdown: true,
+        //     items: [
+        //         { label: "Lowongan Kerja", href: "/lowongan-kerja" },
+        //         { label: "Internship", href: "/internship" },
+        //         { label: "Program Kami", href: "/program-kami" },
+        //     ],
+        // },
     ];
 
     // Handler untuk membuka/menutup dropdown navigasi
@@ -79,7 +72,6 @@ export default function Header() {
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center py-4">
                         <Link href="/">
-                            {/* --- BLOK LOGO DINAMIS --- */}
                             {settings.site_logo ? (
                                 <img
                                     src={`/storage/${settings.site_logo}`}
@@ -170,21 +162,10 @@ export default function Header() {
                         </nav>
                         {/* --- Tombol Aksi di Kanan (BAGIAN YANG DIPERBARUI) --- */}
                         <div className="hidden md:flex items-center space-x-4">
-                            <button
-                                onClick={() => setIsSearchOpen(true)}
-                                className="text-gray-600 hover:text-green-600"
-                            >
-                                <Search size={20} />
-                            </button>
+                            {/* [DIHAPUS] Tombol Search dihilangkan */}
 
                             {auth.user ? (
-                                // Jika user sudah login
-                                <Link
-                                    href={route("dashboard")}
-                                    className="text-gray-600 hover:text-green-600 font-medium"
-                                >
-                                    Dashboard
-                                </Link>
+                                <></>
                             ) : (
                                 // Jika user belum login
                                 <div
@@ -229,11 +210,9 @@ export default function Header() {
                                 </div>
                             )}
 
-                            {/* Tombol "Titip Sekarang" yang selalu muncul */}
+                            {/* [MODIFIKASI] Diubah jadi <a> tag (anchor link) untuk scroll ke section */}
                             <a
-                                href={whatsappUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                href="#layanan"
                                 className="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors"
                             >
                                 Titip Sekarang
@@ -241,12 +220,8 @@ export default function Header() {
                         </div>
                         {/* Tombol untuk Menu Mobile */}
                         <div className="md:hidden flex items-center space-x-4">
-                            <button
-                                onClick={() => setIsSearchOpen(true)}
-                                className="text-gray-600 hover:text-green-600"
-                            >
-                                <Search size={20} />
-                            </button>
+                            {/* [DIHAPUS] Tombol Search dihilangkan */}
+
                             <button
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                                 className="text-gray-600"
@@ -264,11 +239,6 @@ export default function Header() {
                 {/* Dropdown Menu untuk Mobile (jika terbuka) */}
                 {isMenuOpen && <div className="md:hidden"></div>}
             </header>
-
-            <SearchModal
-                isOpen={isSearchOpen}
-                onClose={() => setIsSearchOpen(false)}
-            />
         </>
     );
 }
