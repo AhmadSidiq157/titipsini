@@ -28,29 +28,55 @@ const StepLoading = () => (
 );
 
 // --- Sub-Komponen: Step 1 (Formulir) ---
+// DIROMBAK: Tidak lagi pakai useForm() Inertia, pakai useState + axios
 const StepForm = ({ product, productModelClass, onFormSubmit }) => {
-    const { data, setData, post, processing, errors } = useForm({
-        product_id: product.id,
-        product_model: productModelClass,
-        final_amount: product.price,
-        form_details: {
-            start_date: "",
-            end_date: "",
-            notes: "",
-        },
+    // Ganti useForm dengan useState
+    const [data, setData] = useState({
+        start_date: "",
+        end_date: "",
+        notes: "",
     });
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState({});
+
+    // Helper untuk update state
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setData((prev) => ({ ...prev, [name]: value }));
+    };
 
     const submit = (e) => {
         e.preventDefault();
-        // Saat submit, kita panggil fungsi onFormSubmit dari parent (OrderModal)
-        // yang akan menangani transisi ke step berikutnya
-        post(route("order.store"), {
-            onSuccess: (page) => {
-                // Controller me-redirect ke order.payment,
-                // Inertia akan menangkap props 'order' dari halaman itu
-                onFormSubmit(page.props.order);
-            },
-        });
+        setProcessing(true);
+        setErrors({});
+
+        // Gabungkan data form dengan data produk
+        const payload = {
+            product_id: product.id,
+            product_model: productModelClass,
+            final_amount: product.price,
+            form_details: data, // Kirim state 'data' sebagai 'form_details'
+        };
+
+        // Ganti post() Inertia dengan axios.post()
+        axios
+            .post(route("order.store"), payload)
+            .then((response) => {
+                // Controller merespons JSON { order: {...} }
+                onFormSubmit(response.data.order);
+            })
+            .catch((error) => {
+                if (error.response && error.response.status === 422) {
+                    // Tangani error validasi dari Laravel
+                    setErrors(error.response.data.errors);
+                } else {
+                    console.error("Gagal menyimpan order:", error);
+                    alert("Gagal menyimpan pesanan. Silakan coba lagi.");
+                }
+            })
+            .finally(() => {
+                setProcessing(false);
+            });
     };
 
     return (
@@ -59,7 +85,6 @@ const StepForm = ({ product, productModelClass, onFormSubmit }) => {
                 Langkah 1: Detail Pemesanan
             </h2>
 
-            {/* Detail Produk */}
             <section className="mb-6 bg-gray-50 p-4 rounded-lg border">
                 <h4 className="text-lg font-bold text-gray-800">
                     {product.title || product.name}
@@ -69,7 +94,6 @@ const StepForm = ({ product, productModelClass, onFormSubmit }) => {
                 </div>
             </section>
 
-            {/* Form */}
             <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -80,18 +104,19 @@ const StepForm = ({ product, productModelClass, onFormSubmit }) => {
                         <TextInput
                             id="start_date"
                             type="date"
-                            value={data.form_details.start_date}
+                            name="start_date" // Tambahkan name
+                            value={data.start_date}
                             className="mt-1 block w-full"
-                            onChange={(e) =>
-                                setData("form_details", {
-                                    ...data.form_details,
-                                    start_date: e.target.value,
-                                })
-                            }
+                            onChange={handleChange} // Ganti helper
                             required
                         />
+                        {/* Ganti cara menampilkan error validasi */}
                         <InputError
-                            message={errors["form_details.start_date"]}
+                            message={
+                                errors["form_details.start_date"]
+                                    ? errors["form_details.start_date"][0]
+                                    : ""
+                            }
                             className="mt-2"
                         />
                     </div>
@@ -103,18 +128,18 @@ const StepForm = ({ product, productModelClass, onFormSubmit }) => {
                         <TextInput
                             id="end_date"
                             type="date"
-                            value={data.form_details.end_date}
+                            name="end_date" // Tambahkan name
+                            value={data.end_date}
                             className="mt-1 block w-full"
-                            onChange={(e) =>
-                                setData("form_details", {
-                                    ...data.form_details,
-                                    end_date: e.target.value,
-                                })
-                            }
+                            onChange={handleChange} // Ganti helper
                             required
                         />
                         <InputError
-                            message={errors["form_details.end_date"]}
+                            message={
+                                errors["form_details.end_date"]
+                                    ? errors["form_details.end_date"][0]
+                                    : ""
+                            }
                             className="mt-2"
                         />
                     </div>
@@ -126,15 +151,11 @@ const StepForm = ({ product, productModelClass, onFormSubmit }) => {
                     />
                     <textarea
                         id="notes"
-                        value={data.form_details.notes}
+                        name="notes" // Tambahkan name
+                        value={data.notes}
                         className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                         rows="3"
-                        onChange={(e) =>
-                            setData("form_details", {
-                                ...data.form_details,
-                                notes: e.target.value,
-                            })
-                        }
+                        onChange={handleChange} // Ganti helper
                         placeholder="Contoh: Barang saya ada 2 koper, 1 tas ransel."
                     ></textarea>
                 </div>
@@ -150,21 +171,58 @@ const StepForm = ({ product, productModelClass, onFormSubmit }) => {
 };
 
 // --- Sub-Komponen: Step 2 (Pembayaran) ---
+// DIROMBAK: Ganti useForm() Inertia dengan useState + axios
 const StepPayment = ({ order, onPaymentSubmit }) => {
-    const { data, setData, post, processing, errors } = useForm({
+    // Ganti useForm dengan useState
+    const [data, setData] = useState({
         payment_proof: null,
         notes: "",
     });
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState({});
+
+    const handleFileChange = (e) => {
+        setData((prev) => ({ ...prev, payment_proof: e.target.files[0] }));
+    };
+
+    const handleNotesChange = (e) => {
+        setData((prev) => ({ ...prev, notes: e.target.value }));
+    };
 
     const submit = (e) => {
         e.preventDefault();
-        // Kirim ke controller, lalu panggil onPaymentSubmit untuk
-        // ganti ke step 'success'
-        post(route("order.submitPayment", order.id), {
-            onSuccess: (page) => {
-                onPaymentSubmit(page.props.orderStatus);
-            },
-        });
+        setProcessing(true);
+        setErrors({});
+
+        // Kita butuh FormData karena kita upload file
+        const formData = new FormData();
+        formData.append("payment_proof", data.payment_proof);
+        formData.append("notes", data.notes);
+        // Penting: Laravel butuh ini untuk 'PUT' atau 'POST' saat pakai FormData
+        formData.append("_method", "POST");
+
+        // Ganti post() Inertia dengan axios.post()
+        axios
+            .post(route("order.submitPayment", order.id), formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            })
+            .then((response) => {
+                // Controller merespons JSON { orderStatus: "..." }
+                onPaymentSubmit(response.data.orderStatus);
+            })
+            .catch((error) => {
+                if (error.response && error.response.status === 422) {
+                    setErrors(error.response.data.errors);
+                } else {
+                    console.error("Gagal submit pembayaran:", error);
+                    alert("Gagal submit pembayaran. Silakan coba lagi.");
+                }
+            })
+            .finally(() => {
+                setProcessing(false);
+            });
     };
 
     return (
@@ -173,7 +231,6 @@ const StepPayment = ({ order, onPaymentSubmit }) => {
                 Langkah 2: Pembayaran
             </h2>
 
-            {/* Instruksi Pembayaran */}
             <section className="mb-6">
                 <div className="bg-gray-50 p-4 rounded-lg border">
                     <div className="flex justify-between items-center mt-2">
@@ -193,7 +250,6 @@ const StepPayment = ({ order, onPaymentSubmit }) => {
                 </div>
             </section>
 
-            {/* Form Upload */}
             <div className="space-y-6">
                 <div>
                     <InputLabel
@@ -204,13 +260,13 @@ const StepPayment = ({ order, onPaymentSubmit }) => {
                         id="payment_proof"
                         type="file"
                         className="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
-                        onChange={(e) =>
-                            setData("payment_proof", e.target.files[0])
-                        }
+                        onChange={handleFileChange} // Ganti helper
                         required
                     />
                     <InputError
-                        message={errors.payment_proof}
+                        message={
+                            errors.payment_proof ? errors.payment_proof[0] : ""
+                        }
                         className="mt-2"
                     />
                 </div>
@@ -221,9 +277,13 @@ const StepPayment = ({ order, onPaymentSubmit }) => {
                         value={data.notes}
                         className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                         rows="2"
-                        onChange={(e) => setData("notes", e.target.value)}
+                        onChange={handleNotesChange} // Ganti helper
                         placeholder="Contoh: Sudah transfer dari BCA a/n Budi"
                     ></textarea>
+                    <InputError
+                        message={errors.notes ? errors.notes[0] : ""}
+                        className="mt-2"
+                    />
                 </div>
             </div>
 
@@ -263,31 +323,32 @@ export default function OrderModal({ show, onClose, service }) {
     const [orderData, setOrderData] = useState(null);
     const [orderStatus, setOrderStatus] = useState(null);
 
-    // Efek ini berjalan setiap kali modal dibuka (prop 'service' berubah)
     useEffect(() => {
         if (show && service) {
-            // 1. Reset state
             setStep("loading");
             setProductData(null);
             setOrderData(null);
             setOrderStatus(null);
 
-            // 2. Ambil data produk dari controller (via Axios)
-            // Ini diperlukan agar kita bisa mendapatkan 'productModelClass'
             axios
                 .get(route("order.create", { type: "service", id: service.id }))
                 .then((response) => {
-                    // Data yang diambil adalah Halaman Inertia dalam format JSON
-                    const props = response.data.props;
+                    const props = response.data; // response.data adalah JSON murni
                     setProductData({
                         product: props.product,
                         productModelClass: props.productModelClass,
                     });
-                    setStep("form"); // Pindah ke step formulir
+                    setStep("form");
                 })
                 .catch((error) => {
-                    console.error("Gagal fetch data modal:", error);
-                    alert("Gagal memuat detail layanan. Silakan coba lagi.");
+                    console.error(
+                        "Gagal fetch data modal:",
+                        error.response?.data?.message || error
+                    );
+                    alert(
+                        error.response?.data?.message ||
+                            "Gagal memuat detail layanan. Silakan coba lagi."
+                    );
                     onClose();
                 });
         }
@@ -304,10 +365,12 @@ export default function OrderModal({ show, onClose, service }) {
         setStep("success"); // Pindah ke step sukses
     };
 
-    // Render konten berdasarkan step saat ini
     const renderStep = () => {
         switch (step) {
             case "form":
+                if (!productData) {
+                    return <StepLoading />;
+                }
                 return (
                     <StepForm
                         product={productData.product}

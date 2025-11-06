@@ -9,21 +9,28 @@ use App\Models\ManualPayment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator; // <-- 1. TAMBAHKAN IMPORT INI
 use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
     /**
-     * Menampilkan halaman form pemesanan (Langkah 1 & 2 Anda digabung).
-     * Pengguna memilih produk di 'Welcome.jsx', lalu diarahkan ke sini.
+     * Mengambil detail produk untuk modal (API-friendly).
      */
     public function create(Request $request)
     {
-        // Validasi input query string (apa yg dibeli?)
-        $request->validate([
+        // --- 2. GANTI BLOK VALIDASI ---
+        // Kita butuh validator manual agar bisa return JSON 422
+        $validator = Validator::make($request->all(), [
             'type' => 'required|string|in:service,moving_package',
             'id' => 'required|integer',
         ]);
+
+        // Jika validasi gagal, kirim error JSON, jangan redirect
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+        // --- AKHIR BLOK PENGGANTI ---
 
         $type = $request->query('type');
         $id = $request->query('id');
@@ -39,16 +46,21 @@ class OrderController extends Controller
             $productModelClass = MovingPackage::class;
         }
 
-        // Jika tidak ada harga, jangan biarkan dipesan
+        // --- 3. GANTI BLOK VALIDASI HARGA ---
+        // Jika tidak ada harga, jangan redirect, kirim error JSON
         if ($product->price <= 0) {
-            return redirect()->route('home')->with('error', 'Layanan ini tidak dapat dipesan saat ini.');
+            return response()->json(['message' => 'Layanan ini tidak dapat dipesan saat ini.'], 422);
         }
+        // --- AKHIR BLOK PENGGANTI ---
 
-        return Inertia::render('Order/Create', [
+        // --- 4. GANTI RESPONS ---
+        // Kirim JSON murni, bukan halaman Inertia
+        return response()->json([
             'product' => $product,
             'productType' => $type,
             'productModelClass' => $productModelClass,
         ]);
+        // --- AKHIR BLOK PENGGANTI ---
     }
 
     /**
@@ -80,28 +92,29 @@ class OrderController extends Controller
             'status' => 'awaiting_payment', // Status: Menunggu pembayaran
         ]);
 
-        // Redirect ke halaman upload bukti bayar
-        return redirect()->route('order.payment', $order);
+        // --- 5. GANTI RESPONS (PENTING!) ---
+        // Karena ini dipanggil oleh modal, kita return data 'order' sebagai JSON
+        // Kita tidak bisa redirect di sini
+        $order->load('orderable'); // Muat detail produk untuk Step 2
+        return response()->json([
+            'order' => $order
+        ]);
     }
 
     /**
      * Menampilkan halaman upload pembayaran (Langkah 3).
+     * (Fungsi ini tidak lagi dipakai oleh modal, tapi kita biarkan saja)
      */
     public function payment(Order $order)
     {
-        // Pastikan hanya pemilik order yg bisa bayar
+        // ... (kode lama biarkan saja)
         if ($order->user_id !== Auth::id()) {
             abort(403);
         }
-
-        // Pastikan order ini memang sedang menunggu pembayaran
         if ($order->status !== 'awaiting_payment') {
             return redirect()->route('order.success', $order);
         }
-
-        // Ambil data produk yg dipesan
         $order->load('orderable');
-
         return Inertia::render('Order/Payment', [
             'order' => $order,
         ]);
@@ -112,9 +125,9 @@ class OrderController extends Controller
      */
     public function submitPayment(Request $request, Order $order)
     {
-        // Pastikan hanya pemilik order yg bisa submit
         if ($order->user_id !== Auth::id()) {
-            abort(403);
+            // --- 6. GANTI RESPONS ERROR ---
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         $request->validate([
@@ -122,10 +135,8 @@ class OrderController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        // 1. Upload file
         $path = $request->file('payment_proof')->store('payment_proofs', 'public');
 
-        // 2. Buat record ManualPayment
         $order->payment()->create([
             'user_id' => Auth::id(),
             'payment_proof_path' => $path,
@@ -133,23 +144,25 @@ class OrderController extends Controller
             'status' => 'pending_verification',
         ]);
 
-        // 3. Update status order utama
         $order->update(['status' => 'awaiting_verification']);
 
-        // 4. Redirect ke halaman sukses
-        return redirect()->route('order.success', $order);
+        // --- 7. GANTI RESPONS SUKSES ---
+        // Kirim status order baru sebagai JSON
+        return response()->json([
+            'orderStatus' => $order->status,
+        ]);
     }
 
     /**
      * Menampilkan halaman "Terima Kasih / Sukses".
+     * (Fungsi ini tidak lagi dipakai oleh modal, tapi kita biarkan saja)
      */
     public function success(Order $order)
     {
-        // Pastikan hanya pemilik order yg bisa lihat
+        // ... (kode lama biarkan saja)
         if ($order->user_id !== Auth::id()) {
             abort(403);
         }
-
         return Inertia::render('Order/Success', [
             'orderStatus' => $order->status,
         ]);
