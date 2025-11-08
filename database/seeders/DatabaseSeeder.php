@@ -14,7 +14,7 @@ class DatabaseSeeder extends Seeder
     {
         // 1. Panggil seeder lain yang sudah ada dan yang baru
         $this->call([
-            RoleSeeder::class,    // Seeder untuk role yang sudah ada
+            RoleSeeder::class,      // Seeder untuk role (admin=1, client=2, kurir=3)
             SettingSeeder::class, // Seeder baru yang kita buat untuk settings
             ServiceSeeder::class, // Seeder baru untuk services
             MovingPackageSeeder::class, // Seeder baru untuk moving packages
@@ -42,11 +42,22 @@ class DatabaseSeeder extends Seeder
         $adminUser->roles()->attach(1);
         $adminUser1->roles()->attach(1);
 
-        // Anda juga bisa membuat user biasa jika perlu
-        User::factory()->create([
+        // [UPDATE] Membuat user client untuk testing
+        $clientUser = User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@gmail.com',
             'password' => 'password',
         ]);
+        // [UPDATE] Attach role client (ID = 2)
+        $clientUser->roles()->attach(2);
+
+        // [BARU] Buat user kurir untuk testing
+        $courierUser = User::factory()->create([
+            'name' => 'Kurir Titipsini',
+            'email' => 'kurir@titipsini.com',
+            'password' => 'password', // Passwordnya 'password'
+        ]);
+        // [BARU] Attach role kurir (ID = 3)
+        $courierUser->roles()->attach(3);
     }
 }

@@ -6,8 +6,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Models\UserVerification;
-use App\Models\Role; 
+use App\Models\UserVerification; // Verifikasi Klien
+use App\Models\CourierVerification; // <-- [BARU] Verifikasi Kurir
+use App\Models\Role;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne; // <-- [BARU]
 
 class User extends Authenticatable
 {
@@ -47,27 +51,87 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * The roles that belong to the user.
-     */
-    public function roles()
+    // ===================================================================
+    // RELASI & FUNGSI ROLE
+    // ===================================================================
+
+    public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class);
     }
 
-    public function verification()
+    public function hasRole(string $roleName): bool
+    {
+        if ($this->relationLoaded('roles')) {
+            return $this->roles->contains('name', $roleName);
+        }
+        return $this->roles()->where('name', $roleName)->exists();
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    public function isClient(): bool
+    {
+        return $this->hasRole('client');
+    }
+
+    public function isCourier(): bool
+    {
+        return $this->hasRole('kurir');
+    }
+
+    // ===================================================================
+    // RELASI ORDER
+    // ===================================================================
+
+    public function clientOrders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'user_id');
+    }
+
+    public function courierTasks(): HasMany
+    {
+        return $this->hasMany(Order::class, 'courier_id');
+    }
+
+    // ===================================================================
+    // RELASI VERIFIKASI
+    // ===================================================================
+
+    /**
+     * Relasi ke verifikasi KTP (untuk Klien).
+     */
+    public function verification(): HasOne
     {
         return $this->hasOne(UserVerification::class);
     }
 
-    // --- INI FUNGSI YANG HILANG (PENYEBAB ERROR) ---
     /**
-     * Helper function untuk mengecek apakah user punya role 'admin'.
+     * [BARU] Relasi ke verifikasi Kurir (SIM, KTP, Kendaraan).
      */
-    public function isAdmin(): bool
+    public function courierVerification(): HasOne
     {
-        // Ini akan mengecek ke database apakah user ini
-        // punya role dengan nama 'admin'.
-        return $this->roles()->where('name', 'admin')->exists();
+        return $this->hasOne(CourierVerification::class);
+    }
+
+    /**
+     * [BARU] Helper untuk mendapatkan status verifikasi kurir.
+     */
+    public function courierVerificationStatus(): ?string
+    {
+        // Tanda tanya (?) adalah null-safe operator,
+        // jadi tidak akan error jika relasinya null
+        return $this->courierVerification?->status;
+    }
+
+    /**
+     * [BARU] Helper untuk cek apakah kurir sudah disetujui.
+     */
+    public function isCourierVerified(): bool
+    {
+        return $this->courierVerificationStatus() === 'approved';
     }
 }

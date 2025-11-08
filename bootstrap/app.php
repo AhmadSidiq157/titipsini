@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'isAdmin' => \App\Http\Middleware\IsAdmin::class,
             'isVerified' => \App\Http\Middleware\EnsureUserIsVerified::class,
+            'courier' => \App\Http\Middleware\IsCourier::class, // <--- TAMBAHKAN BARIS INI
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -18,6 +18,7 @@ import {
     Home, // Tambahan ikon untuk Halaman Depan
     FileText, // Tambahan ikon untuk Halaman Layanan
     ShieldCheck,
+    Truck, // <-- [BARU] Ikon untuk Verifikasi Kurir
 } from "lucide-react";
 
 // --- KOMPONEN-KOMPONEN KECIL (HELPER) ---
@@ -187,63 +188,13 @@ export default function AdminSidebar() {
                 </SidebarDropdown>
 
                 {/* --- [MODIFIKASI] Dropdown Manajemen Halaman Internship dimatikan --- */}
-                {/*
-                <SidebarDropdown
-                    title="Halaman Internship"
-                    icon={<GraduationCap className="h-5 w-5" />}
-                    active={openDropdown.halamanInternship}
-                    isOpen={openDropdown.halamanInternship}
-                    onToggle={() => handleToggle("halamanInternship")}
-                >
-                    <SidebarSubLink
-                        href={route("admin.internship-positions.index")}
-                        active={route().current("admin.internship-positions.*")}
-                    >
-                        Posisi Magang
-                    </SidebarSubLink>
-                    <SidebarSubLink
-                        href={route("admin.internship-projects.index")}
-                        active={route().current("admin.internship-projects.*")}
-                    >
-                        Proyek Magang
-                    </SidebarSubLink>
-                </SidebarDropdown>
-                */}
+                {/* ... (kode dropdown internship yang di-comment) ... */}
 
                 {/* --- [MODIFIKASI] Dropdown Manajemen Halaman Program dimatikan --- */}
-                {/*
-                <SidebarDropdown
-                    title="Halaman Program"
-                    icon={<BookOpen className="h-5 w-5" />}
-                    active={openDropdown.halamanProgram}
-                    isOpen={openDropdown.halamanProgram}
-                    onToggle={() => handleToggle("halamanProgram")}
-                >
-                    <SidebarSubLink
-                        href={route("admin.career-programs.index")}
-                        active={route().current("admin.career-programs.*")}
-                    >
-                        Program Karir
-                    </SiderbarSubLink>
-                    <SidebarSubLink
-                        href={route("admin.curricula.index")}
-                        active={route().current("admin.curricula.*")}
-                    >
-                        Kurikulum
-                    </SidebarSubLink>
-                </SidebarDropdown>
-                */}
+                {/* ... (kode dropdown program yang di-comment) ... */}
 
                 {/* --- [MODIFIKASI] Link Lowongan Kerja dimatikan --- */}
-                {/*
-                <SidebarLink
-                    href={route("admin.job_vacancies.index")}
-                    active={route().current("admin.job_vacancies.*")}
-                    icon={<Briefcase className="h-5 w-5" />}
-                >
-                    Lowongan Kerja
-                </SidebarLink>
-                */}
+                {/* ... (kode link lowongan kerja yang di-comment) ... */}
 
                 <SidebarLink
                     href={route("admin.users.index")}
@@ -258,8 +209,18 @@ export default function AdminSidebar() {
                     active={route().current("admin.verification.*")}
                     icon={<ShieldCheck className="h-5 w-5" />}
                 >
-                    Verifikasi User
+                    Verifikasi User (Klien)
                 </SidebarLink>
+
+                {/* --- [BARU] Link Verifikasi Kurir --- */}
+                <SidebarLink
+                    href={route("admin.courier_verifications.index")}
+                    active={route().current("admin.courier_verifications.*")}
+                    icon={<Truck className="h-5 w-5" />}
+                >
+                    Verifikasi Kurir
+                </SidebarLink>
+                {/* --- END [BARU] --- */}
 
                 <SidebarDropdown
                     title="Pengaturan"

@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo; // <-- Pastikan ini ada
+use Illuminate\Database\Eloquent\Relations\MorphTo; // <-- Pastikan ini ada
+use Illuminate\Database\Eloquent\Relations\HasOne; // <-- Pastikan ini ada
 
 class Order extends Model
 {
@@ -21,17 +24,26 @@ class Order extends Model
     ];
 
     /**
-     * Dapatkan user yang memiliki order ini.
+     * Dapatkan user (Client) yang memiliki order ini.
+     * [PERUBAHAN]: Nama relasi dikembalikan ke user() agar konsisten
      */
-    public function user()
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Dapatkan user (Kurir) yang ditugaskan untuk order ini. (BARU)
+     */
+    public function courier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'courier_id');
     }
 
     /**
      * Dapatkan model (Service atau MovingPackage) yang dipesan.
      */
-    public function orderable()
+    public function orderable(): MorphTo
     {
         return $this->morphTo();
     }
@@ -39,7 +51,7 @@ class Order extends Model
     /**
      * Dapatkan data pembayaran manual untuk order ini.
      */
-    public function payment()
+    public function payment(): HasOne
     {
         return $this->hasOne(ManualPayment::class);
     }
