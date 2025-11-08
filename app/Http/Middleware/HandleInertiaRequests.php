@@ -32,10 +32,22 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // [MODIFIKASI] Ambil user-nya dulu
+        $user = $request->user();
+
+        // [MODIFIKASI] Jika user-nya ada (sudah login)
+        if ($user) {
+            // Muat relasi verifikasi kurir.
+            // Ini akan membuat auth.user.courier_verification tersedia di React
+            // untuk digunakan oleh "Smart Sidebar"
+            $user->load('courierVerification');
+        }
+
+        // [MODIFIKASI] Kembalikan array-nya, tapi 'user' sekarang sudah dimodifikasi
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user, // <-- Menggunakan variabel $user yang sudah di-load
             ],
             'settings' => Cache::rememberForever('settings', function () {
                 return Setting::all()->pluck('value', 'key');
@@ -45,10 +57,10 @@ class HandleInertiaRequests extends Middleware
             ],
 
             'ziggy' => function () use ($request) {
-             return array_merge((new \Tighten\Ziggy\Ziggy)->toArray(), [
-                'location' => $request->url(),
-    ]);
-},
+                return array_merge((new \Tighten\Ziggy\Ziggy)->toArray(), [
+                    'location' => $request->url(),
+                ]);
+            },
         ];
     }
 }
