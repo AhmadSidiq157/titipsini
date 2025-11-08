@@ -148,7 +148,7 @@ export default function Header() {
                                                 href={route("order.index")}
                                                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                             >
-                                                Pesanan Saya
+                                                History Pesanan
                                             </Link>
                                             <div className="border-t my-1"></div>
                                             <Link
@@ -211,14 +211,6 @@ export default function Header() {
                                     )}
                                 </div>
                             )}
-
-                            {/* Tombol Titip Sekarang */}
-                            <a
-                                href="#layanan"
-                                className="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors"
-                            >
-                                Titip Sekarang
-                            </a>
                         </div>
 
                         {/* */}
