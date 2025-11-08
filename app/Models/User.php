@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Models\UserVerification;
+use App\Models\Role; 
 
 class User extends Authenticatable
 {
@@ -57,5 +58,16 @@ class User extends Authenticatable
     public function verification()
     {
         return $this->hasOne(UserVerification::class);
+    }
+
+    // --- INI FUNGSI YANG HILANG (PENYEBAB ERROR) ---
+    /**
+     * Helper function untuk mengecek apakah user punya role 'admin'.
+     */
+    public function isAdmin(): bool
+    {
+        // Ini akan mengecek ke database apakah user ini
+        // punya role dengan nama 'admin'.
+        return $this->roles()->where('name', 'admin')->exists();
     }
 }

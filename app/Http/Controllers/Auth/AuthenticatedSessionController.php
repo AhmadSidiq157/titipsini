@@ -33,7 +33,22 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended('/');
+        // --- INI DIA LOGIKA YANG BENAR ---
+
+        // 1. Ambil data user yang baru login
+        $user = $request->user();
+
+        // 2. Cek apakah user itu admin (pakai fungsi isAdmin() dari User.php)
+        if ($user->isAdmin()) {
+            
+            // 3a. JIKA ADMIN: Arahkan ke 'dashboard' (sesuai routes/web.php kamu)
+            return redirect()->intended(route('dashboard', absolute: false));
+        
+        } else {
+            
+            // 3b. JIKA USER BIASA: Arahkan ke 'home' (sesuai routes/web.php kamu)
+            return redirect()->intended(route('home', absolute: false));
+        }
     }
 
     /**

@@ -46,18 +46,24 @@ use App\Http\Controllers\Admin\OrderManagementController;
 // Halaman Utama (Homepage)
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
 
-Route::get('/mitra', [MitraController::class, 'index'])->name('mitra.index');
+// Route::get('/mitra', [MitraController::class, 'index'])->name('mitra.index');
 
 // Halaman Statis Lainnya
 Route::get('/tentang-kami', fn() => Inertia::render('About'))->name('about');
-Route::get('/program-kami', [ProgramPageController::class, 'show'])->name('program');
+// --- [MODIFIKASI] Route dimatikan sesuai permintaan ---
+// Route::get('/program-kami', [ProgramPageController::class, 'show'])->name('program');
 
 // Halaman dengan Controller
 Route::get('/contact', [ContactPageController::class, 'show'])->name('contact.show');
 Route::post('/contact', [ContactPageController::class, 'store'])->name('contact.store');
-Route::get('/internship', [InternshipPageController::class, 'show'])->name('internship.show');
+
+// --- [MODIFIKASI] Route dimatikan sesuai permintaan ---
+// Route::get('/internship', [InternshipPageController::class, 'show'])->name('internship.show');
+
 Route::get('/layanan', [LayananPageController::class, 'show'])->name('layanan.show');
-Route::get('/lowongan-kerja', [JobVacancyController::class, 'publicIndex'])->name('careers.index');
+
+// --- [MODIFIKASI] Route dimatikan sesuai permintaan ---
+// Route::get('/lowongan-kerja', [JobVacancyController::class, 'publicIndex'])->name('careers.index');
 
 Route::get('/Mitra/index', [MitraController::class, 'index'])->name('mitra.index');
 
@@ -101,10 +107,11 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
     ->name('admin.')
     ->group(function () {
 
+        // --- [MODIFIKASI] Route dimatikan sesuai permintaan ---
         // CRUD untuk Job Vacancies
-        Route::resource('job-vacancies', JobVacancyController::class)
-            ->except(['show'])
-            ->names('job_vacancies');
+        // Route::resource('job-vacancies', JobVacancyController::class)
+        //     ->except(['show'])
+        //     ->names('job_vacancies');
 
         // Manajemen User
         Route::get('users', [UserManagementController::class, 'index'])->name('users.index');
@@ -124,10 +131,12 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
         // Resources untuk Layanan & Paket
         Route::resource('services', ServiceController::class);
         Route::resource('moving-packages', MovingPackageController::class);
-        Route::resource('internship-positions', InternshipPositionController::class);
-        Route::resource('internship-projects', InternshipProjectController::class);
-        Route::resource('career-programs', CareerProgramController::class);
-        Route::resource('curricula', CurriculumController::class);
+        
+        // --- [MODIFIKASI] Route dimatikan sesuai permintaan ---
+        // Route::resource('internship-positions', InternshipPositionController::class);
+        // Route::resource('internship-projects', InternshipProjectController::class);
+        // Route::resource('career-programs', CareerProgramController::class);
+        // Route::resource('curricula', CurriculumController::class);
 
         // Manajemen Pesanan Admin
         Route::prefix('orders')->name('orders.')->group(function () {
@@ -151,4 +160,3 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
 
 
 require __DIR__ . '/auth.php';
-

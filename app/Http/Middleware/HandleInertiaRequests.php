@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Inertia\Middleware;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
-// use Tightenco\Ziggy\Ziggy; // <-- 1. KITA HAPUS IMPORT INI
+// use Tightenco\Ziggy\Ziggy; 
 
 class HandleInertiaRequests extends Middleware
 {

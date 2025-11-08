@@ -13,6 +13,9 @@ import {
     BookOpen,
     ArrowRight,
     LogIn,
+    // --- [BARU] Tambahkan ikon untuk stat baru ---
+    Hourglass,
+    ShieldCheck,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -63,10 +66,11 @@ export default function AdminDashboard({ auth, stats, recentActivities }) {
         switch (type) {
             case "user_registered":
                 return <UserPlus className="w-5 h-5 text-green-500" />;
-            case "item_created":
+            // --- [MODIFIKASI] Kita ganti jadi 'order_placed' ---
+            case "order_placed":
                 return <PlusCircle className="w-5 h-5 text-blue-500" />;
-            case "item_updated":
-                return <Settings className="w-5 h-5 text-yellow-500" />;
+            case "order_approved":
+                return <ShieldCheck className="w-5 h-5 text-green-500" />;
             case "user_login":
                 return <LogIn className="w-5 h-5 text-gray-400" />;
             default:
@@ -95,7 +99,7 @@ export default function AdminDashboard({ auth, stats, recentActivities }) {
                         </p>
                     </div>
 
-                    {/* --- Kartu Statistik --- */}
+                    {/* --- [MODIFIKASI] Kartu Statistik diganti --- */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         <StatCard
                             title="Total User"
@@ -108,9 +112,9 @@ export default function AdminDashboard({ auth, stats, recentActivities }) {
                             delay={0.1}
                         />
                         <StatCard
-                            title="Lowongan Aktif"
-                            value={stats.total_job_vacancies}
-                            icon={<Briefcase />}
+                            title="Pesanan Masuk"
+                            value={stats.total_orders} // <-- Butuh data baru
+                            icon={<ClipboardList />}
                             colorClass={{
                                 bg: "bg-green-100",
                                 text: "text-green-600",
@@ -118,9 +122,9 @@ export default function AdminDashboard({ auth, stats, recentActivities }) {
                             delay={0.2}
                         />
                         <StatCard
-                            title="Posisi Magang"
-                            value={stats.total_internship_positions}
-                            icon={<GraduationCap />}
+                            title="Pesanan Pending"
+                            value={stats.pending_orders} // <-- Butuh data baru
+                            icon={<Hourglass />}
                             colorClass={{
                                 bg: "bg-yellow-100",
                                 text: "text-yellow-600",
@@ -128,12 +132,12 @@ export default function AdminDashboard({ auth, stats, recentActivities }) {
                             delay={0.3}
                         />
                         <StatCard
-                            title="Program Karir"
-                            value={stats.total_career_programs}
-                            icon={<BookOpen />}
+                            title="Verifikasi Pending"
+                            value={stats.pending_verifications} // <-- Butuh data baru
+                            icon={<ShieldCheck />}
                             colorClass={{
-                                bg: "bg-indigo-100",
-                                text: "text-indigo-600",
+                                bg: "bg-orange-100",
+                                text: "text-orange-600",
                             }}
                             delay={0.4}
                         />
@@ -146,21 +150,23 @@ export default function AdminDashboard({ auth, stats, recentActivities }) {
                             <h3 className="text-xl font-bold text-gray-800 px-1 mb-2">
                                 Tautan Cepat
                             </h3>
+
+                            {/* --- [MODIFIKASI] Tautan Cepat diganti --- */}
                             <QuickLinkCard
-                                href={route("admin.services.index")}
+                                href={route("admin.orders.index")}
                                 icon={<ClipboardList />}
-                                title="Manajemen Layanan"
-                                description="Atur layanan umum & paket pindahan"
+                                title="Manajemen Pesanan"
+                                description="Review, setujui, atau tolak pesanan"
                                 colorClass={{
                                     bg: "bg-cyan-100",
                                     text: "text-cyan-600",
                                 }}
                             />
                             <QuickLinkCard
-                                href={route("admin.internship-positions.index")}
-                                icon={<GraduationCap />}
-                                title="Manajemen Internship"
-                                description="Atur posisi & proyek magang"
+                                href={route("admin.verification.index")}
+                                icon={<ShieldCheck />}
+                                title="Verifikasi User"
+                                description="Setujui atau tolak data KTP user"
                                 colorClass={{
                                     bg: "bg-rose-100",
                                     text: "text-rose-600",
@@ -210,8 +216,7 @@ export default function AdminDashboard({ auth, stats, recentActivities }) {
                         </div>
                     </div>
                 </div>
-            </motion.div>{" "}
-            {/* <-- INI TAG PENUTUP YANG HILANG */}
+            </motion.div>
         </AdminLayout>
     );
 }

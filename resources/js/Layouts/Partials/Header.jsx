@@ -1,46 +1,27 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, usePage } from "@inertiajs/react";
-// import SearchModal from "./SearchModal"; // <-- [DIHAPUS] Search dihilangkan
-import { Menu, X, ChevronDown, User } from "lucide-react"; // <-- [DIHAPUS] Search dihilangkan dari import
+import { Menu, X, ChevronDown, User } from "lucide-react";
 
 export default function Header() {
-    // ... (kode state, refs, props, handlers, useEffect tidak berubah) ...
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    // const [isSearchOpen, setIsSearchOpen] = useState(false); // <-- [DIHAPUS] Search dihilangkan
     const [openDropdown, setOpenDropdown] = useState(null);
     const [isAccountDropdownOpen, setAccountDropdownOpen] = useState(false);
 
-    // Refs untuk mendeteksi klik di luar area dropdown
     const navDropdownRef = useRef(null);
     const accountDropdownRef = useRef(null);
 
-    // Mengambil URL, status otentikasi, dan settings dari Inertia
     const {
         url,
         props: { auth, settings },
     } = usePage();
 
-    // --- LOGIKA WHATSAPP TIDAK KITA PAKAI LAGI ---
-    // ...
-
-    // Konfigurasi link navigasi
     const navLinks = [
         { label: "Beranda", href: "/" },
         { label: "Pindahan", href: "/layanan" },
         { label: "Tentang Kami", href: "/tentang-kami" },
         { label: "Kontak", href: "/contact" },
-        // { <-- [DIHAPUS] Bagian "Karir & Program" dihilangkan sesuai permintaan
-        //     label: "Karir & Program",
-        //     isDropdown: true,
-        //     items: [
-        //         { label: "Lowongan Kerja", href: "/lowongan-kerja" },
-        //         { label: "Internship", href: "/internship" },
-        //         { label: "Program Kami", href: "/program-kami" },
-        //     ],
-        // },
     ];
 
-    // Handler untuk membuka/menutup dropdown navigasi
     const handleDropdownToggle = (label) => {
         setOpenDropdown(openDropdown === label ? null : label);
     };
@@ -71,6 +52,7 @@ export default function Header() {
             <header className="bg-white shadow-sm sticky top-0 z-40">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center py-4">
+                        {/* */}
                         <Link href="/">
                             {settings.site_logo ? (
                                 <img
@@ -84,12 +66,15 @@ export default function Header() {
                                     <span className="text-green-500">.com</span>
                                 </span>
                             )}
-                        </Link>{" "}
+                        </Link>
+
+                        {/* */}
                         <nav
                             className="hidden md:flex items-center space-x-8"
                             ref={navDropdownRef}
                         >
                             {navLinks.map((link) => {
+                                // ... (logika dropdown navigasi)
                                 const isDropdownActive =
                                     link.isDropdown &&
                                     link.items.some((item) =>
@@ -98,52 +83,7 @@ export default function Header() {
 
                                 return link.isDropdown ? (
                                     <div key={link.label} className="relative">
-                                        <button
-                                            onClick={() =>
-                                                handleDropdownToggle(link.label)
-                                            }
-                                            className={`flex items-center transition-colors font-medium ${
-                                                isDropdownActive
-                                                    ? "text-green-600"
-                                                    : "text-gray-600 hover:text-green-600"
-                                            }`}
-                                        >
-                                            {link.label}
-                                            <ChevronDown
-                                                size={16}
-                                                className={`ml-1 transition-transform duration-200 ${
-                                                    openDropdown === link.label
-                                                        ? "rotate-180"
-                                                        : ""
-                                                }`}
-                                            />
-                                        </button>
-                                        {openDropdown === link.label && (
-                                            <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-10 border">
-                                                {link.items.map((item) => {
-                                                    const isActive =
-                                                        url === item.href;
-                                                    return (
-                                                        <Link
-                                                            key={item.label}
-                                                            href={item.href}
-                                                            className={`block px-4 py-2 text-sm ${
-                                                                isActive
-                                                                    ? "text-green-600 bg-green-50 font-semibold"
-                                                                    : "text-gray-700 hover:bg-green-50 hover:text-green-600"
-                                                            }`}
-                                                            onClick={() =>
-                                                                setOpenDropdown(
-                                                                    null
-                                                                )
-                                                            }
-                                                        >
-                                                            {item.label}
-                                                        </Link>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
+                                        {/* ... (kode tombol dropdown) ... */}
                                     </div>
                                 ) : (
                                     <Link
@@ -160,14 +100,72 @@ export default function Header() {
                                 );
                             })}
                         </nav>
-                        {/* --- Tombol Aksi di Kanan (BAGIAN YANG DIPERBARUI) --- */}
-                        <div className="hidden md:flex items-center space-x-4">
-                            {/* [DIHAPUS] Tombol Search dihilangkan */}
 
+                        {/* --- [BAGIAN PENTING] Tombol Aksi di Kanan (Desktop) --- */}
+                        <div className="hidden md:flex items-center space-x-4">
+                            {/* Logika Tampilan Tombol Akun */}
                             {auth.user ? (
-                                <></>
+                                //
+                                // --- [BAGIAN INI TAMPIL JIKA SUDAH LOGIN] ---
+                                //
+                                <div
+                                    className="relative"
+                                    ref={accountDropdownRef}
+                                >
+                                    <button
+                                        onClick={() =>
+                                            setAccountDropdownOpen(
+                                                (prev) => !prev
+                                            )
+                                        }
+                                        className="inline-flex items-center px-4 py-2 border border-transparent text-gray-700 font-semibold text-sm rounded-md hover:bg-gray-50 transition"
+                                    >
+                                        <User className="w-4 h-4 mr-2" />
+                                        {auth.user.name}{" "}
+                                        {/* Nampilin nama user */}
+                                        <ChevronDown
+                                            size={16}
+                                            className={`ml-1 transition-transform duration-200 ${
+                                                isAccountDropdownOpen
+                                                    ? "rotate-180"
+                                                    : ""
+                                            }`}
+                                        />
+                                    </button>
+                                    {/* Dropdown Menu untuk User Login */}
+                                    {isAccountDropdownOpen && (
+                                        //
+                                        // [PERBAIKAN 1]: z-10 diubah jadi z-50
+                                        //
+                                        <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50 border">
+                                            <Link
+                                                href={route("profile.edit")}
+                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                            >
+                                                Profile
+                                            </Link>
+                                            <Link
+                                                href={route("order.index")}
+                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                            >
+                                                Pesanan Saya
+                                            </Link>
+                                            <div className="border-t my-1"></div>
+                                            <Link
+                                                href={route("logout")}
+                                                method="post"
+                                                as="button"
+                                                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                                            >
+                                                Log Out
+                                            </Link>
+                                        </div>
+                                    )}
+                                </div>
                             ) : (
-                                // Jika user belum login
+                                //
+                                // --- [BAGIAN INI TAMPIL JIKA BELUM LOGIN] ---
+                                //
                                 <div
                                     className="relative"
                                     ref={accountDropdownRef}
@@ -191,8 +189,12 @@ export default function Header() {
                                             }`}
                                         />
                                     </button>
+                                    {/* Dropdown Menu untuk Tamu */}
                                     {isAccountDropdownOpen && (
-                                        <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-10 border">
+                                        //
+                                        // [PERBAIKAN 2]: z-10 diubah jadi z-50
+                                        //
+                                        <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50 border">
                                             <Link
                                                 href={route("login")}
                                                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -210,7 +212,7 @@ export default function Header() {
                                 </div>
                             )}
 
-                            {/* [MODIFIKASI] Diubah jadi <a> tag (anchor link) untuk scroll ke section */}
+                            {/* Tombol Titip Sekarang */}
                             <a
                                 href="#layanan"
                                 className="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors"
@@ -218,10 +220,9 @@ export default function Header() {
                                 Titip Sekarang
                             </a>
                         </div>
-                        {/* Tombol untuk Menu Mobile */}
-                        <div className="md:hidden flex items-center space-x-4">
-                            {/* [DIHAPUS] Tombol Search dihilangkan */}
 
+                        {/* */}
+                        <div className="md:hidden flex items-center space-x-4">
                             <button
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                                 className="text-gray-600"
@@ -236,8 +237,80 @@ export default function Header() {
                     </div>
                 </div>
 
-                {/* Dropdown Menu untuk Mobile (jika terbuka) */}
-                {isMenuOpen && <div className="md:hidden"></div>}
+                {/* --- Dropdown Menu untuk Mobile --- */}
+                {isMenuOpen && (
+                    <div className="md:hidden border-t border-gray-100">
+                        {/* Link Navigasi Mobile */}
+                        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                            {navLinks.map((link) => (
+                                <Link
+                                    key={link.label}
+                                    href={link.href}
+                                    className={`block px-3 py-2 rounded-md text-base font-medium ${
+                                        url === link.href
+                                            ? "text-green-700 bg-green-50"
+                                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                    }`}
+                                >
+                                    {link.label}
+                                </Link>
+                            ))}
+                        </div>
+
+                        {/* Link Akun Mobile */}
+                        <div className="border-t border-gray-200 pt-4 pb-3">
+                            {auth.user ? (
+                                // --- JIKA SUDAH LOGIN (MOBILE) ---
+                                <div className="px-5">
+                                    <div className="font-medium text-base text-gray-800">
+                                        {auth.user.name}
+                                    </div>
+                                    <div className="font-medium text-sm text-gray-500">
+                                        {auth.user.email}
+                                    </div>
+                                    <div className="mt-3 space-y-1">
+                                        <Link
+                                            href={route("profile.edit")}
+                                            className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                        >
+                                            Profile
+                                        </Link>
+                                        <Link
+                                            href={route("order.index")}
+                                            className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                        >
+                                            Pesanan Saya
+                                        </Link>
+                                        <Link
+                                            href={route("logout")}
+                                            method="post"
+                                            as="button"
+                                            className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-gray-50 hover:text-red-700"
+                                        >
+                                            Log Out
+                                        </Link>
+                                    </div>
+                                </div>
+                            ) : (
+                                // --- JIKA BELUM LOGIN (MOBILE) ---
+                                <div className="px-2 space-y-1">
+                                    <Link
+                                        href={route("login")}
+                                        className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                    >
+                                        Login
+                                    </Link>
+                                    <Link
+                                        href={route("register")}
+                                        className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                    >
+                                        Register
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </header>
         </>
     );

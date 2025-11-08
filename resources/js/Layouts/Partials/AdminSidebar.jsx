@@ -110,12 +110,13 @@ export default function AdminSidebar() {
     const [openDropdown, setOpenDropdown] = useState({
         halamanDepan: route().current("admin.services.*"),
         halamanLayanan: route().current("admin.moving-packages.*"),
-        halamanInternship:
-            route().current("admin.internship-positions.*") ||
-            route().current("admin.internship-projects.*"),
-        halamanProgram:
-            route().current("admin.career-programs.*") ||
-            route().current("admin.curricula.*"),
+        // [MODIFIKASI] Hapus pengecekan route yang sudah tidak ada
+        // halamanInternship:
+        //     route().current("admin.internship-positions.*") ||
+        //     route().current("admin.internship-projects.*"),
+        // halamanProgram:
+        //     route().current("admin.career-programs.*") ||
+        //     route().current("admin.curricula.*"),
         pengaturan: route().current("admin.settings.*"),
     });
 
@@ -185,7 +186,8 @@ export default function AdminSidebar() {
                     </SidebarSubLink>
                 </SidebarDropdown>
 
-                {/* --- Dropdown Manajemen Halaman Internship --- */}
+                {/* --- [MODIFIKASI] Dropdown Manajemen Halaman Internship dimatikan --- */}
+                {/*
                 <SidebarDropdown
                     title="Halaman Internship"
                     icon={<GraduationCap className="h-5 w-5" />}
@@ -206,8 +208,10 @@ export default function AdminSidebar() {
                         Proyek Magang
                     </SidebarSubLink>
                 </SidebarDropdown>
+                */}
 
-                {/* --- Dropdown Manajemen Halaman Program --- */}
+                {/* --- [MODIFIKASI] Dropdown Manajemen Halaman Program dimatikan --- */}
+                {/*
                 <SidebarDropdown
                     title="Halaman Program"
                     icon={<BookOpen className="h-5 w-5" />}
@@ -220,7 +224,7 @@ export default function AdminSidebar() {
                         active={route().current("admin.career-programs.*")}
                     >
                         Program Karir
-                    </SidebarSubLink>
+                    </SiderbarSubLink>
                     <SidebarSubLink
                         href={route("admin.curricula.index")}
                         active={route().current("admin.curricula.*")}
@@ -228,7 +232,10 @@ export default function AdminSidebar() {
                         Kurikulum
                     </SidebarSubLink>
                 </SidebarDropdown>
+                */}
 
+                {/* --- [MODIFIKASI] Link Lowongan Kerja dimatikan --- */}
+                {/*
                 <SidebarLink
                     href={route("admin.job_vacancies.index")}
                     active={route().current("admin.job_vacancies.*")}
@@ -236,6 +243,7 @@ export default function AdminSidebar() {
                 >
                     Lowongan Kerja
                 </SidebarLink>
+                */}
 
                 <SidebarLink
                     href={route("admin.users.index")}
