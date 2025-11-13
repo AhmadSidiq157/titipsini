@@ -8,10 +8,10 @@ use Inertia\Inertia;
 // App Controllers
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ContactPageController;
-use App\Http\Controllers\InternshipPageController;
-use App\Http\Controllers\JobVacancyController;
-use App\Http\Controllers\LayananPageController;
-use App\Http\Controllers\ProgramPageController;
+// use App\Http\Controllers\InternshipPageController;
+// use App\Http\Controllers\JobVacancyController;
+// use App\Http\Controllers\LayananPageController;
+// use App\Http\Controllers\ProgramPageController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\UserVerificationController;
 use App\Http\Controllers\MitraController;
@@ -23,12 +23,12 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\WelcomeController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\MovingPackageController;
-use App\Http\Controllers\Admin\InternshipPositionController;
-use App\Http\Controllers\Admin\InternshipProjectController;
-use App\Http\Controllers\Admin\CareerProgramController;
-use App\Http\Controllers\Admin\CurriculumController;
+// use App\Http\Controllers\Admin\InternshipPositionController;
+// use App\Http\Controllers\Admin\InternshipProjectController;
+// use App\Http\Controllers\Admin\CareerProgramController;
+// use App\Http\Controllers\Admin\CurriculumController;
 use App\Http\Controllers\Admin\OrderManagementController;
-use App\Http\Controllers\Admin\BranchController; // ✅ DITAMBAHKAN
+use App\Http\Controllers\Admin\BranchController; 
 
 /*
 |--------------------------------------------------------------------------
@@ -41,14 +41,14 @@ Route::get('/', [WelcomeController::class, 'index'])->name('home');
 Route::get('/mitra', [MitraController::class, 'index'])->name('mitra.index');
 
 Route::get('/tentang-kami', fn() => Inertia::render('About'))->name('about');
-Route::get('/program-kami', [ProgramPageController::class, 'show'])->name('program');
+// Route::get('/program-kami', [ProgramPageController::class, 'show'])->name('program');
 
 Route::get('/contact', [ContactPageController::class, 'show'])->name('contact.show');
 Route::post('/contact', [ContactPageController::class, 'store'])->name('contact.store');
-Route::get('/internship', [InternshipPageController::class, 'show'])->name('internship.show');
-Route::get('/layanan', [LayananPageController::class, 'show'])->name('layanan.show');
-Route::get('/lowongan-kerja', [JobVacancyController::class, 'publicIndex'])->name('careers.index');
-Route::get('/Mitra/index', [MitraController::class, 'index'])->name('mitra.index');
+// Route::get('/internship', [InternshipPageController::class, 'show'])->name('internship.show');
+// Route::get('/layanan', [LayananPageController::class, 'show'])->name('layanan.show');
+// Route::get('/lowongan-kerja', [JobVacancyController::class, 'publicIndex'])->name('careers.index');
+// Route::get('/Mitra/index', [MitraController::class, 'index'])->name('mitra.index');
 
 // --- RUTE UNTUK USER LOGIN & VERIFIED ---
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -84,9 +84,9 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
     ->group(function () {
 
         // CRUD Job Vacancies
-        Route::resource('job-vacancies', JobVacancyController::class)
+       /* Route::resource('job-vacancies', JobVacancyController::class)
             ->except(['show'])
-            ->names('job_vacancies');
+            ->names('job_vacancies'); */
 
         // Manajemen User
         Route::get('users', [UserManagementController::class, 'index'])->name('users.index');
@@ -102,12 +102,10 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
         // Layanan & Paket
         Route::resource('services', ServiceController::class);
         Route::resource('moving-packages', MovingPackageController::class);
-        Route::resource('internship-positions', InternshipPositionController::class);
-        Route::resource('internship-projects', InternshipProjectController::class);
-        Route::resource('career-programs', CareerProgramController::class);
-        Route::resource('curricula', CurriculumController::class);
-
-        // Manajemen Cabang (🔥 DITAMBAHKAN)
+        // Route::resource('internship-positions', InternshipPositionController::class);
+        // Route::resource('internship-projects', InternshipProjectController::class);
+        // Route::resource('career-programs', CareerProgramController::class);
+        // Route::resource('curricula', CurriculumController::class);
         Route::resource('branches', BranchController::class)->names('branches');
 
         // Pesanan Admin
