@@ -7,24 +7,30 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
+use App\Models\Branch; // <-- 1. IMPORT MODEL BRANCH
 
 // PASTIKAN NAMA CLASS INI BENAR (SAMA DENGAN NAMA FILE)
 class ContactPageController extends Controller
 {
-    // ... (kode method show() dan store() ada di sini) ...
+    /**
+     * Menampilkan halaman kontak publik.
+     */
     public function show()
     {
-        $branches = [
-            ['name' => 'Cabang Jakarta Selatan', 'address' => 'Jl. Raya Storage No. 123, Jakarta Selatan', 'phone' => '+62 21 1234 5678', 'status' => 'Buka'],
-            ['name' => 'Cabang Jakarta Pusat', 'address' => 'Jl. Sudirman No. 456, Jakarta Pusat', 'phone' => '+62 21 8765 4321', 'status' => 'Buka'],
-            ['name' => 'Cabang Tangerang', 'address' => 'Jl. BSD Raya No. 789, Tangerang Selatan', 'phone' => '+62 21 5555 6666', 'status' => 'Segera Hadir'],
-        ];
+        // 2. HAPUS ARRAY STATIS
+        // $branches = [ ... ];
+
+        // 3. AMBIL DATA DARI DATABASE
+        $branches = Branch::all(); // ->get() juga bisa
 
         return Inertia::render('Contact', [
-            'branches' => $branches,
+            'branches' => $branches, // Kirim data dinamis
         ]);
     }
 
+    /**
+     * Menyimpan pesan dari form kontak.
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -37,6 +43,7 @@ class ContactPageController extends Controller
 
         Log::info('Pesan Kontak Baru Diterima:', $request->all());
 
-        return Redirect::back();
+        // Redirect kembali dengan pesan sukses
+        return Redirect::back()->with('success', 'Pesan Anda telah terkirim!');
     }
 }

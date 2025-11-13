@@ -98,8 +98,12 @@ export default function Footer() {
                                 </Link>
                             </li>
                             <li>
+                                {/* --- [INI DIA PERBAIKANNYA] ---
+                                    Link diubah dari route('layanan.show')
+                                    menjadi anchor link '/#layanan'
+                                */}
                                 <Link
-                                    href={route("layanan.show")}
+                                    href="/#layanan"
                                     className="hover:text-white transition-colors"
                                 >
                                     Pindahan
@@ -115,7 +119,7 @@ export default function Footer() {
                             </li>
                             <li>
                                 <Link
-                                    href="#"
+                                    href="#" // Link FAQ kamu belum ada, jadi kubiarkan
                                     className="hover:text-white transition-colors"
                                 >
                                     FAQ
@@ -138,9 +142,10 @@ export default function Footer() {
                             Layanan
                         </h4>
                         <ul className="space-y-2 text-sm text-slate-400">
+                            {/* --- [PENYESUAIAN] Link ini juga diarahkan ke anchor --- */}
                             <li>
                                 <Link
-                                    href="#"
+                                    href="/#layanan"
                                     className="hover:text-white transition-colors"
                                 >
                                     Penitipan Barang
@@ -148,7 +153,7 @@ export default function Footer() {
                             </li>
                             <li>
                                 <Link
-                                    href="#"
+                                    href="/#layanan"
                                     className="hover:text-white transition-colors"
                                 >
                                     Storage Kendaraan
@@ -156,7 +161,7 @@ export default function Footer() {
                             </li>
                             <li>
                                 <Link
-                                    href="#"
+                                    href="/#layanan"
                                     className="hover:text-white transition-colors"
                                 >
                                     Layanan Pengiriman
@@ -164,7 +169,7 @@ export default function Footer() {
                             </li>
                             <li>
                                 <Link
-                                    href="#"
+                                    href={route("contact.show")} // Arahkan ke kontak
                                     className="hover:text-white transition-colors"
                                 >
                                     Customer Support
