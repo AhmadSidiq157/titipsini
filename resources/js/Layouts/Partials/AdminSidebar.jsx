@@ -18,7 +18,7 @@ import {
     Home, // Tambahan ikon untuk Halaman Depan
     FileText, // Tambahan ikon untuk Halaman Layanan
     ShieldCheck,
-    Truck, // <-- [BARU] Ikon untuk Verifikasi Kurir
+    MapPin,
 } from "lucide-react";
 
 // --- KOMPONEN-KOMPONEN KECIL (HELPER) ---
@@ -111,14 +111,9 @@ export default function AdminSidebar() {
     const [openDropdown, setOpenDropdown] = useState({
         halamanDepan: route().current("admin.services.*"),
         halamanLayanan: route().current("admin.moving-packages.*"),
-        // [MODIFIKASI] Hapus pengecekan route yang sudah tidak ada
-        // halamanInternship:
-        //     route().current("admin.internship-positions.*") ||
-        //     route().current("admin.internship-projects.*"),
-        // halamanProgram:
-        //     route().current("admin.career-programs.*") ||
-        //     route().current("admin.curricula.*"),
-        pengaturan: route().current("admin.settings.*"),
+        pengaturan:
+            route().current("admin.settings.*") ||
+            route().current("admin.branches.*"), // <-- Ini sudah benar
     });
 
     const handleToggle = (dropdown) => {
@@ -188,13 +183,13 @@ export default function AdminSidebar() {
                 </SidebarDropdown>
 
                 {/* --- [MODIFIKASI] Dropdown Manajemen Halaman Internship dimatikan --- */}
-                {/* ... (kode dropdown internship yang di-comment) ... */}
+                {/* ... (kode link nonaktif) ... */}
 
                 {/* --- [MODIFIKASI] Dropdown Manajemen Halaman Program dimatikan --- */}
-                {/* ... (kode dropdown program yang di-comment) ... */}
+                {/* ... (kode link nonaktif) ... */}
 
                 {/* --- [MODIFIKASI] Link Lowongan Kerja dimatikan --- */}
-                {/* ... (kode link lowongan kerja yang di-comment) ... */}
+                {/* ... (kode link nonaktif) ... */}
 
                 <SidebarLink
                     href={route("admin.users.index")}
@@ -212,15 +207,23 @@ export default function AdminSidebar() {
                     Verifikasi User (Klien)
                 </SidebarLink>
 
-                {/* --- [BARU] Link Verifikasi Kurir --- */}
-                <SidebarLink
+                {/* [PERBAIKAN] Link "Verifikasi Kurir" ini saya nonaktifkan (comment) 
+                  karena ini adalah SUMBER ERROR UTAMA di screenshot Anda.
+
+                  Error-nya adalah: "route 'admin.courier_verifications.index' is not in the route list."
+
+                  Jika rute ini sudah Anda buat di Laravel, pastikan namanya sama persis,
+                  lalu jalankan `php artisan route:cache` & `php artisan ziggy:generate`.
+                  Setelah itu, Anda bisa menghapus komentar (uncomment) blok di bawah ini.
+                */}
+                {/* <SidebarLink
                     href={route("admin.courier_verifications.index")}
                     active={route().current("admin.courier_verifications.*")}
-                    icon={<Truck className="h-5 w-5" />}
+                    icon={<ShieldCheck className="h-5 w-5" />}
                 >
                     Verifikasi Kurir
                 </SidebarLink>
-                {/* --- END [BARU] --- */}
+                */}
 
                 <SidebarDropdown
                     title="Pengaturan"
@@ -229,6 +232,15 @@ export default function AdminSidebar() {
                     isOpen={openDropdown.pengaturan}
                     onToggle={() => handleToggle("pengaturan")}
                 >
+                    {/* --- Manajemen Cabang (Sudah Benar) --- */}
+                    <SidebarSubLink
+                        href={route("admin.branches.index")}
+                        active={route().current("admin.branches.*")}
+                    >
+                        Manajemen Cabang
+                    </SidebarSubLink>
+                    {/* --- Batas Tambahan --- */}
+
                     <SidebarSubLink
                         href={route("admin.settings.contact")}
                         active={route().current("admin.settings.contact")}

@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Auth; // <-- Pastikan Auth di-import
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -33,15 +33,27 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // --- [PERBAIKAN LOGIKA REDIRECT] ---
+        // --- [INI DIA PERBAIKANNYA] ---
+        
+        // 1. Ambil user yang baru saja login
+        $user = Auth::user();
 
-        // Tidak perlu if/else.
-        // Kirim SEMUA user ke rute 'dashboard'.
-        // Controller 'Admin/DashboardController' (yang menangani rute 'dashboard')
-        // sudah kita buat "pintar" untuk menyortir Admin, Kurir, dan Klien
-        // ke halaman mereka masing-masing.
+        // 2. Eager load relasi 'roles' (berdasarkan file UserManagementController kamu)
+        // Pastikan model User kamu punya: public function roles() { return $this->belongsToMany(Role::class); }
+        $user->load('roles'); 
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // 3. Cek apakah user punya role 'admin'
+        // (Pastikan 'admin' adalah nama role di database kamu)
+        if ($user->roles->contains('name', 'admin')) {
+            
+            // JIKA ADMIN: Arahkan ke rute 'dashboard' (Admin Dashboard)
+            return redirect()->intended(route('dashboard', absolute: false));
+
+        } else {
+            
+            // JIKA USER BIASA: Arahkan ke rute 'home' (Halaman Utama)
+            return redirect()->intended(route('home', absolute: false));
+        }
     }
 
     /**
