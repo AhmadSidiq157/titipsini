@@ -14,6 +14,7 @@ use App\Http\Controllers\ContactPageController;
 // use App\Http\Controllers\ProgramPageController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\UserVerificationController;
+
 use App\Http\Controllers\MitraController;
 
 // Admin Controllers
@@ -28,7 +29,10 @@ use App\Http\Controllers\Admin\MovingPackageController;
 // use App\Http\Controllers\Admin\CareerProgramController;
 // use App\Http\Controllers\Admin\CurriculumController;
 use App\Http\Controllers\Admin\OrderManagementController;
+<<<<<<< HEAD
 use App\Http\Controllers\Admin\BranchController; 
+=======
+>>>>>>> 689ba71cd09014093199aaee3074cb74009c056f
 
 /*
 |--------------------------------------------------------------------------
@@ -37,6 +41,7 @@ use App\Http\Controllers\Admin\BranchController;
 */
 
 // --- RUTE HALAMAN PUBLIK ---
+<<<<<<< HEAD
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
 Route::get('/mitra', [MitraController::class, 'index'])->name('mitra.index');
 
@@ -49,9 +54,39 @@ Route::post('/contact', [ContactPageController::class, 'store'])->name('contact.
 // Route::get('/layanan', [LayananPageController::class, 'show'])->name('layanan.show');
 // Route::get('/lowongan-kerja', [JobVacancyController::class, 'publicIndex'])->name('careers.index');
 // Route::get('/Mitra/index', [MitraController::class, 'index'])->name('mitra.index');
+=======
+
+// Halaman Utama (Homepage)
+Route::get('/', [WelcomeController::class, 'index'])->name('home');
+
+// Route::get('/mitra', [MitraController::class, 'index'])->name('mitra.index');
+
+// Halaman Statis Lainnya
+Route::get('/tentang-kami', fn() => Inertia::render('About'))->name('about');
+// --- [MODIFIKASI] Route dimatikan sesuai permintaan ---
+// Route::get('/program-kami', [ProgramPageController::class, 'show'])->name('program');
+
+// Halaman dengan Controller
+Route::get('/contact', [ContactPageController::class, 'show'])->name('contact.show');
+Route::post('/contact', [ContactPageController::class, 'store'])->name('contact.store');
+
+// --- [MODIFIKASI] Route dimatikan sesuai permintaan ---
+// Route::get('/internship', [InternshipPageController::class, 'show'])->name('internship.show');
+
+Route::get('/layanan', [LayananPageController::class, 'show'])->name('layanan.show');
+
+// --- [MODIFIKASI] Route dimatikan sesuai permintaan ---
+// Route::get('/lowongan-kerja', [JobVacancyController::class, 'publicIndex'])->name('careers.index');
+
+Route::get('/Mitra/index', [MitraController::class, 'index'])->name('mitra.index');
+>>>>>>> 689ba71cd09014093199aaee3074cb74009c056f
 
 // --- RUTE UNTUK USER LOGIN & VERIFIED ---
 Route::middleware(['auth', 'verified'])->group(function () {
+<<<<<<< HEAD
+=======
+    // Dashboard
+>>>>>>> 689ba71cd09014093199aaee3074cb74009c056f
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Profil
@@ -59,17 +94,36 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+<<<<<<< HEAD
     // Order
+=======
+    // --- RUTE ORDER (MODIFIKASI) ---
+    // Middleware 'isVerified' dihapus dari grup agar modal bisa me-load data (GET)
+>>>>>>> 689ba71cd09014093199aaee3074cb74009c056f
     Route::prefix('order')->name('order.')->group(function () {
+        // ✅ Tambahkan route index agar Ziggy bisa mengenalinya
+        Route::get('/', [OrderController::class, 'index'])->name('index');
+
+        // Rute GET ini dibiarkan terbuka untuk di-fetch oleh modal.
         Route::get('/create', [OrderController::class, 'create'])->name('create');
         Route::get('/{order}/payment', [OrderController::class, 'payment'])->name('payment');
         Route::get('/{order}/success', [OrderController::class, 'success'])->name('success');
 
+<<<<<<< HEAD
+=======
+        // Rute POST ini WAJIB dilindungi middleware 'isVerified'
+        // Ini adalah lapisan keamanan backend.
+>>>>>>> 689ba71cd09014093199aaee3074cb74009c056f
         Route::post('/', [OrderController::class, 'store'])->name('store')->middleware('isVerified');
         Route::post('/{order}/payment', [OrderController::class, 'submitPayment'])->name('submitPayment')->middleware('isVerified');
     });
 
+<<<<<<< HEAD
     // Verifikasi User
+=======
+    // --- RUTE VERIFIKASI KTP (TETAP SAMA) ---
+    // Rute ini harus bisa diakses oleh user yg 'belum terverifikasi', jadi JANGAN tambahkan 'isVerified'
+>>>>>>> 689ba71cd09014093199aaee3074cb74009c056f
     Route::prefix('verification')->name('verification.')->group(function () {
         Route::get('/create', [UserVerificationController::class, 'create'])->name('create');
         Route::post('/', [UserVerificationController::class, 'store'])->name('store');
@@ -83,30 +137,54 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
     ->name('admin.')
     ->group(function () {
 
+<<<<<<< HEAD
         // CRUD Job Vacancies
        /* Route::resource('job-vacancies', JobVacancyController::class)
             ->except(['show'])
             ->names('job_vacancies'); */
+=======
+        // --- [MODIFIKASI] Route dimatikan sesuai permintaan ---
+        // CRUD untuk Job Vacancies
+        // Route::resource('job-vacancies', JobVacancyController::class)
+        //     ->except(['show'])
+        //     ->names('job_vacancies');
+>>>>>>> 689ba71cd09014093199aaee3074cb74009c056f
 
         // Manajemen User
         Route::get('users', [UserManagementController::class, 'index'])->name('users.index');
         Route::get('users/{user}/make-admin', [UserManagementController::class, 'makeAdmin'])->name('users.makeAdmin');
         Route::get('users/{user}/remove-admin', [UserManagementController::class, 'removeAdmin'])->name('users.removeAdmin');
 
+<<<<<<< HEAD
         // Verifikasi
+=======
+        // ===================================================================
+        // Rute Verifikasi
+>>>>>>> 689ba71cd09014093199aaee3074cb74009c056f
         Route::get('verifications', [UserManagementController::class, 'verificationIndex'])->name('verification.index');
         Route::get('verifications/{userVerification}', [UserManagementController::class, 'verificationShow'])->name('verification.show');
+        
+        // --- INI DUA BARIS YANG DITAMBAHKAN UNTUK MEMPERBAIKI ERROR ---
         Route::post('verifications/{userVerification}/approve', [UserManagementController::class, 'verificationApprove'])->name('verification.approve');
         Route::post('verifications/{userVerification}/reject', [UserManagementController::class, 'verificationReject'])->name('verification.reject');
+        // ===================================================================
 
         // Layanan & Paket
         Route::resource('services', ServiceController::class);
         Route::resource('moving-packages', MovingPackageController::class);
+<<<<<<< HEAD
+=======
+        
+        // --- [MODIFIKASI] Route dimatikan sesuai permintaan ---
+>>>>>>> 689ba71cd09014093199aaee3074cb74009c056f
         // Route::resource('internship-positions', InternshipPositionController::class);
         // Route::resource('internship-projects', InternshipProjectController::class);
         // Route::resource('career-programs', CareerProgramController::class);
         // Route::resource('curricula', CurriculumController::class);
+<<<<<<< HEAD
         Route::resource('branches', BranchController::class)->names('branches');
+=======
+>>>>>>> 689ba71cd09014093199aaee3074cb74009c056f
 
         // Pesanan Admin
         Route::prefix('orders')->name('orders.')->group(function () {
@@ -128,4 +206,8 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
         });
     });
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 689ba71cd09014093199aaee3074cb74009c056f
 require __DIR__ . '/auth.php';
