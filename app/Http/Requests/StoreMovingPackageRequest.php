@@ -16,6 +16,11 @@ class StoreMovingPackageRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'description' => 'required|string',
+
+            // [BARU] Tambahkan aturan validasi untuk harga
+            // Memastikan harga ada, berupa angka, dan minimal 0
+            'price' => 'required|numeric|min:0',
+
             'features' => 'required|array',
             'features.*' => 'required|string',
             'popular' => 'boolean', // Pastikan 'popular' adalah boolean (true/false)

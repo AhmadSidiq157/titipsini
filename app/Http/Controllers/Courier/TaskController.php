@@ -34,21 +34,42 @@ class TaskController extends Controller
      */
     public function updateStatus(Request $request, string $id)
     {
-        /** @var \App\Models\User $user */ // <--- TAMBAHKAN BARIS INI
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // Validasi input
-        $request->validate([
-            'status' => 'required|string|in:picked_up,on_delivery,delivered,completed,cancelled',
+        // 1. Validasi input
+        $validated = $request->validate([
+            // Pastikan semua status yang bisa dipilih kurir ada di sini
+            'status' => 'required|string|in:ready_for_pickup,picked_up,on_delivery,delivered,completed,cancelled',
         ]);
 
-        // Cari order milik kurir ini
+        $newStatusTugas = $validated['status'];
+
+        // 2. Cari order milik kurir ini
         $task = $user->courierTasks()->findOrFail($id);
 
-        // Update status
+        // 3. Update status TUGAS
         $task->update([
-            'status' => $request->status,
+            'status' => $newStatusTugas,
         ]);
+
+        // --- [LOGIKA OTOMATISASI STATUS KURIR] ---
+
+        // Tentukan status kurir baru berdasarkan status tugas
+        $newCourierStatus = 'available'; // Default: Tersedia
+
+        if (in_array($newStatusTugas, ['picked_up', 'on_delivery'])) {
+            // Jika kurir sedang mengambil atau mengantar
+            $newCourierStatus = 'on_delivery';
+        }
+        // Jika statusnya 'completed', 'delivered', 'cancelled', atau 'ready_for_pickup',
+        // status kurir akan di-set ke 'available' (default).
+
+        // 4. Update status KURIR
+        $user->update([
+            'courier_status' => $newCourierStatus
+        ]);
+        // --- Akhir Modifikasi ---
 
         return redirect()->route('courier.tasks.show', $task->id)
             ->with('success', 'Status tugas berhasil diperbarui.');

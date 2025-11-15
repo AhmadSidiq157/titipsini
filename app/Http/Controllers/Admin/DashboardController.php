@@ -11,22 +11,23 @@ use App\Models\Service;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // <-- Pastikan ini Auth
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Illuminate\Http\RedirectResponse;
+use Inertia\Response; // <-- [PERBAIKAN] Ini dia baris yang hilang
 
 class DashboardController extends Controller
 {
-    public function index()
+    // [MODIFIKASI] Ganti return type ke 'Response|RedirectResponse'
+    public function index(Request $request): Response|RedirectResponse
     {
         /** @var \App\Models\User $user */
-        $user = Auth::user(); // <-- Menggunakan Auth::user()
-
-        // [PERBAIKAN LOGIKA]
+        $user = Auth::user();
 
         // 1. Cek apakah pengguna adalah admin
         if ($user->isAdmin()) {
 
-            // --- JIKA PENGGUNA ADALAH ADMIN, KUMPULKAN SEMUA DATA STATISTIK ---
+            // --- JIKA ADMIN: Tampilkan Admin Dashboard ---
             $stats = [
                 'total_users' => User::count(),
                 'new_users_this_week' => User::where('created_at', '>=', Carbon::now()->subWeek())->count(),
@@ -36,8 +37,6 @@ class DashboardController extends Controller
                 'total_internship_positions' => InternshipPosition::count(),
                 'total_career_programs' => CareerProgram::count(),
             ];
-
-            // Contoh data aktivitas terbaru
             $recent_activities = [
                 ['type' => 'user_registered', 'description' => 'User baru, Budi Santoso, telah mendaftar.', 'time' => '5 menit lalu'],
                 ['type' => 'item_created', 'description' => 'Posisi Magang "Marketing Intern" telah ditambahkan.', 'time' => '1 jam lalu'],
@@ -45,25 +44,22 @@ class DashboardController extends Controller
                 ['type' => 'user_login', 'description' => 'Anda login ke sistem.', 'time' => 'Kemarin'],
             ];
 
-            // Render komponen Admin/Dashboard
             return Inertia::render('Admin/Dashboard', [
                 'stats' => $stats,
                 'recentActivities' => $recent_activities,
             ]);
         }
-        // 2. [BARU] Cek apakah pengguna adalah kurir
+        // 2. Cek apakah pengguna adalah kurir
         else if ($user->isCourier()) {
 
-            // Jika kurir, alihkan ke rute dashboard kurir
-            // (Middleware IsCourier kemudian akan mengambil alih
-            // dan mengarahkannya ke form verifikasi jika diperlukan)
+            // JIKA KURIR: Arahkan ke rute dashboard kurir
             return redirect()->route('courier.dashboard');
         }
-        // 3. Jika bukan admin atau kurir (dia adalah client)
+        // 3. [PERBAIKAN] Jika bukan admin atau kurir (dia adalah KLIEN)
         else {
 
-            // Tampilkan dashboard pengguna biasa (client)
-            return Inertia::render('Dashboard');
+            // JIKA KLIEN: Arahkan kembali ke Halaman Utama (Homepage)
+            return redirect()->route('home');
         }
     }
 }

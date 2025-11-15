@@ -23,43 +23,56 @@ class IsCourier
             return redirect()->route('login');
         }
 
-        // 2. Ambil status verifikasi kurir
         $status = $user->courierVerificationStatus(); // (null, 'pending', 'approved', 'rejected')
         $currentRoute = $request->route()->getName();
 
-        // 3. Definisikan rute-rute "aman" yang selalu boleh diakses
+        // [MODIFIKASI LOGIKA]
+
+        // 1. Jika user SUDAH DISETUJUI
+        if ($status === 'approved') {
+            $verificationRoutes = [
+                'courier.verification.create',
+                'courier.verification.pending',
+            ];
+
+            // Jika dia disetujui TAPI masih 'terjebak' di halaman verifikasi/pending
+            // (karena polling), paksa dia ke dashboard.
+            if (in_array($currentRoute, $verificationRoutes)) {
+                return redirect()->route('courier.dashboard');
+            }
+
+            // Jika dia disetujui dan ada di halaman lain (dashboard, tasks), biarkan lanjut.
+            return $next($request);
+        }
+
+        // 2. Jika user BELUM DISETUJUI (pending, rejected, null)
         $safeRoutes = [
             'courier.verification.create',
             'courier.verification.store',
             'courier.verification.pending',
-            'logout', // Pastikan kurir selalu bisa logout
+            'logout',
         ];
 
-        // Jika rute saat ini ada di daftar aman, biarkan saja.
+        // Jika dia mencoba mengakses halaman aman (verifikasi, pending, logout), biarkan.
         if (in_array($currentRoute, $safeRoutes)) {
+
+            // Pengecualian: Jika dia ditolak (rejected) tapi masih di halaman pending
+            // (karena polling), paksa dia kembali ke halaman 'create' untuk melihat alasannya.
+            if ($status === 'rejected' && $currentRoute === 'courier.verification.pending') {
+                return redirect()->route('courier.verification.create');
+            }
+
             return $next($request);
         }
 
-        // 4. Logika Pengalihan (Routing) berdasarkan Status
+        // 3. Jika user BELUM DISETUJUI dan mencoba mengakses halaman TERLARANG (misal /dashboard)
+        // Paksa dia kembali ke alur verifikasi yang benar.
         switch ($status) {
-
-            // 4A. Jika SUDAH DISETUJUI ('approved')
-            case 'approved':
-                // Dia sudah disetujui, biarkan dia akses semua halaman kurir
-                return $next($request);
-
-                // 4B. Jika SEDANG DITINJAU ('pending')
             case 'pending':
-                // Dia 'pending' dan mencoba akses halaman terlarang (misal dashboard)
-                // Paksa dia ke halaman "pending"
                 return redirect()->route('courier.verification.pending');
-
-                // 4C. Jika DITOLAK ('rejected') atau BARU (null)
             case 'rejected':
             case null:
             default:
-                // Dia 'ditolak' atau 'baru' dan mencoba akses halaman terlarang
-                // Paksa dia ke formulir verifikasi
                 return redirect()->route('courier.verification.create');
         }
     }

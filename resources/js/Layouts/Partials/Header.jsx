@@ -1,17 +1,35 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, usePage, router } from "@inertiajs/react";
+import { User, LogOut, History, LayoutDashboard, Truck } from "lucide-react";
+
+// Helper (tidak berubah)
+const hasRole = (user, roleName) => {
+    if (!user || !user.roles) return false;
+    return user.roles.some((role) => role.name === roleName);
+};
+const isClient = (user) => {
+    if (!user) return false;
+    if (!user.roles || user.roles.length === 0) {
+        return true;
+    }
+    return !hasRole(user, "admin") && !hasRole(user, "kurir");
+};
 
 export default function Header() {
     const { auth } = usePage().props;
     const [menuOpen, setMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
 
+    const user = auth?.user;
+    const userIsClient = isClient(user);
+    const userIsAdmin = hasRole(user, "admin");
+    const userIsCourier = hasRole(user, "kurir");
+
     const handleLogout = (e) => {
         e.preventDefault();
         router.post(route("logout"));
     };
 
-    // Tutup dropdown jika klik di luar
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (
@@ -35,7 +53,7 @@ export default function Header() {
                         Titipsini<span className="text-green-500">.com</span>
                     </Link>
 
-                    {/* NAVIGASI */}
+                    {/* NAVIGASI (Hanya Desktop) */}
                     <nav className="hidden md:flex items-center space-x-8">
                         <Link
                             href="/"
@@ -64,161 +82,36 @@ export default function Header() {
                     </nav>
 
                     {/* AKUN / LOGIN */}
-                    <div className="relative" ref={dropdownRef}>
-                        {auth?.user ? (
-                            <div className="flex items-center space-x-2">
+                    {/* [PERBAIKAN] 'ref' dipindah ke 'div' terluar agar 'relative' tidak diperlukan */}
+                    <div ref={dropdownRef}>
+                        {!user && (
+                            // --- 1. TAMPILAN TAMU (GUEST) ---
+                            <div className="flex items-center space-x-2 flex-nowrap">
+                                <Link
+                                    href={route("login")}
+                                    className="inline-flex items-center px-3 py-2 border border-gray-300 text-gray-700 font-semibold text-sm rounded-md hover:bg-gray-50 transition whitespace-nowrap"
+                                >
+                                    Login
+                                </Link>
+                                <Link
+                                    href={route("register")}
+                                    className="inline-flex items-center px-3 py-2 bg-green-500 text-white font-semibold text-sm rounded-md hover:bg-green-600 transition whitespace-nowrap"
+                                >
+                                    Daftar
+                                </Link>
+                            </div>
+                        )}
+
+                        {userIsClient && (
+                            // --- 2. TAMPILAN KLIEN ---
+                            // [PERBAIKAN] Tambahkan 'relative' di sini
+                            <div className="relative flex items-center space-x-2">
                                 <button
                                     onClick={() => setMenuOpen(!menuOpen)}
                                     className="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-md hover:bg-gray-200 transition"
                                 >
-<<<<<<< HEAD
-                                    <span className="font-semibold text-gray-800">
-=======
-                                    <button
-                                        onClick={() =>
-                                            setAccountDropdownOpen(
-                                                (prev) => !prev
-                                            )
-                                        }
-                                        className="inline-flex items-center px-4 py-2 border border-transparent text-gray-700 font-semibold text-sm rounded-md hover:bg-gray-50 transition"
-                                    >
-                                        <User className="w-4 h-4 mr-2" />
-                                        {auth.user.name}{" "}
-                                        {/* Nampilin nama user */}
-                                        <ChevronDown
-                                            size={16}
-                                            className={`ml-1 transition-transform duration-200 ${
-                                                isAccountDropdownOpen
-                                                    ? "rotate-180"
-                                                    : ""
-                                            }`}
-                                        />
-                                    </button>
-                                    {/* Dropdown Menu untuk User Login */}
-                                    {isAccountDropdownOpen && (
-                                        //
-                                        // [PERBAIKAN 1]: z-10 diubah jadi z-50
-                                        //
-                                        <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50 border">
-                                            <Link
-                                                href={route("profile.edit")}
-                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                            >
-                                                Profile
-                                            </Link>
-                                            <Link
-                                                href={route("order.index")}
-                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                            >
-                                                History Pesanan
-                                            </Link>
-                                            <div className="border-t my-1"></div>
-                                            <Link
-                                                href={route("logout")}
-                                                method="post"
-                                                as="button"
-                                                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                                            >
-                                                Log Out
-                                            </Link>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                //
-                                // --- [BAGIAN INI TAMPIL JIKA BELUM LOGIN] ---
-                                //
-                                <div
-                                    className="relative"
-                                    ref={accountDropdownRef}
-                                >
-                                    <button
-                                        onClick={() =>
-                                            setAccountDropdownOpen(
-                                                (prev) => !prev
-                                            )
-                                        }
-                                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 font-semibold text-sm rounded-md hover:bg-gray-50 transition"
-                                    >
-                                        <User className="w-4 h-4 mr-2" />
-                                        Akun
-                                        <ChevronDown
-                                            size={16}
-                                            className={`ml-1 transition-transform duration-200 ${
-                                                isAccountDropdownOpen
-                                                    ? "rotate-180"
-                                                    : ""
-                                            }`}
-                                        />
-                                    </button>
-                                    {/* Dropdown Menu untuk Tamu */}
-                                    {isAccountDropdownOpen && (
-                                        //
-                                        // [PERBAIKAN 2]: z-10 diubah jadi z-50
-                                        //
-                                        <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50 border">
-                                            <Link
-                                                href={route("login")}
-                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                            >
-                                                Login
-                                            </Link>
-                                            <Link
-                                                href={route("register")}
-                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                            >
-                                                Register
-                                            </Link>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* */}
-                        <div className="md:hidden flex items-center space-x-4">
-                            <button
-                                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                                className="text-gray-600"
-                            >
-                                {isMenuOpen ? (
-                                    <X size={24} />
-                                ) : (
-                                    <Menu size={24} />
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* --- Dropdown Menu untuk Mobile --- */}
-                {isMenuOpen && (
-                    <div className="md:hidden border-t border-gray-100">
-                        {/* Link Navigasi Mobile */}
-                        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                            {navLinks.map((link) => (
-                                <Link
-                                    key={link.label}
-                                    href={link.href}
-                                    className={`block px-3 py-2 rounded-md text-base font-medium ${
-                                        url === link.href
-                                            ? "text-green-700 bg-green-50"
-                                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                                    }`}
-                                >
-                                    {link.label}
-                                </Link>
-                            ))}
-                        </div>
-
-                        {/* Link Akun Mobile */}
-                        <div className="border-t border-gray-200 pt-4 pb-3">
-                            {auth.user ? (
-                                // --- JIKA SUDAH LOGIN (MOBILE) ---
-                                <div className="px-5">
-                                    <div className="font-medium text-base text-gray-800">
->>>>>>> 689ba71cd09014093199aaee3074cb74009c056f
-                                        {auth.user.name}
+                                    <span className="font-semibold text-gray-800 truncate max-w-[100px]">
+                                        {user.name}
                                     </span>
                                     <svg
                                         className={`w-4 h-4 text-gray-600 transform transition-transform duration-200 ${
@@ -237,72 +130,87 @@ export default function Header() {
                                     </svg>
                                 </button>
 
-                                {/* === DROPDOWN MODERN === */}
                                 {menuOpen && (
-                                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-100 z-50 transform origin-top-right transition-all duration-200 ease-out animate-dropdownShow">
+                                    // [PERBAIKAN] Ganti 'mt-3' menjadi 'top-full mt-2'
+                                    // 'top-full' berarti "mulai SETELAH tinggi parent"
+                                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 transform origin-top-right transition-all duration-200 ease-out animate-dropdownShow">
                                         <Link
                                             href={route("profile.edit")}
                                             className="flex items-center gap-2 px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-t-xl transition-all"
                                         >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="w-4 h-4 text-gray-500"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    d="M5.121 17.804A8 8 0 1118.364 4.56 8 8 0 015.12 17.804z"
-                                                />
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    d="M15 11a3 3 0 11-6 0 3 3 0z"
-                                                />
-                                            </svg>
-                                            Profil
+                                            <User className="w-4 h-4 text-gray-500" />
+                                            Profil Saya
                                         </Link>
-
+                                        <Link
+                                            href={route("history.index")}
+                                            className="flex items-center gap-2 px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-all"
+                                        >
+                                            <History className="w-4 h-4 text-gray-500" />
+                                            Riwayat Pesanan
+                                        </Link>
                                         <button
                                             onClick={handleLogout}
                                             className="flex items-center gap-2 w-full text-left px-5 py-3 text-sm text-red-600 hover:bg-red-50 rounded-b-xl transition-all"
                                         >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="w-4 h-4 text-red-500"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1m0-10V5"
-                                                />
-                                            </svg>
+                                            <LogOut className="w-4 h-4 text-red-500" />
                                             Logout
                                         </button>
                                     </div>
                                 )}
                             </div>
-                        ) : (
-                            <div className="hidden md:flex items-center space-x-4">
-                                <Link
-                                    href={route("login")}
-                                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 font-semibold text-sm rounded-md hover:bg-gray-50 transition"
+                        )}
+
+                        {(userIsAdmin || userIsCourier) && (
+                            // --- 3. TAMPILAN ADMIN / KURIR (Jika nyasar) ---
+                            // [PERBAIKAN] Tambahkan 'relative' di sini
+                            <div className="relative flex items-center space-x-2">
+                                <button
+                                    onClick={() => setMenuOpen(!menuOpen)}
+                                    className="flex items-center space-x-2 bg-red-100 px-3 py-2 rounded-md hover:bg-red-200 transition"
                                 >
-                                    Login
-                                </Link>
-                                <Link
-                                    href={route("register")}
-                                    className="inline-flex items-center px-4 py-2 bg-green-500 text-white font-semibold text-sm rounded-md hover:bg-green-600 transition"
-                                >
-                                    Daftar
-                                </Link>
+                                    <span className="font-semibold text-red-800 truncate max-w-[100px]">
+                                        {user.name}
+                                    </span>
+                                    <svg
+                                        className={`w-4 h-4 text-red-600 transform transition-transform duration-200 ${
+                                            menuOpen ? "rotate-180" : ""
+                                        }`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M19 9l-7 7-7-7"
+                                        />
+                                    </svg>
+                                </button>
+
+                                {menuOpen && (
+                                    // [PERBAIKAN] Ganti 'mt-3' menjadi 'top-full mt-2'
+                                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 transform origin-top-right transition-all duration-200 ease-out animate-dropdownShow">
+                                        <Link
+                                            href={route("dashboard")} // Link "Kembali ke Dashboard"
+                                            className="flex items-center gap-2 px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-t-xl transition-all"
+                                        >
+                                            {userIsAdmin ? (
+                                                <LayoutDashboard className="w-4 h-4 text-gray-500" />
+                                            ) : (
+                                                <Truck className="w-4 h-4 text-gray-500" />
+                                            )}
+                                            Kembali ke Dashboard
+                                        </Link>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="flex items-center gap-2 w-full text-left px-5 py-3 text-sm text-red-600 hover:bg-red-50 rounded-b-xl transition-all"
+                                        >
+                                            <LogOut className="w-4 h-4 text-red-500" />
+                                            Logout
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

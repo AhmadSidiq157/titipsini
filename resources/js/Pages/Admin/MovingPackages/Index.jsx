@@ -6,6 +6,15 @@ import { Head, Link } from "@inertiajs/react";
 import AddPackageModal from "./Partials/AddPackageModal";
 import EditPackageModal from "./Partials/EditPackageModal";
 
+// [BARU] Helper function untuk format mata uang
+const formatRupiah = (number) => {
+    return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+    }).format(number);
+};
+
 export default function Index({ auth, packages, flash }) {
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [editingPackage, setEditingPackage] = useState(null);
@@ -60,6 +69,10 @@ export default function Index({ auth, packages, flash }) {
                                             <th className="py-3 px-4 border-b text-left">
                                                 Nama Paket
                                             </th>
+                                            {/* [BARU] Kolom Harga */}
+                                            <th className="py-3 px-4 border-b text-left">
+                                                Harga
+                                            </th>
                                             <th className="py-3 px-4 border-b text-left">
                                                 Deskripsi
                                             </th>
@@ -79,6 +92,10 @@ export default function Index({ auth, packages, flash }) {
                                             >
                                                 <td className="py-3 px-4 border-b font-medium">
                                                     {pkg.name}
+                                                </td>
+                                                {/* [BARU] Data Harga */}
+                                                <td className="py-3 px-4 border-b font-semibold text-green-600">
+                                                    {formatRupiah(pkg.price)}
                                                 </td>
                                                 <td className="py-3 px-4 border-b text-sm text-gray-600">
                                                     {pkg.description}

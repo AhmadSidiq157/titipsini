@@ -32,22 +32,19 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        // [MODIFIKASI] Ambil user-nya dulu
         $user = $request->user();
 
-        // [MODIFIKASI] Jika user-nya ada (sudah login)
+        // [MODIFIKASI]
         if ($user) {
-            // Muat relasi verifikasi kurir.
-            // Ini akan membuat auth.user.courier_verification tersedia di React
-            // untuk digunakan oleh "Smart Sidebar"
-            $user->load('courierVerification');
+            // Muat relasi verifikasi kurir DAN relasi roles
+            // Ini membuat 'auth.user.roles' selalu tersedia di React
+            $user->load('courierVerification', 'roles');
         }
 
-        // [MODIFIKASI] Kembalikan array-nya, tapi 'user' sekarang sudah dimodifikasi
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $user, // <-- Menggunakan variabel $user yang sudah di-load
+                'user' => $user, // Kirim user object yang sudah di-load
             ],
             'settings' => Cache::rememberForever('settings', function () {
                 return Setting::all()->pluck('value', 'key');

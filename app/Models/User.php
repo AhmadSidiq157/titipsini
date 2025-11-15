@@ -11,7 +11,7 @@ use App\Models\CourierVerification; // <-- [BARU] Verifikasi Kurir
 use App\Models\Role;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne; // <-- [BARU]
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
@@ -26,6 +26,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'courier_status', // <-- [PERBAIKAN] Tambahkan ini
     ];
 
     /**
@@ -122,8 +123,6 @@ class User extends Authenticatable
      */
     public function courierVerificationStatus(): ?string
     {
-        // Tanda tanya (?) adalah null-safe operator,
-        // jadi tidak akan error jika relasinya null
         return $this->courierVerification?->status;
     }
 

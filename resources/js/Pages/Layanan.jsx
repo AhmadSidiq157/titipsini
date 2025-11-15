@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import GuestLayout from "@/Layouts/GuestLayout";
-import { Head, usePage } from "@inertiajs/react"; // <-- DITAMBAHKAN usePage
+import { Head, usePage, router } from "@inertiajs/react";
 import {
     ArrowRight,
     CheckCircle2,
@@ -13,14 +13,12 @@ import {
     Truck,
     PackageCheck,
 } from "lucide-react";
+import OrderModal from "@/Pages/Order/Partials/OrderModal"; // <-- Import Modal
 
-//======================================================================
-// SECTIONS (Defined as local components)
-//======================================================================
-
-// --- Hero Section ---
+// ... (Semua komponen statis Anda: LayananHero, StatsAndFeatures, HowItWorks, dll)
+// ... (Saya akan singkat agar fokus pada perbaikan)
 const LayananHero = () => {
-    // --- Logika WhatsApp Ditambahkan ---
+    // ... (Isi komponen ini sama persis seperti sebelumnya)
     const { settings } = usePage().props;
     const phoneNumber = settings.contact_phone
         ? settings.contact_phone.replace(/\D/g, "")
@@ -29,7 +27,6 @@ const LayananHero = () => {
         ? encodeURIComponent(settings.whatsapp_message)
         : "";
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-    // --- Akhir Logika WhatsApp ---
 
     return (
         <section className="bg-green-50/70 pt-28 pb-16">
@@ -48,7 +45,6 @@ const LayananHero = () => {
                             dan harga terjangkau.
                         </p>
                         <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                            {/* --- Tombol diubah ke link WhatsApp --- */}
                             <a
                                 href={whatsappUrl}
                                 target="_blank"
@@ -58,7 +54,6 @@ const LayananHero = () => {
                                 Mulai Sekarang{" "}
                                 <ArrowRight className="w-5 h-5 ml-2" />
                             </a>
-                            {/* --- Tombol diubah ke link WhatsApp --- */}
                             <a
                                 href={whatsappUrl}
                                 target="_blank"
@@ -81,8 +76,6 @@ const LayananHero = () => {
         </section>
     );
 };
-
-// --- Stats & Features Section ---
 const StatsAndFeatures = () => {
     const stats = [
         { icon: <Users />, value: "10K+", label: "Pelanggan Puas" },
@@ -170,8 +163,6 @@ const StatsAndFeatures = () => {
         </section>
     );
 };
-
-// --- How It Works Section ---
 const HowItWorks = () => {
     const steps = [
         {
@@ -232,8 +223,6 @@ const HowItWorks = () => {
         </section>
     );
 };
-
-// --- About Us Section ---
 const AboutUs = () => (
     <section className="py-16 sm:py-24 bg-white">
         <div className="container mx-auto px-4">
@@ -278,12 +267,8 @@ const AboutUs = () => (
         </div>
     </section>
 );
-
-// ==================================================================
-// --- Pricing Section (KODE YANG DIPERBAIKI) ---
-// ==================================================================
-const Pricing = ({ packages }) => {
-    // --- Logika WhatsApp Ditambahkan ---
+const Pricing = ({ packages, onOrderClick }) => {
+    // ... (Isi komponen Pricing sama persis)
     const { settings } = usePage().props;
     const phoneNumber = settings.contact_phone
         ? settings.contact_phone.replace(/\D/g, "")
@@ -292,7 +277,6 @@ const Pricing = ({ packages }) => {
         ? encodeURIComponent(settings.whatsapp_message)
         : "";
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-    // --- Akhir Logika WhatsApp ---
 
     return (
         <section id="pricing" className="py-16 sm:py-24 bg-gray-50">
@@ -308,112 +292,68 @@ const Pricing = ({ packages }) => {
                 </div>
 
                 <div className="mt-12 flex flex-col lg:flex-row items-stretch justify-center gap-8">
-                    {packages.map((plan) => (
-                        <div
-                            key={plan.id}
-                            className={`w-full max-w-md bg-white rounded-xl shadow-lg p-8 relative flex flex-col transition-transform duration-300 ${
-                                plan.popular
-                                    ? "border-2 border-green-600"
-                                    : "border border-gray-200"
-                            }`}
-                        >
-                            {plan.popular ? (
-                                <span className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs font-bold px-4 py-1 rounded-full">
-                                    Paling Populer
-                                </span>
-                            ) : null}
-                            <div>
-                                <h3 className="text-2xl font-bold text-gray-900">
-                                    {plan.name}
-                                </h3>
-
-                                <p className="text-gray-500 text-sm mt-1 min-h-[40px]">
-                                    {plan.description}
-                                </p>
-                            </div>
-
-                            <ul className="mt-6 space-y-3 flex-grow">
-                                {plan.features.map((feature, i) => (
-                                    <li
-                                        key={i}
-                                        className="flex items-center gap-3 text-gray-600"
-                                    >
-                                        <CheckCircle2
-                                            size={16}
-                                            className="text-green-500 flex-shrink-0"
-                                        />
-                                        {feature}
-                                    </li>
-                                ))}
-                            </ul>
-                            {/* --- Tombol diubah ke link WhatsApp --- */}
-                            <a
-                                href={whatsappUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-full inline-block text-center mt-8 font-semibold py-3 px-6 rounded-lg shadow-md transition-colors bg-gray-800 text-white hover:bg-gray-900"
+                    {packages && packages.length > 0 ? (
+                        packages.map((plan) => (
+                            <div
+                                key={plan.id}
+                                className={`w-full max-w-md bg-white rounded-xl shadow-lg p-8 relative flex flex-col transition-transform duration-300 ${
+                                    plan.popular
+                                        ? "border-2 border-green-600"
+                                        : "border border-gray-200"
+                                }`}
                             >
-                                Pilih Paket
-                            </a>
-                        </div>
-                    ))}
+                                {plan.popular ? (
+                                    <span className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs font-bold px-4 py-1 rounded-full">
+                                        Paling Populer
+                                    </span>
+                                ) : null}
+                                <div>
+                                    <h3 className="text-2xl font-bold text-gray-900">
+                                        {plan.name}
+                                    </h3>
+
+                                    <p className="text-gray-500 text-sm mt-1 min-h-[40px]">
+                                        {plan.description}
+                                    </p>
+                                </div>
+
+                                <ul className="mt-6 space-y-3 flex-grow">
+                                    {Array.isArray(plan.features) &&
+                                        plan.features.map((feature, i) => (
+                                            <li
+                                                key={i}
+                                                className="flex items-center gap-3 text-gray-600"
+                                            >
+                                                <CheckCircle2
+                                                    size={16}
+                                                    className="text-green-500 flex-shrink-0"
+                                                />
+                                                {feature}
+                                            </li>
+                                        ))}
+                                </ul>
+
+                                <button
+                                    type="button"
+                                    onClick={() => onOrderClick(plan)} // Panggil handler
+                                    className="w-full inline-block text-center mt-8 font-semibold py-3 px-6 rounded-lg shadow-md transition-colors bg-gray-800 text-white hover:bg-gray-900"
+                                >
+                                    Pilih Paket
+                                </button>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-center text-gray-600 col-span-full">
+                            Paket pindahan akan segera tersedia.
+                        </p>
+                    )}
                 </div>
             </div>
         </section>
     );
 };
-
-// --- Savings Section ---
-const Savings = () => (
-    <section className="py-16 sm:py-24 bg-white">
-        <div className="container mx-auto px-4">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-                <div>
-                    <h2 className="text-4xl font-bold text-gray-900 tracking-tight">
-                        Hemat di Awal, Untung Berkali-Lipat!
-                    </h2>
-                    <ul className="mt-6 space-y-4">
-                        <li className="flex items-start gap-3">
-                            <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0 mt-1" />
-                            <span>
-                                Hemat 30% biaya pindahan dengan paket bundling
-                            </span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0 mt-1" />
-                            <span>
-                                Gratis asuransi untuk barang bernilai tinggi
-                            </span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0 mt-1" />
-                            <span>
-                                Cashback hingga 50rb untuk pelanggan setia
-                            </span>
-                        </li>
-                    </ul>
-                    <div className="mt-8 bg-green-50/70 p-6 rounded-lg border border-green-200/80">
-                        <p className="text-4xl font-bold text-green-600">95%</p>
-                        <p className="text-gray-600">
-                            Tingkat kepuasan pelanggan yang menggunakan layanan
-                            kami
-                        </p>
-                    </div>
-                </div>
-                <div>
-                    <img
-                        src="images/kepuasan-pelanggan.jpg"
-                        alt="Pelanggan Puas"
-                        className="rounded-2xl shadow-xl w-full h-auto"
-                    />
-                </div>
-            </div>
-        </div>
-    </section>
-);
-
-// --- Testimonials Section ---
 const Testimonials = () => {
+    // ... (Isi komponen ini sama persis seperti sebelumnya)
     const reviews = [
         {
             name: "Rizki A.",
@@ -479,10 +419,55 @@ const Testimonials = () => {
         </section>
     );
 };
-
-// --- CTA Section ---
+const Savings = () => (
+    <section className="py-16 sm:py-24 bg-white">
+        <div className="container mx-auto px-4">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 className="text-4xl font-bold text-gray-900 tracking-tight">
+                        Hemat di Awal, Untung Berkali-Lipat!
+                    </h2>
+                    <ul className="mt-6 space-y-4">
+                        <li className="flex items-start gap-3">
+                            <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0 mt-1" />
+                            <span>
+                                Hemat 30% biaya pindahan dengan paket bundling
+                            </span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0 mt-1" />
+                            <span>
+                                Gratis asuransi untuk barang bernilai tinggi
+                            </span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0 mt-1" />
+                            <span>
+                                Cashback hingga 50rb untuk pelanggan setia
+                            </span>
+                        </li>
+                    </ul>
+                    <div className="mt-8 bg-green-50/70 p-6 rounded-lg border border-green-200/80">
+                        <p className="text-4xl font-bold text-green-600">95%</p>
+                        <p className="text-gray-600">
+                            Tingkat kepuasan pelanggan yang menggunakan layanan
+                            kami
+                        </p>
+                    </div>
+                </div>
+                <div>
+                    <img
+                        src="images/kepuasan-pelanggan.jpg"
+                        alt="Pelanggan Puas"
+                        className="rounded-2xl shadow-xl w-full h-auto"
+                    />
+                </div>
+            </div>
+        </div>
+    </section>
+);
 const CtaSection = () => {
-    // --- Logika WhatsApp Ditambahkan ---
+    // ... (Isi komponen ini sama persis seperti sebelumnya)
     const { settings } = usePage().props;
     const phoneNumber = settings.contact_phone
         ? settings.contact_phone.replace(/\D/g, "")
@@ -491,7 +476,6 @@ const CtaSection = () => {
         ? encodeURIComponent(settings.whatsapp_message)
         : "";
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-    // --- Akhir Logika WhatsApp ---
 
     return (
         <section className="py-16 sm:py-24 bg-green-600">
@@ -504,7 +488,6 @@ const CtaSection = () => {
                     kebutuhan pindahan Anda.
                 </p>
                 <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-                    {/* --- Tombol diubah ke link WhatsApp --- */}
                     <a
                         href={whatsappUrl}
                         target="_blank"
@@ -513,7 +496,6 @@ const CtaSection = () => {
                     >
                         <Phone className="w-5 h-5 mr-2" /> Hubungi Sekarang
                     </a>
-                    {/* --- Tombol diubah ke link WhatsApp --- */}
                     <a
                         href={whatsappUrl}
                         target="_blank"
@@ -528,10 +510,36 @@ const CtaSection = () => {
     );
 };
 
-//======================================================================
-// MAIN PAGE COMPONENT (The one that gets exported)
-//======================================================================
+// --- Komponen Utama Halaman Layanan ---
 const Layanan = ({ packages }) => {
+    const { auth, userVerificationStatus } = usePage().props;
+
+    const [isOrderModalOpen, setOrderModalOpen] = useState(false);
+    const [selectedPackage, setSelectedPackage] = useState(null);
+
+    // --- Logika 4 Kasus ---
+    const handleOrderClick = (pkg) => {
+        if (!auth.user) {
+            router.get(route("login"));
+            return;
+        }
+        if (
+            userVerificationStatus === null ||
+            userVerificationStatus === "rejected"
+        ) {
+            router.get(route("verification.create"));
+            return;
+        }
+        if (userVerificationStatus === "pending") {
+            router.get(route("verification.pending"));
+            return;
+        }
+        if (userVerificationStatus === "approved") {
+            setSelectedPackage(pkg);
+            setOrderModalOpen(true);
+        }
+    };
+
     return (
         <>
             <Head title="Layanan Pindahan & Penyimpanan" />
@@ -542,9 +550,18 @@ const Layanan = ({ packages }) => {
             <HowItWorks />
             <Testimonials />
             <Savings />
-            {/* Teruskan prop 'packages' ke komponen Pricing */}
-            <Pricing packages={packages} />
+
+            <Pricing packages={packages} onOrderClick={handleOrderClick} />
+
             <CtaSection />
+
+            {/* --- [PERBAIKAN] Render Modal dengan prop 'productType' --- */}
+            <OrderModal
+                show={isOrderModalOpen}
+                onClose={() => setOrderModalOpen(false)}
+                product={selectedPackage} // <-- [PERBAIKAN] Ganti 'service' jadi 'product'
+                productType="moving_package"
+            />
         </>
     );
 };

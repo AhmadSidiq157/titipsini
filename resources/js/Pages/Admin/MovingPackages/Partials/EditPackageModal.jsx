@@ -7,21 +7,28 @@ import { useEffect } from "react";
 export default function EditPackageModal({ show, onClose, aPackage }) {
     const { data, setData, put, processing, errors, reset } = useForm({
         name: "",
+        price: 0, // <-- [BARU] Tambahkan price
         description: "",
         features: [],
         popular: false,
     });
 
     useEffect(() => {
-        if (aPackage) {
+        // [MODIFIKASI] Pastikan aPackage ada sebelum mengakses propertinya
+        if (show && aPackage) {
             setData({
-                name: aPackage.name,
-                description: aPackage.description,
+                name: aPackage.name || "",
+                price: aPackage.price || 0, // <-- [BARU] Set data price
+                description: aPackage.description || "",
                 features: aPackage.features || [""],
                 popular: aPackage.popular || false,
             });
+        } else if (!show) {
+            // Reset form jika modal ditutup
+            reset();
         }
-    }, [aPackage]);
+        // [MODIFIKASI] Tambahkan 'show' ke dependency array
+    }, [show, aPackage]);
 
     const handleAddFeature = () => setData("features", [...data.features, ""]);
     const handleFeatureChange = (index, value) => {
@@ -55,12 +62,13 @@ export default function EditPackageModal({ show, onClose, aPackage }) {
                 <div className="mt-6 space-y-4">
                     <div>
                         <label
-                            htmlFor="name"
+                            htmlFor="name_edit"
                             className="block text-sm font-medium text-gray-700"
                         >
                             Nama Paket
                         </label>
                         <input
+                            id="name_edit"
                             type="text"
                             value={data.name}
                             onChange={(e) => setData("name", e.target.value)}
@@ -72,14 +80,40 @@ export default function EditPackageModal({ show, onClose, aPackage }) {
                             </p>
                         )}
                     </div>
+
+                    {/* --- [BARU] Input untuk Harga --- */}
                     <div>
                         <label
-                            htmlFor="description"
+                            htmlFor="price_edit"
+                            className="block text-sm font-medium text-gray-700"
+                        >
+                            Harga (Rp)
+                        </label>
+                        <input
+                            id="price_edit"
+                            type="number"
+                            min="0"
+                            value={data.price}
+                            onChange={(e) => setData("price", e.target.value)}
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                        />
+                        {errors.price && (
+                            <p className="text-sm text-red-600 mt-1">
+                                {errors.price}
+                            </p>
+                        )}
+                    </div>
+                    {/* --- Akhir Input Harga --- */}
+
+                    <div>
+                        <label
+                            htmlFor="description_edit"
                             className="block text-sm font-medium text-gray-700"
                         >
                             Deskripsi
                         </label>
                         <textarea
+                            id="description_edit"
                             value={data.description}
                             onChange={(e) =>
                                 setData("description", e.target.value)

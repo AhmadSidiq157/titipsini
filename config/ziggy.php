@@ -13,36 +13,34 @@ return [
     | Whitelist/Blacklist Route
     |--------------------------------------------------------------------------
     |
-    | Kita gunakan 'only' di level atas.
-    | Ini adalah cara standar untuk Inertia.
+    | [PERBAIKAN] Kita kosongkan 'only'.
+    | Mengosongkan 'only' berarti Ziggy akan menyertakan SEMUA rute
+    | secara default, yang jauh lebih aman untuk proyek Anda.
     |
     */
     'only' => [
-        // TAMBAHKAN SEMUA POLA ROUTE YANG KAMU BUTUHKAN DI FRONTEND
-        'admin.*', // Ini akan menyelesaikan error 'admin.verification.index'
-        // 'login', // Mungkin kamu butuh ini
-        // 'register', // Mungkin kamu butuh ini
-        // 'dashboard', // Jika ada route 'dashboard'
+        // DIBIARKAN KOSONG
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Pengecualian Global
     |--------------------------------------------------------------------------
+    |
+    | [PERBAIKAN] Ini adalah cara yang benar.
+    | Kita hanya mengecualikan rute-rute debug/sensitif.
+    |
     */
     'except' => [
         '_ignition.*',
         'sanctum.*',
-        // 'debugbar.*', // Tambahkan ini jika pakai Debugbar
+        // 'debugbar.*', // Tambahkan ini jika Anda menggunakan Debugbar
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Grup Route
     |--------------------------------------------------------------------------
-    |
-    | Kita biarkan kosong saja karena kita sudah pakai 'only' di atas.
-    |
     */
     'groups' => [],
 ];

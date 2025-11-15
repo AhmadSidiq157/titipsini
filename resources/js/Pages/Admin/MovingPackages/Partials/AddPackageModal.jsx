@@ -6,6 +6,7 @@ import { useForm } from "@inertiajs/react";
 export default function AddPackageModal({ show, onClose }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         name: "",
+        price: 0, // <-- [BARU] Tambahkan field harga
         description: "",
         features: [""],
         popular: false,
@@ -59,6 +60,31 @@ export default function AddPackageModal({ show, onClose }) {
                             </p>
                         )}
                     </div>
+
+                    {/* --- [BARU] Input untuk Harga --- */}
+                    <div>
+                        <label
+                            htmlFor="price"
+                            className="block text-sm font-medium text-gray-700"
+                        >
+                            Harga (Rp)
+                        </label>
+                        <input
+                            id="price"
+                            type="number"
+                            min="0"
+                            value={data.price}
+                            onChange={(e) => setData("price", e.target.value)}
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                        />
+                        {errors.price && (
+                            <p className="text-sm text-red-600 mt-1">
+                                {errors.price}
+                            </p>
+                        )}
+                    </div>
+                    {/* --- Akhir Input Harga --- */}
+
                     <div>
                         <label
                             htmlFor="description"

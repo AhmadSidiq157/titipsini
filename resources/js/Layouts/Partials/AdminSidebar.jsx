@@ -19,6 +19,7 @@ import {
     FileText, // Tambahan ikon untuk Halaman Layanan
     ShieldCheck,
     MapPin,
+    Truck, // Ikon untuk Kurir
 } from "lucide-react";
 
 // --- KOMPONEN-KOMPONEN KECIL (HELPER) ---
@@ -113,7 +114,11 @@ export default function AdminSidebar() {
         halamanLayanan: route().current("admin.moving-packages.*"),
         pengaturan:
             route().current("admin.settings.*") ||
-            route().current("admin.branches.*"), // <-- Ini sudah benar
+            route().current("admin.branches.*"),
+        // [BARU] State untuk dropdown pesanan
+        manajemenPesanan:
+            route().current("admin.orders.*") ||
+            route().current("admin.pindahan.*"),
     });
 
     const handleToggle = (dropdown) => {
@@ -142,13 +147,28 @@ export default function AdminSidebar() {
                     Dashboard
                 </SidebarLink>
 
-                <SidebarLink
-                    href={route("admin.orders.index")}
-                    active={route().current("admin.orders.*")}
+                {/* --- [MODIFIKASI] Link Pesanan Menjadi Dropdown --- */}
+                <SidebarDropdown
+                    title="Manajemen Pesanan"
                     icon={<ClipboardList className="h-5 w-5" />}
+                    active={openDropdown.manajemenPesanan}
+                    isOpen={openDropdown.manajemenPesanan}
+                    onToggle={() => handleToggle("manajemenPesanan")}
                 >
-                    Manajemen Pesanan
-                </SidebarLink>
+                    <SidebarSubLink
+                        href={route("admin.orders.index")}
+                        active={route().current("admin.orders.*")}
+                    >
+                        Pesanan Penitipan
+                    </SidebarSubLink>
+                    <SidebarSubLink
+                        href={route("admin.pindahan.index")}
+                        active={route().current("admin.pindahan.*")}
+                    >
+                        Pesanan Pindahan
+                    </SidebarSubLink>
+                </SidebarDropdown>
+                {/* --- Akhir Modifikasi --- */}
 
                 {/* --- Dropdown Manajemen Halaman Depan --- */}
                 <SidebarDropdown
@@ -182,14 +202,7 @@ export default function AdminSidebar() {
                     </SidebarSubLink>
                 </SidebarDropdown>
 
-                {/* --- [MODIFIKASI] Dropdown Manajemen Halaman Internship dimatikan --- */}
-                {/* ... (kode link nonaktif) ... */}
-
-                {/* --- [MODIFIKASI] Dropdown Manajemen Halaman Program dimatikan --- */}
-                {/* ... (kode link nonaktif) ... */}
-
-                {/* --- [MODIFIKASI] Link Lowongan Kerja dimatikan --- */}
-                {/* ... (kode link nonaktif) ... */}
+                {/* ... (Link nonaktif Anda) ... */}
 
                 <SidebarLink
                     href={route("admin.users.index")}
@@ -207,23 +220,13 @@ export default function AdminSidebar() {
                     Verifikasi User (Klien)
                 </SidebarLink>
 
-                {/* [PERBAIKAN] Link "Verifikasi Kurir" ini saya nonaktifkan (comment) 
-                  karena ini adalah SUMBER ERROR UTAMA di screenshot Anda.
-
-                  Error-nya adalah: "route 'admin.courier_verifications.index' is not in the route list."
-
-                  Jika rute ini sudah Anda buat di Laravel, pastikan namanya sama persis,
-                  lalu jalankan `php artisan route:cache` & `php artisan ziggy:generate`.
-                  Setelah itu, Anda bisa menghapus komentar (uncomment) blok di bawah ini.
-                */}
-                {/* <SidebarLink
+                <SidebarLink
                     href={route("admin.courier_verifications.index")}
                     active={route().current("admin.courier_verifications.*")}
-                    icon={<ShieldCheck className="h-5 w-5" />}
+                    icon={<Truck className="h-5 w-5" />}
                 >
                     Verifikasi Kurir
                 </SidebarLink>
-                */}
 
                 <SidebarDropdown
                     title="Pengaturan"
@@ -232,15 +235,12 @@ export default function AdminSidebar() {
                     isOpen={openDropdown.pengaturan}
                     onToggle={() => handleToggle("pengaturan")}
                 >
-                    {/* --- Manajemen Cabang (Sudah Benar) --- */}
                     <SidebarSubLink
                         href={route("admin.branches.index")}
                         active={route().current("admin.branches.*")}
                     >
                         Manajemen Cabang
                     </SidebarSubLink>
-                    {/* --- Batas Tambahan --- */}
-
                     <SidebarSubLink
                         href={route("admin.settings.contact")}
                         active={route().current("admin.settings.contact")}

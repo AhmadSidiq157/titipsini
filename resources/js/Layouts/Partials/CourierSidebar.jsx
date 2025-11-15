@@ -1,109 +1,161 @@
 import React from "react";
 import { Link, usePage } from "@inertiajs/react";
-import ApplicationLogo from "@/Components/ApplicationLogo"; // Menggunakan alias
+// [WAJIB] Import motion dari framer-motion
+import { motion } from "framer-motion";
+import ApplicationLogo from "../../Components/ApplicationLogo";
 import {
     LayoutDashboard,
-    LogOut,
-    ShieldCheck, // Ikon baru untuk verifikasi
-    FileClock, // Ikon baru untuk pending
+    ShieldCheck,
+    FileClock,
+    User, // <-- [BARU] Ikon untuk Profil
 } from "lucide-react";
 
-// Komponen link sidebar internal
-const SidebarLink = ({ href, active, children }) => (
-    <Link
-        href={href}
-        className={`
-            flex items-center space-x-3 px-4 py-3 text-sm font-medium
-            transition-all duration-150 ease-in-out
-            ${
-                active
-                    ? "bg-indigo-50 text-indigo-700 border-r-4 border-indigo-600"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-            }
-        `}
-    >
-        {children}
-    </Link>
+// --- [EFEK] Varian untuk animasi list ---
+const sidebarVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1, // <-- Ini adalah efek staggered
+        },
+    },
+};
+
+const linkVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: { opacity: 1, x: 0 },
+};
+
+// --- [MODIFIKASI] Komponen SidebarLink dengan Efek ---
+const SidebarLink = ({ href, active, children, icon }) => (
+    <motion.li variants={linkVariants}>
+        <motion.div
+            whileHover={{ x: 5 }} // <-- Ini adalah efek "maju" saat hover
+            transition={{ type: "spring", stiffness: 400, damping: 15 }}
+            className="relative"
+        >
+            <Link
+                href={href}
+                className={`
+                    flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-lg
+                    transition-all duration-150 ease-in-out w-full
+                    ${
+                        active
+                            ? "bg-gradient-to-r from-green-50 to-green-100 text-green-700 font-semibold shadow-inner" // <-- [EFEK] Gaya aktif baru
+                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    }
+                `}
+            >
+                <span
+                    className={`flex-shrink-0 ${
+                        active
+                            ? "text-green-600"
+                            : "text-gray-400 group-hover:text-gray-500"
+                    }`}
+                >
+                    {icon}
+                </span>
+                <span>{children}</span>
+            </Link>
+            {/* [EFEK] Indikator aktif di sebelah kiri */}
+            {active && (
+                <motion.div
+                    className="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-r-full"
+                    layoutId="active-indicator" // <-- Animasi perpindahan antar link
+                />
+            )}
+        </motion.div>
+    </motion.li>
 );
 
-// [MODIFIKASI] Menerima prop 'user' dari CourierLayout
+// --- Komponen Sidebar Utama ---
 export default function CourierSidebar({ user }) {
     const { url } = usePage();
 
-    // [LOGIKA PINTAR]
-    // Dapatkan status verifikasi dari prop user yang sudah di-load
-    // Status bisa: 'approved', 'pending', 'rejected', or null (baru)
+    // Logika "pintar" (tetap sama)
     const verificationStatus = user?.courier_verification?.status;
-
-    // Cek apakah kurir sudah disetujui (verified)
     const isVerified = verificationStatus === "approved";
 
     return (
-        <aside className="w-64 flex-shrink-0 bg-white shadow-lg border-r border-gray-100 flex flex-col">
+        <aside className="w-72 flex-col h-full bg-white shadow-xl flex border-r border-gray-100">
             {/* Logo */}
-            <div className="h-16 flex items-center justify-center px-4 border-b border-gray-100">
-                <Link href="/">
-                    <ApplicationLogo className="block h-10 w-auto" />
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="p-6 border-b h-16 flex items-center justify-center"
+            >
+                <Link href={route("home")}>
+                    <ApplicationLogo className="h-10 w-auto text-gray-800" />
                 </Link>
-            </div>
+            </motion.div>
 
-            {/* Navigasi */}
-            <nav className="flex-1 overflow-y-auto py-4 space-y-1">
-                {/* [LOGIKA KONDISIONAL] */}
-                {isVerified ? (
-                    <>
-                        {/* === TAMPILKAN INI HANYA JIKA KURIR SUDAH DISETUJUI === */}
-                        <SidebarLink
-                            href={route("courier.dashboard")}
-                            active={url.startsWith("/courier/dashboard")}
-                        >
-                            <LayoutDashboard size={20} />
-                            <span>Dashboard Tugas</span>
-                        </SidebarLink>
+            {/* Nav Links dengan Efek Staggered */}
+            <motion.nav
+                variants={sidebarVariants}
+                initial="hidden"
+                animate="visible"
+                className="flex-1 p-4 space-y-2 overflow-y-auto"
+            >
+                {/* [MODIFIKASI] Kita bungkus dengan <ul> untuk animasi */}
+                <ul className="space-y-2">
+                    {isVerified ? (
+                        <>
+                            {/* === TAMPILKAN INI HANYA JIKA KURIR SUDAH DISETUJUI === */}
+                            <SidebarLink
+                                href={route("courier.dashboard")}
+                                active={
+                                    url.startsWith("/courier/dashboard") ||
+                                    url.startsWith("/courier/tasks")
+                                }
+                                icon={<LayoutDashboard size={20} />}
+                            >
+                                Dashboard Tugas
+                            </SidebarLink>
 
-                        {/* Nanti Anda bisa tambahkan link "Riwayat Tugas" atau "Profil" di sini */}
-                    </>
-                ) : (
-                    <>
-                        {/* === TAMPILKAN INI JIKA KURIR BELUM DISETUJUI === */}
-                        <SidebarLink
-                            href={route("courier.verification.create")}
-                            active={url.startsWith("/courier/verification")}
-                        >
-                            {verificationStatus === "pending" ? (
-                                <FileClock
-                                    size={20}
-                                    className="text-yellow-600"
-                                />
-                            ) : (
-                                <ShieldCheck
-                                    size={20}
-                                    className="text-blue-600"
-                                />
-                            )}
-
-                            <span>
+                            {/* [BARU] Link ke profil (menggunakan link profile bawaan) */}
+                            <SidebarLink
+                                href={route("profile.edit")}
+                                active={url.startsWith("/profile")}
+                                icon={<User size={20} />}
+                            >
+                                Profil Saya
+                            </SidebarLink>
+                        </>
+                    ) : (
+                        <>
+                            {/* === TAMPILKAN INI JIKA KURIR BELUM DISETUJUI === */}
+                            <SidebarLink
+                                href={route("courier.verification.create")}
+                                active={url.includes("/courier/verification")}
+                                icon={
+                                    verificationStatus === "pending" ? (
+                                        <FileClock size={20} />
+                                    ) : (
+                                        <ShieldCheck size={20} />
+                                    )
+                                }
+                            >
                                 {verificationStatus === "pending"
                                     ? "Status Verifikasi"
                                     : "Form Verifikasi"}
-                            </span>
-                        </SidebarLink>
-                    </>
-                )}
-            </nav>
+                            </SidebarLink>
+                        </>
+                    )}
+                </ul>
+            </motion.nav>
 
-            {/* Bagian Bawah (Logout) */}
-            <div className="py-4 border-t border-gray-100">
-                <SidebarLink
-                    href={route("logout")}
-                    method="post"
-                    as="button"
-                    active={false}
-                >
-                    <LogOut size={20} className="text-red-600" />
-                    <span className="text-red-700">Logout</span>
-                </SidebarLink>
-            </div>
+            {/* Footer */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5, duration: 0.5 }}
+                className="p-4 border-t border-gray-100"
+            >
+                <p className="text-xs text-gray-400 text-center">
+                    © {new Date().getFullYear()} Titipsini
+                </p>
+            </motion.div>
         </aside>
     );
 }

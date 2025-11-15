@@ -1,9 +1,15 @@
+import React from "react"; // <-- Import React
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, useForm } from "@inertiajs/react";
+import AdminLayout from "@/Layouts/AdminLayout"; // <-- [BARU] Import layout Admin
+import CourierLayout from "@/Layouts/CourierLayout"; // <-- [BARU] Import layout Kurir
+import { Head, useForm, usePage } from "@inertiajs/react"; // <-- [BARU] Import usePage
 import DeleteUserForm from "./Partials/DeleteUserForm";
 import UpdatePasswordForm from "./Partials/UpdatePasswordForm";
 
-export default function Edit({ mustVerifyEmail, status, auth }) {
+// [MODIFIKASI] Hapus 'auth' dari props
+export default function Edit({ mustVerifyEmail, status }) {
+    const { auth } = usePage().props; // <-- Ambil 'auth' dari global props
+
     const { data, setData, post, processing, errors } = useForm({
         name: auth.user.name || "",
         email: auth.user.email || "",
@@ -16,14 +22,9 @@ export default function Edit({ mustVerifyEmail, status, auth }) {
         post(route("profile.update"));
     };
 
+    // [MODIFIKASI] Hapus pembungkus <AuthenticatedLayout>
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Edit Profil
-                </h2>
-            }
-        >
+        <>
             <Head title="Edit Profil" />
 
             <div className="py-12">
@@ -132,6 +133,7 @@ export default function Edit({ mustVerifyEmail, status, auth }) {
                         <h3 className="text-lg font-semibold mb-4 text-gray-700">
                             Ganti Password
                         </h3>
+                        {/* File Anda sudah benar */}
                         <UpdatePasswordForm className="max-w-xl" />
                     </div>
 
@@ -144,6 +146,57 @@ export default function Edit({ mustVerifyEmail, status, auth }) {
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+// --- [LOGIKA PINTAR] ---
+// Tambahkan resolver layout dinamis di bagian bawah
+Edit.layout = (page) => {
+    // Ambil 'user' dari props halaman
+    const { auth } = page.props;
+    const user = auth.user;
+
+    // Header default (string, bukan <h2>)
+    const header = "Edit Profil";
+
+    // Helper untuk cek role (lebih aman)
+    const hasRole = (roleName) => {
+        // 'roles' sekarang dijamin ada oleh HandleInertiaRequests
+        return user.roles?.some((role) => role.name === roleName);
+    };
+
+    // 1. Cek jika Admin
+    if (hasRole("admin")) {
+        return (
+            <AdminLayout user={user} header={header}>
+                {page}
+            </AdminLayout>
+        );
+    }
+
+    // 2. Cek jika Kurir
+    if (hasRole("kurir")) {
+        return (
+            <CourierLayout user={user} header={header}>
+                {page}
+            </CourierLayout>
+        );
+    }
+
+    // 3. Default untuk Klien (Publik)
+    // [PERBAIKAN] Kita gunakan AuthenticatedLayout (layout klien)
+    // dan kita berikan header h2 seperti aslinya
+    return (
+        <AuthenticatedLayout
+            user={user}
+            header={
+                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
+                    {header}
+                </h2>
+            }
+        >
+            {page}
+        </AuthenticatedLayout>
+    );
+};

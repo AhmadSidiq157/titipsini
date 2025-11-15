@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
-// [UPDATE] Import useForm dan ikon baru
 import { Head, Link, usePage, useForm } from "@inertiajs/react";
-import { Check, X, Truck } from "lucide-react"; // <-- Tambahkan Truck
+import { Check, X, AlertTriangle } from "lucide-react";
 import PrimaryButton from "@/Components/PrimaryButton";
 import DangerButton from "@/Components/DangerButton";
+import Modal from "@/Components/Modal";
+import InputLabel from "@/Components/InputLabel";
+import InputError from "@/Components/InputError";
 
 const formatRupiah = (number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -14,88 +16,117 @@ const formatRupiah = (number) => {
     }).format(number);
 };
 
-// [BARU] Komponen untuk menugaskan kurir
-const AssignCourierBox = ({ order, couriers }) => {
-    const { data, setData, post, processing, errors } = useForm({
-        courier_id: order.courier_id || "", // Default ke kurir yg sudah ada, atau string kosong
+// --- [BARU] Komponen Box Verifikasi (disalin dari modal) ---
+const PaymentVerificationBox = ({ order }) => {
+    const [showRejectModal, setShowRejectModal] = useState(false);
+
+    // Form untuk Alasan Penolakan
+    const { data, setData, post, processing, errors, reset } = useForm({
+        rejection_reason: "", // Ini diperlukan jika Anda ingin menambahkan alasan penolakan
     });
 
-    const submit = (e) => {
+    const submitReject = (e) => {
         e.preventDefault();
-        post(route("admin.orders.assignCourier", order.id));
+        // Arahkan ke rute 'orders.reject' yang lama
+        post(route("admin.orders.reject", order.id), {
+            preserveScroll: true,
+            onSuccess: () => setShowRejectModal(false),
+        });
     };
 
     return (
         <div className="bg-white shadow-sm sm:rounded-lg p-6">
-            <h3 className="text-xl font-bold mb-4 flex items-center">
-                <Truck className="w-5 h-5 mr-2" />
-                Tugaskan Kurir
-            </h3>
-
-            <form onSubmit={submit}>
+            <h3 className="text-xl font-bold mb-4">Verifikasi Pembayaran</h3>
+            {order.payment ? (
                 <div>
-                    <label
-                        htmlFor="courier_id"
-                        className="block text-sm font-medium text-gray-700"
+                    <a
+                        href={`/storage/${order.payment.payment_proof_path}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                     >
-                        Pilih Kurir
-                    </label>
-                    <select
-                        id="courier_id"
-                        name="courier_id"
-                        value={data.courier_id}
-                        onChange={(e) => setData("courier_id", e.target.value)}
-                        className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                        disabled={couriers.length === 0}
-                    >
-                        <option value="">
-                            {couriers.length > 0
-                                ? "-- Pilih kurir --"
-                                : "-- Tidak ada kurir tersedia --"}
-                        </option>
-                        {couriers.map((courier) => (
-                            <option key={courier.id} value={courier.id}>
-                                {courier.name}
-                            </option>
-                        ))}
-                    </select>
-                    {errors.courier_id && (
-                        <p className="mt-2 text-sm text-red-600">
-                            {errors.courier_id}
-                        </p>
-                    )}
+                        <img
+                            src={`/storage/${order.payment.payment_proof_path}`}
+                            alt="Bukti Pembayaran"
+                            className="w-full rounded-lg border shadow-sm cursor-pointer hover:opacity-80 transition"
+                        />
+                    </a>
+                    <div className="mt-6 flex space-x-3">
+                        <Link
+                            href={route("admin.orders.approve", order.id)}
+                            method="post"
+                            as="button"
+                            className="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700"
+                            onBefore={() =>
+                                confirm(
+                                    "Apakah Anda yakin ingin MENYETUJUI pembayaran ini?"
+                                )
+                            }
+                        >
+                            <Check className="w-4 h-4 mr-2" />
+                            Approve
+                        </Link>
+                        {/* Tombol reject sekarang memicu modal */}
+                        <DangerButton
+                            onClick={() => setShowRejectModal(true)}
+                            className="w-full justify-center"
+                        >
+                            <X className="w-4 h-4 mr-2" />
+                            Reject
+                        </DangerButton>
+                    </div>
                 </div>
-                <div className="mt-4">
-                    <PrimaryButton
-                        className="w-full justify-center"
-                        disabled={processing || couriers.length === 0}
-                    >
-                        {processing ? "Menyimpan..." : "Tugaskan Kurir"}
-                    </PrimaryButton>
-                </div>
-            </form>
+            ) : (
+                <p className="text-gray-600">
+                    User belum meng-upload bukti pembayaran.
+                </p>
+            )}
+
+            {/* Modal untuk Alasan Penolakan (jika Anda membutuhkannya) */}
+            {/* Jika tidak perlu alasan, Anda bisa gunakan <Link> biasa seperti di file lama Anda */}
+            <Modal
+                show={showRejectModal}
+                onClose={() => setShowRejectModal(false)}
+            >
+                <form onSubmit={submitReject} className="p-6">
+                    <h2 className="text-lg font-medium text-gray-900">
+                        Tolak Pembayaran
+                    </h2>
+                    <p className="mt-1 text-sm text-gray-600">
+                        Apakah Anda yakin ingin menolak pembayaran ini? Bukti
+                        bayar akan dihapus dan user harus upload ulang.
+                    </p>
+                    {/* Opsional: Tambahkan input alasan jika controller Anda membutuhkannya */}
+                    <div className="mt-6 flex justify-end">
+                        <PrimaryButton
+                            type="button"
+                            className="bg-gray-200 text-gray-800 hover:bg-gray-300"
+                            onClick={() => setShowRejectModal(false)}
+                        >
+                            Batal
+                        </PrimaryButton>
+                        <DangerButton className="ms-3" disabled={processing}>
+                            Ya, Tolak Pembayaran
+                        </DangerButton>
+                    </div>
+                </form>
+            </Modal>
         </div>
     );
 };
 
-export default function Show({ auth, order, couriers }) {
-    // <-- [UPDATE] Terima prop 'couriers'
+export default function Show({ auth, order }) {
+    // <-- [PERBAIKAN] Prop 'couriers' dihapus
     const { flash } = usePage().props;
-    const payment = order.payment;
 
-    // URL lengkap untuk gambar di storage
-    const proofImageUrl = payment
-        ? `/storage/${payment.payment_proof_path}`
-        : null;
+    // Ambil data form (hanya untuk Penitipan)
+    const details = order.user_form_details || {};
 
     return (
         <AdminLayout
             user={auth.user}
-            header={
-                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
-                    Detail Pesanan #{order.id}
-                </h2>
-            }
+            // [PERBAIKAN] Error nesting <h1><h2>:
+            // Ubah header dari <h2> menjadi string biasa.
+            header={`Detail Pesanan #${order.id}`}
         >
             <Head title={`Detail Pesanan #${order.id}`} />
 
@@ -104,7 +135,7 @@ export default function Show({ auth, order, couriers }) {
                     {/* Kolom Kiri: Detail Pesanan & User */}
                     <div className="lg:col-span-2 bg-white shadow-sm sm:rounded-lg p-6">
                         <h3 className="text-xl font-bold mb-4">
-                            Detail Pesanan
+                            Detail Pesanan (Penitipan)
                         </h3>
                         {flash.success && (
                             <div className="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow-sm">
@@ -124,28 +155,11 @@ export default function Show({ auth, order, couriers }) {
                             />
                             <DetailRow
                                 label="Status"
-                                // [UPDATE] Ganti format status
-                                value={
-                                    <span className="font-semibold uppercase text-sm tracking-wide">
-                                        {order.status.replace("_", " ")}
-                                    </span>
-                                }
+                                value={order.status.replace("_", " ")}
                             />
-                            {/* [BARU] Tampilkan kurir jika sudah ditugaskan */}
-                            {order.courier && (
-                                <DetailRow
-                                    label="Ditugaskan ke"
-                                    value={
-                                        <span className="font-bold text-indigo-600 flex items-center">
-                                            <Truck className="w-4 h-4 mr-1.5" />
-                                            {order.courier.name}
-                                        </span>
-                                    }
-                                />
-                            )}
                             <DetailRow
                                 label="Total"
-                                value={formatRupiah(order.final_amount)} // Anda menggunakan final_amount
+                                value={formatRupiah(order.final_amount)}
                             />
                             <DetailRow
                                 label="Layanan"
@@ -164,106 +178,37 @@ export default function Show({ auth, order, couriers }) {
                             </h4>
                             <DetailRow
                                 label="Tgl Mulai"
-                                value={order.user_form_details.start_date}
+                                value={details.start_date}
                             />
                             <DetailRow
                                 label="Tgl Selesai"
-                                value={order.user_form_details.end_date}
+                                value={details.end_date}
                             />
                             <DetailRow
                                 label="Catatan User"
-                                value={order.user_form_details.notes || "-"}
+                                value={details.notes || "-"}
                             />
                         </div>
                     </div>
 
-                    {/* Kolom Kanan: Aksi Admin */}
+                    {/* Kolom Kanan: Aksi */}
                     <div className="lg:col-span-1 space-y-6">
-                        {/* Box Verifikasi Pembayaran */}
-                        <div className="bg-white shadow-sm sm:rounded-lg p-6">
-                            <h3 className="text-xl font-bold mb-4">
-                                Verifikasi Pembayaran
-                            </h3>
-
-                            {order.status === "awaiting_verification" &&
-                            payment ? (
-                                <div>
-                                    <h4 className="font-semibold">
-                                        Bukti Transfer:
-                                    </h4>
-                                    <p className="text-sm text-gray-600 mb-2">
-                                        Catatan: {payment.notes || "-"}
-                                    </p>
-
-                                    <a
-                                        href={proofImageUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                    >
-                                        <img
-                                            src={proofImageUrl}
-                                            alt="Bukti Pembayaran"
-                                            className="w-full rounded-lg border shadow-sm cursor-pointer hover:opacity-80 transition"
-                                        />
-                                    </a>
-
-                                    <div className="mt-6 flex space-x-3">
-                                        <Link
-                                            href={route(
-                                                "admin.orders.approve",
-                                                order.id
-                                            )}
-                                            method="post"
-                                            as="button"
-                                            className="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                                            onBefore={() =>
-                                                confirm(
-                                                    "Apakah Anda yakin ingin MENYETUJUI pembayaran ini?"
-                                                )
-                                            }
-                                        >
-                                            <Check className="w-4 h-4 mr-2" />
-                                            Approve
-                                        </Link>
-                                        <Link
-                                            href={route(
-                                                "admin.orders.reject",
-                                                order.id
-                                            )}
-                                            method="post"
-                                            as="button"
-                                            className="w-full inline-flex justify-center items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 active:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                                            onBefore={() =>
-                                                confirm(
-                                                    "Apakah Anda yakin ingin MENOLAK pembayaran ini? Bukti bayar akan dihapus dan user harus upload ulang."
-                                                )
-                                            }
-                                        >
-                                            <X className="w-4 h-4 mr-2" />
-                                            Reject
-                                        </Link>
-                                    </div>
-                                </div>
-                            ) : (
-                                <p className="text-gray-600">
-                                    {order.status === "processing" ||
-                                    order.status === "ready_for_pickup" ||
-                                    order.status === "completed"
-                                        ? "Pembayaran sudah diverifikasi."
-                                        : "User belum meng-upload bukti pembayaran."}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* [BARU] Box Tugaskan Kurir */}
-                        {/* Tampilkan box ini HANYA jika pembayaran sudah lunas (processing) atau sudah siap jemput */}
-                        {(order.status === "processing" ||
-                            order.status === "ready_for_pickup") && (
-                            <AssignCourierBox
-                                order={order}
-                                couriers={couriers}
-                            />
+                        {/* 1. Tampilkan Box Pembayaran JIKA statusnya 'awaiting_verification' */}
+                        {order.status === "awaiting_verification" && (
+                            <PaymentVerificationBox order={order} />
                         )}
+
+                        {/* 2. Tampilkan pesan jika sudah diproses */}
+                        {order.status !== "awaiting_verification" && (
+                            <div className="bg-white rounded-lg p-6 border shadow-sm flex items-center text-gray-700">
+                                <Check className="w-6 h-6 mr-3 text-green-500" />
+                                <span className="font-medium">
+                                    Pembayaran untuk pesanan ini sudah diproses.
+                                </span>
+                            </div>
+                        )}
+
+                        {/* [DIHAPUS] AssignCourierBox sudah dihapus dari halaman ini */}
                     </div>
                 </div>
             </div>
@@ -273,10 +218,8 @@ export default function Show({ auth, order, couriers }) {
 
 // Komponen helper kecil
 const DetailRow = ({ label, value }) => (
-    <div className="flex flex-col sm:flex-row sm:justify-between py-2 border-b border-gray-100">
+    <div className="flex justify-between py-2 border-b border-gray-100">
         <span className="text-sm text-gray-500">{label}</span>
-        <span className="font-semibold text-gray-900 text-left sm:text-right">
-            {value}
-        </span>
+        <span className="font-semibold text-gray-900 text-right">{value}</span>
     </div>
 );

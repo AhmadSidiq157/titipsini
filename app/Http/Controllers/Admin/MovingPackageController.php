@@ -30,7 +30,7 @@ class MovingPackageController extends Controller
      */
     public function create()
     {
-        //
+        // (Tidak dipakai, modal menangani ini)
     }
 
     /**
@@ -38,6 +38,7 @@ class MovingPackageController extends Controller
      */
     public function store(StoreMovingPackageRequest $request)
     {
+        // Request akan divalidasi oleh StoreMovingPackageRequest
         MovingPackage::create($request->validated());
         return Redirect::route('admin.moving-packages.index')->with('success', 'Paket berhasil ditambahkan.');
     }
@@ -63,6 +64,7 @@ class MovingPackageController extends Controller
      */
     public function update(StoreMovingPackageRequest $request, MovingPackage $movingPackage)
     {
+        // Request akan divalidasi oleh StoreMovingPackageRequest
         $movingPackage->update($request->validated());
         return Redirect::route('admin.moving-packages.index')->with('success', 'Paket berhasil diperbarui.');
     }
@@ -72,6 +74,8 @@ class MovingPackageController extends Controller
      */
     public function destroy(MovingPackage $movingPackage)
     {
-        //
+        // [PERBAIKAN] Tambahkan logika hapus
+        $movingPackage->delete();
+        return Redirect::route('admin.moving-packages.index')->with('success', 'Paket berhasil dihapus.');
     }
 }

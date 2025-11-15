@@ -20,9 +20,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'isAdmin' => \App\Http\Middleware\IsAdmin::class,
             'isVerified' => \App\Http\Middleware\EnsureUserIsVerified::class,
-            'courier' => \App\Http\Middleware\IsCourier::class, // <--- TAMBAHKAN BARIS INI
+            'courier' => \App\Http\Middleware\IsCourier::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
-    })->create();
+    })
+    // --- [BARU] Daftarkan EventServiceProvider Anda di sini ---
+    ->withProviders([
+        \App\Providers\EventServiceProvider::class,
+    ])
+    // --- Akhir Blok Baru ---
+    ->create();

@@ -3,7 +3,7 @@ import {
     ShieldCheck,
     Clock,
     MapPin,
-    Package,
+    Package, // <-- [PERBAIKAN] 'Package' di-import di sini
     Car,
     Users,
     Star,
@@ -11,14 +11,15 @@ import {
     ChevronLeft,
     ChevronRight,
     CheckCircle,
-} from "lucide-react";
+} from "lucide-react"; // <-- [PERBAIKAN] Semua ikon di-import di sini
 import GuestLayout from "../Layouts/GuestLayout";
 import CountUp from "react-countup";
-import { useInView } from "react-intersection-observer";
-import { usePage, Link, router } from "@inertiajs/react"; // <-- DITAMBAHKAN 'router'
-import OrderModal from "@/Pages/Order/Partials/OrderModal"; // <-- 1. IMPORT MODAL BARU
+import { useInView } from "react-intersection-observer"; // <-- [PERBAIKAN] 'useInView' di-import di sini
+import { usePage, Link, router } from "@inertiajs/react";
+import OrderModal from "@/Pages/Order/Partials/OrderModal";
 
-// Helper function
+// [PERBAIKAN] Fungsi ini dipindahkan ke atas (scope global file)
+// agar bisa diakses oleh 'ServiceCard'
 const formatRupiah = (number) => {
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
@@ -28,7 +29,6 @@ const formatRupiah = (number) => {
 };
 
 // Komponen untuk setiap kartu layanan
-// DIROMBAK TOTAL
 const ServiceCard = ({ service, onOrderClick }) => {
     const { id, illustration, title, description, features, price } = service;
 
@@ -50,6 +50,7 @@ const ServiceCard = ({ service, onOrderClick }) => {
                 <div className="mb-4">
                     <span className="text-gray-500 text-sm">Mulai dari</span>
                     <p className="text-2xl font-bold text-green-600">
+                        {/* [PERBAIKAN] Sekarang 'formatRupiah' terdefinisi */}
                         {formatRupiah(price)}
                     </p>
                 </div>
@@ -66,7 +67,6 @@ const ServiceCard = ({ service, onOrderClick }) => {
                     ))}
                 </ul>
 
-                {/* --- TOMBOL DIGANTI JADI <button> --- */}
                 <button
                     onClick={() => onOrderClick(service)} // Panggil handler dari parent
                     className="mt-auto w-full bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 text-center"
@@ -98,7 +98,7 @@ const FaqItem = ({ question, answer, isOpen, onClick }) => (
             className="w-full flex justify-between items-center text-left"
         >
             <h4 className="font-semibold text-gray-800 text-lg">{question}</h4>
-            <ChevronDown
+            <ChevronDown // <-- [PERBAIKAN] 'ChevronDown' sekarang sudah di-import
                 className={`transform transition-transform duration-300 ${
                     isOpen ? "rotate-180 text-green-600" : ""
                 }`}
@@ -117,7 +117,7 @@ const FaqItem = ({ question, answer, isOpen, onClick }) => (
 // --- SECTIONS ---
 
 const Hero = () => {
-    // --- Logika WhatsApp Ditambahkan ---
+    // ... (Logika WhatsApp Anda)
     const { settings } = usePage().props;
     const phoneNumber = settings.contact_phone
         ? settings.contact_phone.replace(/\D/g, "")
@@ -126,7 +126,6 @@ const Hero = () => {
         ? encodeURIComponent(settings.whatsapp_message)
         : "";
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-    // --- Akhir Logika WhatsApp ---
 
     return (
         <section className="bg-gray-50 py-12 md:py-20">
@@ -151,7 +150,6 @@ const Hero = () => {
                             langsung.
                         </p>
                         <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                            {/* --- Tombol diubah ke link WhatsApp --- */}
                             <a
                                 href={whatsappUrl}
                                 target="_blank"
@@ -160,7 +158,6 @@ const Hero = () => {
                             >
                                 Titip Sekarang
                             </a>
-                            {/* --- Tombol diubah ke link WhatsApp --- */}
                             <a
                                 href={whatsappUrl}
                                 target="_blank"
@@ -181,7 +178,7 @@ const Hero = () => {
                 </div>
                 <div className="mt-16 bg-white p-6 rounded-lg shadow-md grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
                     <div className="p-4">
-                        <Package
+                        <Package // <-- [PERBAIKAN] 'Package' sekarang sudah di-import
                             size={40}
                             className="mx-auto text-green-600 mb-2"
                         />
@@ -191,7 +188,7 @@ const Hero = () => {
                         </p>
                     </div>
                     <div className="p-4">
-                        <Clock
+                        <Clock // <-- [PERBAIKAN] 'Clock' sekarang sudah di-import
                             size={40}
                             className="mx-auto text-green-600 mb-2"
                         />
@@ -199,7 +196,7 @@ const Hero = () => {
                         <p className="text-gray-600">Harian hingga bulanan</p>
                     </div>
                     <div className="p-4">
-                        <Car
+                        <Car // <-- [PERBAIKAN] 'Car' sekarang sudah di-import
                             size={40}
                             className="mx-auto text-green-600 mb-2"
                         />
@@ -212,7 +209,7 @@ const Hero = () => {
     );
 };
 
-// --- KOMPONEN SERVICES DIROMBAK ---
+// --- KOMPONEN SERVICES ---
 const Services = ({ services, onOrderClick }) => {
     return (
         <section className="py-16 bg-white">
@@ -241,7 +238,9 @@ const Services = ({ services, onOrderClick }) => {
     );
 };
 
+// --- KOMPONEN STATS ---
 const Stats = () => {
+    // <-- [PERBAIKAN] 'useInView' sekarang sudah di-import
     const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 });
     const stats = [
         { value: 5, suffix: "+", label: "Tahun Beroperasi" },
@@ -277,9 +276,11 @@ const Stats = () => {
     );
 };
 
+// --- KOMPONEN WHY US ---
 const WhyUs = () => {
     const features = [
         {
+            // <-- [PERBAIKAN] 'ShieldCheck' sekarang sudah di-import
             icon: <ShieldCheck size={24} className="text-green-600" />,
             title: "Keamanan Terjamin",
             description:
@@ -331,8 +332,9 @@ const WhyUs = () => {
     );
 };
 
-// Testimonials menjadi Carousel Interaktif
+// --- KOMPONEN TESTIMONIALS ---
 const Testimonials = () => {
+    // ... (Logika testimonials)
     const testimonials = [
         {
             quote: "Sangat membantu saat pindah kost! Barang-barang saya aman.",
@@ -377,6 +379,7 @@ const Testimonials = () => {
                             onClick={goToPrevious}
                             className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition"
                         >
+                            {/* [PERBAIKAN] 'ChevronLeft' sekarang sudah di-import */}
                             <ChevronLeft className="text-gray-600" />
                         </button>
                     </div>
@@ -413,6 +416,7 @@ const Testimonials = () => {
                             onClick={goToNext}
                             className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition"
                         >
+                            {/* [PERBAIKAN] 'ChevronRight' sekarang sudah di-import */}
                             <ChevronRight className="text-gray-600" />
                         </button>
                     </div>
@@ -435,7 +439,9 @@ const Testimonials = () => {
     );
 };
 
+// --- KOMPONEN FAQ ---
 const FAQ = () => {
+    // ... (Logika FAQ)
     const [openFaqIndex, setOpenFaqIndex] = useState(0);
     const faqs = [
         {
@@ -482,47 +488,32 @@ const FAQ = () => {
 };
 
 // --- Komponen Utama Halaman Welcome ---
-// DIROMBAK TOTAL
 const Welcome = (props) => {
     const { services } = props;
     const { auth, userVerificationStatus } = usePage().props;
 
-    // --- 2. STATE UNTUK MODAL ---
+    // --- State untuk Modal ---
     const [isOrderModalOpen, setOrderModalOpen] = useState(false);
     const [selectedService, setSelectedService] = useState(null);
 
-    // --- 3. LOGIKA UTAMA (4 KASUS) ---
+    // --- Logika Utama (4 Kasus) ---
     const handleOrderClick = (service) => {
-        // Kasus 1: User adalah tamu (belum login)
         if (!auth.user) {
-            // Kita pakai 'router.get' agar Inertia bisa intercept,
-            // tapi 'window.location.href' juga bisa
             router.get(route("login"));
             return;
         }
-
-        // User sudah login, cek status verifikasi KTP-nya
-
-        // Kasus 2: Belum terverifikasi (null) atau Ditolak (rejected)
         if (
             userVerificationStatus === null ||
             userVerificationStatus === "rejected"
         ) {
-            // Redirect ke HALAMAN form KTP
             router.get(route("verification.create"));
             return;
         }
-
-        // Kasus 3: Masih ditinjau (pending)
         if (userVerificationStatus === "pending") {
-            // Redirect ke HALAMAN tunggu
             router.get(route("verification.pending"));
             return;
         }
-
-        // Kasus 4: Sudah disetujui (approved)
         if (userVerificationStatus === "approved") {
-            // BUKA MODAL PEMESANAN!
             setSelectedService(service);
             setOrderModalOpen(true);
         }
@@ -533,20 +524,18 @@ const Welcome = (props) => {
             <Hero />
             <Services
                 services={services}
-                onOrderClick={handleOrderClick} // <-- Kirim handler ke <Services>
+                onOrderClick={handleOrderClick} // <-- Kirim handler
             />
             <Stats />
             <WhyUs />
             <Testimonials />
             <FAQ />
 
-            {/* --- 4. RENDER MODAL --- */}
-            {/* Modal ini akan di-render di sini tapi tersembunyi, 
-                dia akan mengambil data service saat 'isOrderModalOpen' jadi true */}
             <OrderModal
                 show={isOrderModalOpen}
                 onClose={() => setOrderModalOpen(false)}
-                service={selectedService}
+                product={selectedService} // <-- [PERBAIKAN] Ganti 'service' jadi 'product'
+                productType="service"
             />
         </>
     );

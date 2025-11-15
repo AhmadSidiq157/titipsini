@@ -15,6 +15,7 @@ use App\Http\Controllers\ProgramPageController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\UserVerificationController;
 use App\Http\Controllers\MitraController;
+use App\Http\Controllers\HistoryController;
 
 // Admin Controllers
 use App\Http\Controllers\Admin\DashboardController;
@@ -28,11 +29,11 @@ use App\Http\Controllers\Admin\InternshipProjectController;
 use App\Http\Controllers\Admin\CareerProgramController;
 use App\Http\Controllers\Admin\CurriculumController;
 use App\Http\Controllers\Admin\OrderManagementController;
-// --- [TAMBAHKAN INI] Import Verifikasi Kurir ---
+use App\Http\Controllers\Admin\PindahanManagementController;
 use App\Http\Controllers\Admin\CourierVerificationController;
+use App\Http\Controllers\Admin\BranchController;
 
-
-// --- [TAMBAHKAN INI] Import Controller Kurir ---
+// --- Controller Kurir ---
 use App\Http\Controllers\Courier\DashboardController as CourierDashboardController;
 use App\Http\Controllers\Courier\TaskController as CourierTaskController;
 use App\Http\Controllers\Courier\VerificationController as CourierVerificationSideController;
@@ -54,18 +55,20 @@ Route::get('/Mitra/index', [MitraController::class, 'index'])->name('mitra.index
 
 // --- RUTE UNTUK PENGGUNA TERAUTENTIKASI ---
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Rute 'dashboard' ini akan ditangani oleh Admin/DashboardController
-    // yang akan menyortir user berdasarkan peran (Admin, Kurir, Klien)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
+
+    // --- [BARU] Rute untuk polling status order real-time ---
+    Route::get('/order/{order}/status', [OrderController::class, 'getStatus'])->name('order.status');
 
     // --- RUTE ORDER KLIEN ---
     Route::prefix('order')->name('order.')->group(function () {
-        Route::get('/', [OrderController::class, 'index'])->name('index'); // Kode Anda
+        Route::get('/', [OrderController::class, 'index'])->name('index');
         Route::get('/create', [OrderController::class, 'create'])->name('create');
         Route::get('/{order}/payment', [OrderController::class, 'payment'])->name('payment');
         Route::get('/{order}/success', [OrderController::class, 'success'])->name('success');
@@ -102,6 +105,7 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
         // Resources untuk Layanan & Paket
         Route::resource('services', ServiceController::class);
         Route::resource('moving-packages', MovingPackageController::class);
+        Route::resource('branches', BranchController::class);
 
         // Manajemen Pesanan Admin
         Route::prefix('orders')->name('orders.')->group(function () {
@@ -109,17 +113,22 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
             Route::get('/{order}', [OrderManagementController::class, 'show'])->name('show');
             Route::post('/{order}/approve', [OrderManagementController::class, 'approvePayment'])->name('approve');
             Route::post('/{order}/reject', [OrderManagementController::class, 'rejectPayment'])->name('reject');
-            // --- [TAMBAHKAN INI] Rute Assign Kurir ---
-            Route::post('/{order}/assign-courier', [OrderManagementController::class, 'assignCourier'])->name('assignCourier');
         });
 
-        // --- [TAMBAHKAN INI] Manajemen Verifikasi Kurir ---
+        Route::prefix('pindahan')->name('pindahan.')->group(function () {
+            Route::get('/', [PindahanManagementController::class, 'index'])->name('index');
+            Route::post('/{order}/approve', [PindahanManagementController::class, 'approvePayment'])->name('approve');
+            Route::post('/{order}/reject', [PindahanManagementController::class, 'rejectPayment'])->name('reject');
+            Route::post('/{order}/assign-courier', [PindahanManagementController::class, 'assignCourier'])->name('assignCourier');
+        });
+
+        // Manajemen Verifikasi Kurir
         Route::prefix('courier-verifications')
             ->name('courier_verifications.')
             ->controller(CourierVerificationController::class)
             ->group(function () {
 
-                Route::get('/', 'index')->name('index'); // <-- Ini rute yang error
+                Route::get('/', 'index')->name('index');
                 Route::get('/{verification}', 'show')->name('show');
                 Route::post('/{verification}/approve', 'approve')->name('approve');
                 Route::post('/{verification}/reject', 'reject')->name('reject');
@@ -137,8 +146,8 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
     });
 
 
-// --- [TAMBAHKAN INI] RUTE KHUSUS KURIR ---
-Route::middleware(['auth', 'verified', 'courier']) // <-- Dilindungi middleware 'courier'
+// --- RUTE KHUSUS KURIR ---
+Route::middleware(['auth', 'verified', 'courier'])
     ->prefix('courier')
     ->name('courier.')
     ->group(function () {

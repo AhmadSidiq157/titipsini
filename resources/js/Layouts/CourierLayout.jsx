@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "@inertiajs/react";
-import CourierSidebar from "./Partials/CourierSidebar"; // <-- Import sidebar baru
+import CourierSidebar from "./Partials/CourierSidebar";
 import { Menu, X, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -11,7 +11,8 @@ export default function CourierLayout({ user, header, children }) {
         <div className="relative flex h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 text-gray-900 overflow-hidden">
             {/* Sidebar untuk Desktop */}
             <div className="hidden md:flex">
-                <CourierSidebar />
+                {/* [PERBAIKAN] Meneruskan prop 'user' ke sidebar */}
+                <CourierSidebar user={user} />
             </div>
 
             {/* Sidebar untuk Mobile */}
@@ -47,7 +48,8 @@ export default function CourierLayout({ user, header, children }) {
                                 </button>
                             </div>
                             <div className="flex-1 overflow-y-auto">
-                                <CourierSidebar />
+                                {/* [PERBAIKAN] Meneruskan prop 'user' ke sidebar */}
+                                <CourierSidebar user={user} />
                             </div>
                         </motion.div>
                     </>
