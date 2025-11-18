@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+// [1] usePage sekarang di-import langsung untuk mengambil 'url'
 import { Link, usePage, router } from "@inertiajs/react";
 import { User, LogOut, History, LayoutDashboard, Truck } from "lucide-react";
 
@@ -17,6 +18,8 @@ const isClient = (user) => {
 
 export default function Header() {
     const { auth } = usePage().props;
+    // [2] Ambil 'url' dari usePage() untuk mengecek halaman aktif
+    const { url } = usePage();
     const [menuOpen, setMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -55,27 +58,47 @@ export default function Header() {
 
                     {/* NAVIGASI (Hanya Desktop) */}
                     <nav className="hidden md:flex items-center space-x-8">
+                        {/* [3] Modifikasi className untuk link Beranda */}
                         <Link
                             href="/"
-                            className="transition-colors font-medium text-gray-600 hover:text-green-600"
+                            className={`transition-colors font-medium hover:text-green-600 ${
+                                url === "/"
+                                    ? "text-green-600" // Kelas Aktif
+                                    : "text-gray-600" // Kelas Inaktif
+                            }`}
                         >
                             Beranda
                         </Link>
+                        {/* [3] Modifikasi className untuk link Pindahan */}
                         <Link
                             href="/layanan"
-                            className="transition-colors font-medium text-gray-600 hover:text-green-600"
+                            className={`transition-colors font-medium hover:text-green-600 ${
+                                url.startsWith("/layanan")
+                                    ? "text-green-600" // Kelas Aktif
+                                    : "text-gray-600" // Kelas Inaktif
+                            }`}
                         >
                             Pindahan
                         </Link>
+                        {/* [3] Modifikasi className untuk link Tentang Kami */}
                         <Link
                             href="/tentang-kami"
-                            className="transition-colors font-medium text-gray-600 hover:text-green-600"
+                            className={`transition-colors font-medium hover:text-green-600 ${
+                                url.startsWith("/tentang-kami")
+                                    ? "text-green-600" // Kelas Aktif
+                                    : "text-gray-600" // Kelas Inaktif
+                            }`}
                         >
                             Tentang Kami
                         </Link>
+                        {/* [3] Modifikasi className untuk link Kontak */}
                         <Link
                             href="/contact"
-                            className="transition-colors font-medium text-gray-600 hover:text-green-600"
+                            className={`transition-colors font-medium hover:text-green-600 ${
+                                url.startsWith("/contact")
+                                    ? "text-green-600" // Kelas Aktif
+                                    : "text-gray-600" // Kelas Inaktif
+                            }`}
                         >
                             Kontak
                         </Link>

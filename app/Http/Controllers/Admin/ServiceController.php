@@ -16,55 +16,34 @@ class ServiceController extends Controller
      */
     public function index()
     {
-        // Ambil semua data layanan dari database
-        $services = Service::all();
-
-        // Render komponen React dan kirim data 'services' sebagai prop
         return Inertia::render('Admin/Services/Index', [
-            'services' => $services,
-        ]);
-    }
+            'services' => Service::all(),
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+            // FIX: harus array, bukan string
+            'flash' => session()->only(['success'])
+        ]);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreServiceRequest $request) // <-- Gunakan Form Request
+    public function store(StoreServiceRequest $request)
     {
         Service::create($request->validated());
-        return Redirect::route('admin.services.index')->with('success', 'Layanan berhasil ditambahkan.');
-    }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Service $service)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Service $service)
-    {
-        //
+        return Redirect::route('admin.services.index')
+            ->with('success', 'Layanan berhasil ditambahkan.');
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(StoreServiceRequest $request, Service $service) // <-- Gunakan Form Request
+    public function update(StoreServiceRequest $request, Service $service)
     {
         $service->update($request->validated());
-        return Redirect::route('admin.services.index')->with('success', 'Layanan berhasil diperbarui.');
+
+        return Redirect::route('admin.services.index')
+            ->with('success', 'Layanan berhasil diperbarui.');
     }
 
     /**
@@ -72,6 +51,9 @@ class ServiceController extends Controller
      */
     public function destroy(Service $service)
     {
-        //
+        $service->delete();
+
+        return Redirect::route('admin.services.index')
+            ->with('success', 'Layanan berhasil dihapus.');
     }
 }

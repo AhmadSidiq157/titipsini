@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import { Head, Link, usePage } from "@inertiajs/react";
-import ManageOrderModal from "./Partials/ManageOrderModal"; // <-- Kita akan buat file ini setelah ini
+import ManageOrderModal from "./Partials/ManageOrderModal";
 import { Eye, Truck, Check, X, Clock, Package, DollarSign } from "lucide-react";
 
 // Helper function untuk format mata uang
