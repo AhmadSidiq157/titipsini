@@ -36,7 +36,7 @@ use App\Http\Controllers\Admin\BranchController;
 // --- Controller Kurir ---
 use App\Http\Controllers\Courier\DashboardController as CourierDashboardController;
 use App\Http\Controllers\Courier\TaskController as CourierTaskController;
-use App\Http\Controllers\Courier\VerificationController as CourierVerificationSideController;
+use App\Http\Controllers\Courier\AuthController as CourierAuthController;
 
 
 /*
@@ -44,6 +44,27 @@ use App\Http\Controllers\Courier\VerificationController as CourierVerificationSi
 | Web Routes
 |--------------------------------------------------------------------------
 */
+
+// --- [BARU] RUTE LOGIN & REGISTER KURIR ---
+// Rute ini untuk 'Tamu' (yang belum login)
+Route::middleware('guest')->prefix('courier')->name('courier.')->group(function () {
+    // Halaman Login
+    Route::get('login', [CourierAuthController::class, 'showLoginForm'])->name('login');
+    // Proses Login
+    Route::post('login', [CourierAuthController::class, 'login'])->name('login.store');
+    
+    // Halaman Register
+    Route::get('register', [CourierAuthController::class, 'showRegisterForm'])->name('register');
+    // Proses Register (termasuk upload)
+    Route::post('register', [CourierAuthController::class, 'register'])->name('register.store');
+});
+
+// Rute Logout Kurir (terpisah, butuh auth)
+Route::middleware('auth')->prefix('courier')->name('courier.')->group(function () {
+    Route::post('logout', [CourierAuthController::class, 'logout'])->name('logout');
+});
+// --- AKHIR RUTE BARU ---
+
 
 // --- RUTE HALAMAN PUBLIK ---
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
@@ -53,7 +74,7 @@ Route::post('/contact', [ContactPageController::class, 'store'])->name('contact.
 Route::get('/layanan', [LayananPageController::class, 'show'])->name('layanan.show');
 Route::get('/Mitra/index', [MitraController::class, 'index'])->name('mitra.index');
 
-// --- RUTE UNTUK PENGGUNA TERAUTENTIKASI ---
+// --- RUTE UNTUK PENGGUNA TERAUTENTIKASI (KLIEN BIASA) ---
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -146,16 +167,11 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
     });
 
 
-// --- RUTE KHUSUS KURIR ---
+// --- RUTE KHUSUS KURIR (YANG SUDAH LOGIN) ---
 Route::middleware(['auth', 'verified', 'courier'])
     ->prefix('courier')
     ->name('courier.')
     ->group(function () {
-
-        // Verifikasi Sisi Kurir
-        Route::get('/verification/create', [CourierVerificationSideController::class, 'create'])->name('verification.create');
-        Route::post('/verification/store', [CourierVerificationSideController::class, 'store'])->name('verification.store');
-        Route::get('/verification/pending', [CourierVerificationSideController::class, 'pending'])->name('verification.pending');
 
         // Dashboard & Tugas Kurir
         Route::get('/dashboard', [CourierDashboardController::class, 'index'])->name('dashboard');

@@ -3,62 +3,59 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\CourierVerification; // <-- Import model kita
+use App\Models\CourierVerification;
+use App\Models\Role; // <-- 1. PASTIKAN 'Role' DI-IMPORT
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class CourierVerificationController extends Controller
 {
-    /**
-     * Menampilkan daftar semua pengajuan verifikasi kurir.
-     */
     public function index()
     {
-        $verifications = CourierVerification::with('user') // Ambil data user-nya
-            ->latest() // Urutkan dari yang terbaru
+        $verifications = CourierVerification::with('user')
+            ->latest()
             ->paginate(15);
-
+            
+        // 2. PERBAIKI PATH VIEW: 'CourierVerifications' (pakai 's')
         return Inertia::render('Admin/CourierVerification/Index', [
             'verifications' => $verifications,
         ]);
     }
 
-    /**
-     * Menampilkan detail satu pengajuan verifikasi.
-     */
     public function show(CourierVerification $verification)
     {
-        // Gunakan Route-Model Binding
-        // Kita juga load relasi user agar data kurir (nama, email) bisa tampil
         $verification->load('user');
 
+        // 3. PERBAIKI PATH VIEW: 'CourierVerifications' (pakai 's')
         return Inertia::render('Admin/CourierVerification/Show', [
             'verification' => $verification,
         ]);
     }
 
-    /**
-     * Menyetujui pengajuan verifikasi kurir.
-     */
     public function approve(CourierVerification $verification)
     {
         $verification->update([
             'status' => 'approved',
-            'rejection_reason' => null, // Hapus alasan penolakan jika ada
+            'rejection_reason' => null,
         ]);
+        
+        // 4. [PERBAIKAN WAJIB] Berikan role 'kurir' ke user-nya!
+        $user = $verification->user;
+        $courierRole = Role::where('name', 'kurir')->first();
 
-        // TODO: Kirim email notifikasi ke kurir bahwa akunnya disetujui
+        if ($user && $courierRole && !$user->hasRole('kurir')) {
+            $user->roles()->attach($courierRole);
+        }
 
-        return redirect()->route('admin.courier_verifications.show', $verification->id)
-            ->with('success', 'Verifikasi kurir berhasil disetujui.');
+        // 5. Redirect kembali ke Index agar lihat flash message
+        return redirect()->route('admin.courier_verification.index')
+                         ->with('success', 'Verifikasi kurir berhasil disetujui.');
     }
 
-    /**
-     * Menolak pengajuan verifikasi kurir.
-     */
     public function reject(Request $request, CourierVerification $verification)
     {
-        // Validasi input (alasan penolakan wajib diisi)
+        // Validasi Anda sudah benar, tapi kita butuh modal di frontend
         $validated = $request->validate([
             'rejection_reason' => 'required|string|max:1000',
         ]);
@@ -68,9 +65,7 @@ class CourierVerificationController extends Controller
             'rejection_reason' => $validated['rejection_reason'],
         ]);
 
-        // TODO: Kirim email notifikasi ke kurir bahwa akunnya ditolak
-
-        return redirect()->route('admin.courier_verifications.show', $verification->id)
+        return redirect()->route('admin.courier_verification.index')
             ->with('success', 'Verifikasi kurir telah ditolak.');
     }
 }

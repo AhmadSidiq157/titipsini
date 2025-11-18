@@ -1,12 +1,15 @@
 import React from "react";
 import CourierLayout from "../../Layouts/CourierLayout"; // Menggunakan path relatif
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 
-// Komponen helper untuk badge status
+// [BARU] Import ikon-ikon untuk desain modern
+import { User, Calendar, ChevronRight, ClipboardList } from "lucide-react";
+
+// Komponen helper untuk badge status (Tidak Berubah, sudah bagus)
 const StatusBadge = ({ status }) => {
     let bgColor = "bg-gray-500";
     let textColor = "text-gray-100";
-    let label = status || "unknown"; // Default jika status null
+    let label = status || "unknown";
 
     switch (label) {
         case "pending":
@@ -17,7 +20,7 @@ const StatusBadge = ({ status }) => {
             bgColor = "bg-cyan-100";
             textColor = "text-cyan-800";
             break;
-        case "ready_for_pickup": // Status baru
+        case "ready_for_pickup":
             bgColor = "bg-blue-100";
             textColor = "text-blue-800";
             break;
@@ -46,7 +49,7 @@ const StatusBadge = ({ status }) => {
 
     return (
         <span
-            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${bgColor} ${textColor}`}
+            className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${bgColor} ${textColor}`}
         >
             {label.replace("_", " ").toUpperCase()}
         </span>
@@ -54,115 +57,103 @@ const StatusBadge = ({ status }) => {
 };
 
 export default function Dashboard({ auth, tasks }) {
+    const { flash } = usePage().props;
+
     return (
         <CourierLayout
             user={auth.user}
-            header={
-                <h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                    Dashboard Tugas Saya
-                </h2>
-            }
+            // [MODIFIKASI] Header diubah jadi teks biasa
+            // Ini memperbaiki warning <h2> di dalam <h1>
+            header={"Dashboard Tugas Saya"}
         >
             <Head title="Dashboard Kurir" />
 
-            <div className="py-12">
+            {/* [MODIFIKASI] Latar belakang diubah jadi abu-abu muda */}
+            <div className="py-12 bg-gray-50 min-h-screen">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900 dark:text-gray-100">
-                            {/* Daftar Tugas */}
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                    <thead className="bg-gray-50 dark:bg-gray-700">
-                                        <tr>
-                                            <th
-                                                scope="col"
-                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                                            >
-                                                Order ID
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                                            >
-                                                Klien
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                                            >
-                                                Status
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                                            >
-                                                Tgl. Order
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                className="relative px-6 py-3"
-                                            >
-                                                <span className="sr-only">
-                                                    Aksi
-                                                </span>
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                        {tasks.data.length > 0 ? (
-                                            tasks.data.map((task) => (
-                                                <tr key={task.id}>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                        #{task.id}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                        {/* [PERBAIKAN] Menggunakan task.user.name */}
+                    {/* Notifikasi Flash (Sudah Benar) */}
+                    {flash.success && (
+                        <div className="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow-sm">
+                            <p>{flash.success}</p>
+                        </div>
+                    )}
+                    {flash.error && (
+                        <div className="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md shadow-sm">
+                            <p>{flash.error}</p>
+                        </div>
+                    )}
+
+                    {/* [MODIFIKASI] Judul Halaman Internal */}
+                    <h3 className="text-3xl font-bold text-gray-900 mb-6 px-4 sm:px-0">
+                        Tugas Aktif Anda
+                    </h3>
+
+                    {/* [MODIFIKASI] Ganti Tabel menjadi Card List */}
+                    <div className="space-y-4">
+                        {tasks.data.length > 0 ? (
+                            tasks.data.map((task) => (
+                                // [MODIFIKASI] Setiap tugas adalah card yang bisa diklik
+                                <Link
+                                    key={task.id}
+                                    href={route("courier.tasks.show", task.id)}
+                                    className="block group"
+                                >
+                                    <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 transition-all duration-300 group-hover:shadow-md group-hover:border-green-300">
+                                        <div className="p-6 flex items-center justify-between">
+                                            {/* Info Tugas */}
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-4">
+                                                    <p className="text-lg font-semibold text-gray-900">
+                                                        Order #{task.id}
+                                                    </p>
+                                                    <StatusBadge
+                                                        status={task.status}
+                                                    />
+                                                </div>
+
+                                                <div className="flex items-center gap-6 text-sm">
+                                                    <span className="flex items-center text-gray-600">
+                                                        <User className="w-4 h-4 mr-2 text-gray-400" />
                                                         {task.user
                                                             ? task.user.name
                                                             : "Klien Dihapus"}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                        <StatusBadge
-                                                            status={task.status}
-                                                        />
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                    </span>
+                                                    <span className="flex items-center text-gray-500">
+                                                        <Calendar className="w-4 h-4 mr-2 text-gray-400" />
                                                         {new Date(
                                                             task.created_at
                                                         ).toLocaleDateString(
                                                             "id-ID"
                                                         )}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                        <Link
-                                                            href={route(
-                                                                "courier.tasks.show",
-                                                                task.id
-                                                            )}
-                                                            className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300"
-                                                        >
-                                                            Lihat Detail
-                                                        </Link>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td
-                                                    colSpan="5"
-                                                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center"
-                                                >
-                                                    Belum ada tugas yang
-                                                    diberikan.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                    </span>
+                                                </div>
+                                            </div>
 
-                            {/* TODO: Tambahkan Pagination Links di sini jika perlu */}
-                        </div>
+                                            {/* Tombol Aksi (Ikon) */}
+                                            <div className="text-gray-400 transition-all duration-300 group-hover:text-green-600 group-hover:translate-x-1">
+                                                <ChevronRight className="w-6 h-6" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))
+                        ) : (
+                            // [MODIFIKASI] Tampilan "Empty State" yang modern
+                            <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
+                                <div className="p-12 text-center">
+                                    <ClipboardList className="mx-auto h-12 w-12 text-gray-300" />
+                                    <h4 className="mt-4 text-xl font-semibold text-gray-700">
+                                        Belum Ada Tugas
+                                    </h4>
+                                    <p className="mt-1 text-sm text-gray-500">
+                                        Saat ada tugas baru yang diberikan,
+                                        tugas itu akan muncul di sini.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TODO: Tambahkan Pagination Links di sini jika perlu */}
                     </div>
                 </div>
             </div>

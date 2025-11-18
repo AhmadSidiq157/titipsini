@@ -5,8 +5,8 @@ import { motion } from "framer-motion";
 import ApplicationLogo from "../../Components/ApplicationLogo";
 import {
     LayoutDashboard,
-    ShieldCheck,
-    FileClock,
+    ShieldCheck, // Ikon ini sudah tidak terpakai, bisa dihapus
+    FileClock, // Ikon ini sudah tidak terpakai, bisa dihapus
     User, // <-- [BARU] Ikon untuk Profil
 } from "lucide-react";
 
@@ -72,9 +72,11 @@ const SidebarLink = ({ href, active, children, icon }) => (
 export default function CourierSidebar({ user }) {
     const { url } = usePage();
 
-    // Logika "pintar" (tetap sama)
-    const verificationStatus = user?.courier_verification?.status;
-    const isVerified = verificationStatus === "approved";
+    // [MODIFIKASI] Logika 'isVerified' ini sudah tidak diperlukan
+    // untuk menampilkan link, karena semua kurir kini ke dashboard.
+    // (Dihapus agar tidak membingungkan)
+    // const verificationStatus = user?.courier_verification?.status;
+    // const isVerified = verificationStatus === "approved";
 
     return (
         <aside className="w-72 flex-col h-full bg-white shadow-xl flex border-r border-gray-100">
@@ -99,49 +101,32 @@ export default function CourierSidebar({ user }) {
             >
                 {/* [MODIFIKASI] Kita bungkus dengan <ul> untuk animasi */}
                 <ul className="space-y-2">
-                    {isVerified ? (
-                        <>
-                            {/* === TAMPILKAN INI HANYA JIKA KURIR SUDAH DISETUJUI === */}
-                            <SidebarLink
-                                href={route("courier.dashboard")}
-                                active={
-                                    url.startsWith("/courier/dashboard") ||
-                                    url.startsWith("/courier/tasks")
-                                }
-                                icon={<LayoutDashboard size={20} />}
-                            >
-                                Dashboard Tugas
-                            </SidebarLink>
+                    {/* [MODIFIKASI] Hapus pengecekan 'isVerified'. */}
+                    {/* Tampilkan link ini untuk SEMUA kurir. */}
 
-                            {/* [BARU] Link ke profil (menggunakan link profile bawaan) */}
-                            <SidebarLink
-                                href={route("profile.edit")}
-                                active={url.startsWith("/profile")}
-                                icon={<User size={20} />}
-                            >
-                                Profil Saya
-                            </SidebarLink>
-                        </>
-                    ) : (
-                        <>
-                            {/* === TAMPILKAN INI JIKA KURIR BELUM DISETUJUI === */}
-                            <SidebarLink
-                                href={route("courier.verification.create")}
-                                active={url.includes("/courier/verification")}
-                                icon={
-                                    verificationStatus === "pending" ? (
-                                        <FileClock size={20} />
-                                    ) : (
-                                        <ShieldCheck size={20} />
-                                    )
-                                }
-                            >
-                                {verificationStatus === "pending"
-                                    ? "Status Verifikasi"
-                                    : "Form Verifikasi"}
-                            </SidebarLink>
-                        </>
-                    )}
+                    <SidebarLink
+                        href={route("courier.dashboard")}
+                        active={
+                            url.startsWith("/courier/dashboard") ||
+                            url.startsWith("/courier/tasks")
+                        }
+                        icon={<LayoutDashboard size={20} />}
+                    >
+                        Dashboard Tugas
+                    </SidebarLink>
+
+                    <SidebarLink
+                        href={route("profile.edit")}
+                        active={url.startsWith("/profile")}
+                        icon={<User size={20} />}
+                    >
+                        Profil Saya
+                    </SidebarLink>
+
+                    {/* [DIHAPUS] Blok 'else' yang berisi link
+                      ke 'courier.verification.create' telah dihapus
+                      untuk memperbaiki error Ziggy.
+                    */}
                 </ul>
             </motion.nav>
 
