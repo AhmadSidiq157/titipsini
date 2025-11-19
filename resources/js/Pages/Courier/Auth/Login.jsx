@@ -30,7 +30,9 @@ export default function Login({ status, canResetPassword }) {
 
     const submit = (e) => {
         e.preventDefault();
-        post(route("courier.login.store"));
+        // [PERBAIKAN] Gunakan route('login') standar.
+        // AuthController backend kita sudah pintar untuk redirect kurir.
+        post(route("login"));
     };
 
     return (
@@ -148,8 +150,9 @@ export default function Login({ status, canResetPassword }) {
                             </PrimaryButton>
 
                             {/* [MODIFIKASI] Link Daftar dipindah ke bawah, center */}
+                            {/* [PERBAIKAN] Gunakan 'register.courier' */}
                             <Link
-                                href={route("courier.register")}
+                                href={route("register.courier")}
                                 className="mt-6 underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                             >
                                 Belum punya akun? Daftar sebagai Kurir

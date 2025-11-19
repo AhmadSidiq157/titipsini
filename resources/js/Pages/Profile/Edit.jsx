@@ -1,148 +1,249 @@
-import React from "react"; // <-- Import React
+import React from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import AdminLayout from "@/Layouts/AdminLayout"; // <-- [BARU] Import layout Admin
-import CourierLayout from "@/Layouts/CourierLayout"; // <-- [BARU] Import layout Kurir
-import { Head, useForm, usePage } from "@inertiajs/react"; // <-- [BARU] Import usePage
+import AdminLayout from "@/Layouts/AdminLayout";
+import CourierLayout from "@/Layouts/CourierLayout";
+import { Head, useForm, usePage } from "@inertiajs/react";
 import DeleteUserForm from "./Partials/DeleteUserForm";
 import UpdatePasswordForm from "./Partials/UpdatePasswordForm";
+// [BARU] Import ikon-ikon cantik
+import {
+    User,
+    Mail,
+    Phone,
+    MapPin,
+    Save,
+    Lock,
+    ShieldAlert,
+} from "lucide-react";
+import InputError from "@/Components/InputError"; // Pastikan import komponen ini
+import PrimaryButton from "@/Components/PrimaryButton"; // Pastikan import komponen ini
 
-// [MODIFIKASI] Hapus 'auth' dari props
 export default function Edit({ mustVerifyEmail, status }) {
-    const { auth } = usePage().props; // <-- Ambil 'auth' dari global props
+    const { auth } = usePage().props;
 
-    const { data, setData, post, processing, errors } = useForm({
-        name: auth.user.name || "",
-        email: auth.user.email || "",
-        phone: auth.user.phone || "",
-        address: auth.user.address || "",
-    });
+    const { data, setData, post, processing, errors, recentlySuccessful } =
+        useForm({
+            name: auth.user.name || "",
+            email: auth.user.email || "",
+            phone: auth.user.phone || "", // Pastikan kolom 'phone' ada di tabel users Anda
+            address: auth.user.address || "", // Pastikan kolom 'address' ada di tabel users Anda
+        });
 
     const submit = (e) => {
         e.preventDefault();
         post(route("profile.update"));
     };
 
-    // [MODIFIKASI] Hapus pembungkus <AuthenticatedLayout>
     return (
         <>
-            <Head title="Edit Profil" />
+            <Head title="Pengaturan Profil" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    {/* === FORM CUSTOM UPDATE PROFIL === */}
-                    <div className="bg-white p-6 shadow sm:rounded-lg sm:p-8">
-                        <h3 className="text-lg font-semibold mb-4 text-gray-700">
-                            Informasi Pribadi
-                        </h3>
-
-                        <form onSubmit={submit} className="space-y-4">
-                            {/* Nama */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    Nama Lengkap
-                                </label>
-                                <input
-                                    type="text"
-                                    value={data.name}
-                                    onChange={(e) =>
-                                        setData("name", e.target.value)
-                                    }
-                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-green-500 focus:ring-green-500"
-                                />
-                                {errors.name && (
-                                    <p className="text-red-600 text-sm mt-1">
-                                        {errors.name}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Email */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    Email
-                                </label>
-                                <input
-                                    type="email"
-                                    value={data.email}
-                                    onChange={(e) =>
-                                        setData("email", e.target.value)
-                                    }
-                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-green-500 focus:ring-green-500"
-                                />
-                                {errors.email && (
-                                    <p className="text-red-600 text-sm mt-1">
-                                        {errors.email}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Nomor HP */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    Nomor HP
-                                </label>
-                                <input
-                                    type="text"
-                                    value={data.phone}
-                                    onChange={(e) =>
-                                        setData("phone", e.target.value)
-                                    }
-                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-green-500 focus:ring-green-500"
-                                />
-                                {errors.phone && (
-                                    <p className="text-red-600 text-sm mt-1">
-                                        {errors.phone}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Alamat */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    Alamat
-                                </label>
-                                <textarea
-                                    rows="3"
-                                    value={data.address}
-                                    onChange={(e) =>
-                                        setData("address", e.target.value)
-                                    }
-                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-green-500 focus:ring-green-500"
-                                ></textarea>
-                                {errors.address && (
-                                    <p className="text-red-600 text-sm mt-1">
-                                        {errors.address}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="flex justify-end">
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition disabled:opacity-50"
-                                >
-                                    Simpan Perubahan
-                                </button>
-                            </div>
-                        </form>
+            <div className="py-12 bg-gray-50 min-h-screen">
+                <div className="mx-auto max-w-4xl space-y-8 px-4 sm:px-6 lg:px-8">
+                    {/* Header Halaman */}
+                    <div className="mb-8">
+                        <h2 className="text-3xl font-extrabold text-gray-900">
+                            Pengaturan Akun
+                        </h2>
+                        <p className="mt-2 text-gray-600">
+                            Kelola informasi profil, keamanan, dan preferensi
+                            akun Anda.
+                        </p>
                     </div>
 
-                    {/* === FORM GANTI PASSWORD === */}
-                    <div className="bg-white p-6 shadow sm:rounded-lg sm:p-8">
-                        <h3 className="text-lg font-semibold mb-4 text-gray-700">
-                            Ganti Password
-                        </h3>
-                        {/* File Anda sudah benar */}
-                        <UpdatePasswordForm className="max-w-xl" />
+                    {/* === KARTU 1: INFORMASI PRIBADI === */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="p-6 sm:p-8 border-b border-gray-100">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-green-100 rounded-lg text-green-600">
+                                    <User size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900">
+                                        Informasi Pribadi
+                                    </h3>
+                                    <p className="text-sm text-gray-500">
+                                        Perbarui detail profil dan informasi
+                                        kontak Anda.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <form onSubmit={submit} className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Input Nama */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Nama Lengkap
+                                        </label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <User className="h-5 w-5 text-gray-400" />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={data.name}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        "name",
+                                                        e.target.value
+                                                    )
+                                                }
+                                                className="pl-10 block w-full border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 sm:text-sm transition duration-150 ease-in-out"
+                                                placeholder="Nama Anda"
+                                            />
+                                        </div>
+                                        <InputError
+                                            message={errors.name}
+                                            className="mt-2"
+                                        />
+                                    </div>
+
+                                    {/* Input Email */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Email Address
+                                        </label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <Mail className="h-5 w-5 text-gray-400" />
+                                            </div>
+                                            <input
+                                                type="email"
+                                                value={data.email}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        "email",
+                                                        e.target.value
+                                                    )
+                                                }
+                                                className="pl-10 block w-full border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                                                placeholder="nama@email.com"
+                                            />
+                                        </div>
+                                        <InputError
+                                            message={errors.email}
+                                            className="mt-2"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Input Nomor HP */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Nomor Telepon
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Phone className="h-5 w-5 text-gray-400" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={data.phone}
+                                            onChange={(e) =>
+                                                setData("phone", e.target.value)
+                                            }
+                                            className="pl-10 block w-full border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                                            placeholder="0812..."
+                                        />
+                                    </div>
+                                    <InputError
+                                        message={errors.phone}
+                                        className="mt-2"
+                                    />
+                                </div>
+
+                                {/* Input Alamat */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Alamat Lengkap
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute top-3 left-3 pointer-events-none">
+                                            <MapPin className="h-5 w-5 text-gray-400" />
+                                        </div>
+                                        <textarea
+                                            rows="3"
+                                            value={data.address}
+                                            onChange={(e) =>
+                                                setData(
+                                                    "address",
+                                                    e.target.value
+                                                )
+                                            }
+                                            className="pl-10 block w-full border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                                            placeholder="Alamat lengkap Anda..."
+                                        ></textarea>
+                                    </div>
+                                    <InputError
+                                        message={errors.address}
+                                        className="mt-2"
+                                    />
+                                </div>
+
+                                {/* Tombol Simpan */}
+                                <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-100">
+                                    {recentlySuccessful && (
+                                        <p className="text-sm text-green-600 font-medium animate-pulse">
+                                            Berhasil disimpan.
+                                        </p>
+                                    )}
+                                    <PrimaryButton
+                                        disabled={processing}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Save className="w-4 h-4" />
+                                        Simpan Perubahan
+                                    </PrimaryButton>
+                                </div>
+                            </form>
+                        </div>
                     </div>
 
-                    {/* === FORM HAPUS AKUN === */}
-                    <div className="bg-white p-6 shadow sm:rounded-lg sm:p-8">
-                        <h3 className="text-lg font-semibold mb-4 text-gray-700">
-                            Hapus Akun
-                        </h3>
-                        <DeleteUserForm className="max-w-xl" />
+                    {/* === KARTU 2: GANTI PASSWORD === */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="p-6 sm:p-8">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                                    <Lock size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900">
+                                        Keamanan Akun
+                                    </h3>
+                                    <p className="text-sm text-gray-500">
+                                        Perbarui kata sandi Anda untuk menjaga
+                                        keamanan akun.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="max-w-xl">
+                                <UpdatePasswordForm />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* === KARTU 3: HAPUS AKUN === */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden">
+                        <div className="p-6 sm:p-8">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-red-100 rounded-lg text-red-600">
+                                    <ShieldAlert size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900">
+                                        Zona Bahaya
+                                    </h3>
+                                    <p className="text-sm text-gray-500">
+                                        Tindakan ini tidak dapat dibatalkan.
+                                        Hati-hati.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="max-w-xl">
+                                <DeleteUserForm />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -150,23 +251,18 @@ export default function Edit({ mustVerifyEmail, status }) {
     );
 }
 
-// --- [LOGIKA PINTAR] ---
-// Tambahkan resolver layout dinamis di bagian bawah
+// --- LAYOUT DINAMIS (TETAP SAMA) ---
 Edit.layout = (page) => {
-    // Ambil 'user' dari props halaman
     const { auth } = page.props;
     const user = auth.user;
 
-    // Header default (string, bukan <h2>)
-    const header = "Edit Profil";
+    // Header string untuk layout admin/kurir
+    const header = "Pengaturan Profil";
 
-    // Helper untuk cek role (lebih aman)
     const hasRole = (roleName) => {
-        // 'roles' sekarang dijamin ada oleh HandleInertiaRequests
         return user.roles?.some((role) => role.name === roleName);
     };
 
-    // 1. Cek jika Admin
     if (hasRole("admin")) {
         return (
             <AdminLayout user={user} header={header}>
@@ -175,7 +271,6 @@ Edit.layout = (page) => {
         );
     }
 
-    // 2. Cek jika Kurir
     if (hasRole("kurir")) {
         return (
             <CourierLayout user={user} header={header}>
@@ -184,9 +279,7 @@ Edit.layout = (page) => {
         );
     }
 
-    // 3. Default untuk Klien (Publik)
-    // [PERBAIKAN] Kita gunakan AuthenticatedLayout (layout klien)
-    // dan kita berikan header h2 seperti aslinya
+    // Default Klien
     return (
         <AuthenticatedLayout
             user={user}

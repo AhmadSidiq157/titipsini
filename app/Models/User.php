@@ -26,7 +26,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'courier_status', // <-- [PERBAIKAN] Tambahkan ini
+        'courier_status',
+        'latitude',
+        'longitude',
     ];
 
     /**

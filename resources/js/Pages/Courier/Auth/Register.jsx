@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { Head, Link, useForm } from "@inertiajs/react";
-
-// [MODIFIKASI] Hapus GuestLayout, kita buat layout sendiri
-// import GuestLayout from "@/Layouts/GuestLayout";
-
-// Import komponen (sudah benar semua)
 import InputError from "@/Components/InputError";
 import InputLabel from "@/Components/InputLabel";
 import PrimaryButton from "@/Components/PrimaryButton";
 import TextInput from "@/Components/TextInput";
-// [MODIFIKASI] Checkbox tidak dipakai di register, hapus saja
-// import Checkbox from "@/Components/Checkbox";
-
-// [BARU] Import ikon-ikon yang dibutuhkan
-import { Mail, Lock, User, Truck, FileText, Tag, Camera } from "lucide-react";
+import {
+    Mail,
+    Lock,
+    User,
+    Truck,
+    FileText,
+    Tag,
+    Camera,
+    Car,
+} from "lucide-react"; // Import Car
 
 export default function Register() {
     const { data, setData, post, processing, errors, progress, reset } =
@@ -22,21 +22,24 @@ export default function Register() {
             email: "",
             password: "",
             password_confirmation: "",
+
+            vehicle_type: "", // [BARU] Tipe Kendaraan
             vehicle_brand: "",
             vehicle_model: "",
             plat_nomor: "",
             no_bpkb: "",
             no_sim: "",
+
             foto_ktp: null,
             foto_sim: null,
-            foto_stnk: null,
+            foto_stnk: null, // [BARU] Foto STNK
             foto_kendaraan: null,
         });
 
     const [preview, setPreview] = useState({
         foto_ktp: null,
         foto_sim: null,
-        foto_stnk: null,
+        foto_stnk: null, // [BARU]
         foto_kendaraan: null,
     });
 
@@ -59,24 +62,23 @@ export default function Register() {
 
     const submit = (e) => {
         e.preventDefault();
-        post(route("courier.register.store"), { forceFormData: true });
+        post(route("register.courier"), { forceFormData: true });
     };
 
+    // [MODIFIKASI] Daftar file upload termasuk STNK
     const uploadFields = [
         ["foto_ktp", "Foto KTP"],
         ["foto_sim", "Foto SIM"],
-        ["foto_stnk", "Foto STNK"],
+        ["foto_stnk", "Foto STNK"], // [BARU]
         ["foto_kendaraan", "Foto Kendaraan (Nampak Plat Nomor)"],
     ];
 
     return (
-        // [MODIFIKASI] Layout satu halaman penuh (sama seperti Login)
         <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center py-12 px-4 antialiased">
             <Head title="Register Kurir" />
 
-            {/* [BARU] Branding Logo (sama seperti Login) */}
             <div className="mb-6 text-center">
-                <div href="/" className="text-4xl font-bold text-gray-800">
+                <div className="text-4xl font-bold text-gray-800">
                     Titipsini<span className="text-green-500">.com</span>
                 </div>
                 <p className="text-lg text-gray-600 mt-1">
@@ -84,7 +86,6 @@ export default function Register() {
                 </p>
             </div>
 
-            {/* [MODIFIKASI] Kartu Register yang Modern */}
             <div className="w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden border-t-4 border-green-500">
                 <div className="p-6 sm:p-8">
                     <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">
@@ -101,7 +102,6 @@ export default function Register() {
                         </h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* [MODIFIKASI] Input Nama dengan Ikon */}
                             <div>
                                 <InputLabel
                                     htmlFor="name"
@@ -129,8 +129,6 @@ export default function Register() {
                                     className="mt-2"
                                 />
                             </div>
-
-                            {/* [MODIFIKASI] Input Email dengan Ikon */}
                             <div>
                                 <InputLabel
                                     htmlFor="email"
@@ -147,6 +145,7 @@ export default function Register() {
                                         name="email"
                                         value={data.email}
                                         className="mt-1 block w-full pl-10 pr-3 py-2.5 rounded-md"
+                                        autoComplete="username"
                                         onChange={(e) =>
                                             setData("email", e.target.value)
                                         }
@@ -160,7 +159,6 @@ export default function Register() {
                             </div>
                         </div>
 
-                        {/* [MODIFIKASI] Input Password dengan Ikon */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <InputLabel
@@ -178,6 +176,7 @@ export default function Register() {
                                         name="password"
                                         value={data.password}
                                         className="mt-1 block w-full pl-10 pr-3 py-2.5 rounded-md"
+                                        autoComplete="new-password"
                                         onChange={(e) =>
                                             setData("password", e.target.value)
                                         }
@@ -205,6 +204,7 @@ export default function Register() {
                                         name="password_confirmation"
                                         value={data.password_confirmation}
                                         className="mt-1 block w-full pl-10 pr-3 py-2.5 rounded-md"
+                                        autoComplete="new-password"
                                         onChange={(e) =>
                                             setData(
                                                 "password_confirmation",
@@ -226,8 +226,45 @@ export default function Register() {
                             Data Kendaraan & Dokumen
                         </h3>
 
+                        {/* [BARU] Dropdown Tipe Kendaraan */}
+                        <div>
+                            <InputLabel
+                                htmlFor="vehicle_type"
+                                value="Jenis Kendaraan"
+                                className="font-semibold text-gray-700"
+                            />
+                            <div className="relative mt-1">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <Car className="h-5 w-5 text-gray-400" />
+                                </span>
+                                <select
+                                    id="vehicle_type"
+                                    value={data.vehicle_type}
+                                    onChange={(e) =>
+                                        setData("vehicle_type", e.target.value)
+                                    }
+                                    className="mt-1 block w-full pl-10 pr-3 py-2.5 border-gray-300 focus:border-green-500 focus:ring-green-500 rounded-md shadow-sm"
+                                    required
+                                >
+                                    <option value="" disabled>
+                                        Pilih Jenis Kendaraan
+                                    </option>
+                                    <option value="motor">Motor</option>
+                                    <option value="mobil">
+                                        Mobil (MPV/SUV/Sedan)
+                                    </option>
+                                    <option value="pickup">Pickup Bak</option>
+                                    <option value="box">Mobil Box</option>
+                                    <option value="truk">Truk</option>
+                                </select>
+                            </div>
+                            <InputError
+                                message={errors.vehicle_type}
+                                className="mt-2"
+                            />
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* [MODIFIKASI] Input Kendaraan dengan Ikon */}
                             <div>
                                 <InputLabel
                                     htmlFor="vehicle_brand"
@@ -249,6 +286,7 @@ export default function Register() {
                                             )
                                         }
                                         required
+                                        placeholder="Cth: Honda"
                                     />
                                 </div>
                                 <InputError
@@ -277,6 +315,7 @@ export default function Register() {
                                             )
                                         }
                                         required
+                                        placeholder="Cth: Vario 150"
                                     />
                                 </div>
                                 <InputError
@@ -305,6 +344,7 @@ export default function Register() {
                                             )
                                         }
                                         required
+                                        placeholder="Cth: B 1234 XYZ"
                                     />
                                 </div>
                                 <InputError
@@ -364,7 +404,7 @@ export default function Register() {
                             </div>
                         </div>
 
-                        {/* [MODIFIKASI] UPLOAD GAMBAR MODERN */}
+                        {/* UPLOAD GAMBAR */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                             {uploadFields.map(([id, label]) => (
                                 <div key={id}>
@@ -373,7 +413,6 @@ export default function Register() {
                                         value={label}
                                         className="font-semibold text-gray-700"
                                     />
-
                                     <label
                                         htmlFor={id}
                                         className="mt-2 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-6 cursor-pointer bg-gray-50 hover:bg-green-50 hover:border-green-500 transition-all"
@@ -396,7 +435,6 @@ export default function Register() {
                                             </div>
                                         )}
                                     </label>
-
                                     <input
                                         type="file"
                                         id={id}
@@ -407,7 +445,6 @@ export default function Register() {
                                         }
                                         required
                                     />
-
                                     <InputError
                                         message={errors[id]}
                                         className="mt-2"
@@ -416,19 +453,15 @@ export default function Register() {
                             ))}
                         </div>
 
-                        {/* [MODIFIKASI] PROGRESS BAR */}
                         {progress && (
                             <div className="w-full bg-gray-200 rounded-full h-3">
                                 <div
                                     className="bg-green-600 h-3 rounded-full text-xs text-white text-center transition-all duration-300"
-                                    style={{
-                                        width: `${progress.percentage}%`,
-                                    }}
+                                    style={{ width: `${progress.percentage}%` }}
                                 ></div>
                             </div>
                         )}
 
-                        {/* [MODIFIKASI] Tombol & Link (sama seperti Login) */}
                         <div className="flex flex-col items-center justify-end mt-6 pt-4 border-t">
                             <PrimaryButton
                                 className="w-full justify-center py-3 text-base font-semibold tracking-wider bg-green-600 hover:bg-green-700 focus:bg-green-700 active:bg-green-800 focus:ring-green-500"
@@ -438,9 +471,8 @@ export default function Register() {
                                     ? "MEMPROSES..."
                                     : "DAFTAR & KIRIM VERIFIKASI"}
                             </PrimaryButton>
-
                             <Link
-                                href={route("courier.login")}
+                                href={route("login")}
                                 className="mt-6 underline text-sm text-gray-600 hover:text-gray-900"
                             >
                                 Sudah punya akun? Login

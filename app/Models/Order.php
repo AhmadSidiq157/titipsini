@@ -55,4 +55,12 @@ class Order extends Model
     {
         return $this->hasOne(ManualPayment::class);
     }
+
+    /**
+     * Relasi ke riwayat tracking.
+     */
+    public function trackings()
+    {
+        return $this->hasMany(OrderTracking::class)->latest();
+    }
 }

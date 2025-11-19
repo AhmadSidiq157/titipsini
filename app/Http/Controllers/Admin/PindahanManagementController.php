@@ -104,4 +104,22 @@ class PindahanManagementController extends Controller
         // [MODIFIKASI] Redirect kembali ke halaman Index
         return Redirect::back()->with('success', 'Kurir berhasil ditugaskan!');
     }
+
+    /**
+     * [BARU] API untuk Admin memantau lokasi kurir secara live
+     */
+    public function getCourierLocation(User $courier)
+    {
+        // Pastikan user ini benar-benar kurir
+        if (!$courier->hasRole('kurir')) {
+            return response()->json(['message' => 'Not a courier'], 404);
+        }
+
+        return response()->json([
+            'lat' => $courier->latitude,
+            'lng' => $courier->longitude,
+            'updated_at' => $courier->updated_at->diffForHumans(),
+            'status' => $courier->courier_status // Sekalian update status (online/sibuk)
+        ]);
+    }
 }

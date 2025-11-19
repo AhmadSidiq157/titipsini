@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use App\Models\User;
 use App\Models\Role;
@@ -16,11 +16,17 @@ use Illuminate\Validation\Rules;
 
 class AuthController extends Controller
 {
-    // ... (method showLoginForm dan login tidak berubah) ...
+    /**
+     * Menampilkan halaman login kurir.
+     */
     public function showLoginForm()
     {
         return Inertia::render('Courier/Auth/Login');
     }
+
+    /**
+     * Menangani proses login kurir.
+     */
     public function login(Request $request)
     {
         $request->validate([
@@ -31,16 +37,20 @@ class AuthController extends Controller
         if (Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
             $user = Auth::user();
 
-            // Cek ini SANGAT PENTING:
-            // Hanya user yang SUDAH DISETUJUI ADMIN (punya role kurir) yang boleh login.
+            /** @var \App\Models\User $user */
+
+            // Cek apakah user punya role kurir
             if (!$user->hasRole('kurir')) {
                 Auth::logout();
                 return redirect()->back()->withErrors([
-                    'email' => 'Akun ini belum disetujui oleh Admin.',
+                    'email' => 'Akun ini tidak terdaftar sebagai kurir.',
                 ]);
             }
 
             $request->session()->regenerate();
+
+            // Redirect ke dashboard. 
+            // Middleware 'IsCourier' yang akan menangkapnya jika statusnya masih 'pending'
             return redirect()->intended(route('courier.dashboard'));
         }
 
@@ -62,89 +72,110 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        // 1. Validasi (Sudah benar)
+        // 1. Validasi Input
         $request->validate([
+            // Data Akun
             'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+
+            // Data Kendaraan & Dokumen
+            'vehicle_type' => 'required|string|in:motor,mobil,pickup,box,truk',
             'vehicle_brand' => 'required|string|max:255',
             'vehicle_model' => 'required|string|max:255',
-            'plat_nomor' => 'required|string|max:20',
-            'no_bpkb' => 'required|string|max:255',
-            'no_sim' => 'required|string|max:255',
-            'foto_ktp' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'foto_sim' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'foto_stnk' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'foto_kendaraan' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'plat_nomor' => 'required|string|max:20|unique:courier_verifications,plat_nomor',
+            'no_bpkb' => 'required|string|max:255|unique:courier_verifications,no_bpkb',
+            'no_sim' => 'required|string|max:255|unique:courier_verifications,no_sim',
+
+            // Validasi File Foto
+            'foto_ktp' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'foto_sim' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'foto_stnk' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'foto_kendaraan' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        // 2. Transaksi Database
         try {
             DB::beginTransaction();
 
-            // 3. Buat Akun User Baru
+            // 2. Buat User Baru
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
+                'courier_status' => 'offline', // Default status kehadiran
             ]);
-            
-            // [PERBAIKAN] JANGAN BERIKAN ROLE DULU!
-            // Baris '$user->roles()->attach($courierRole);' DIHAPUS DARI SINI.
-            // Role akan diberikan oleh Admin saat approve.
 
-            // 5. Upload File (Sudah benar)
-            $ktpPath = $request->file('foto_ktp')->store('courier_verifications', 'public');
-            $simPath = $request->file('foto_sim')->store('courier_verifications', 'public');
-            $stnkPath = $request->file('foto_stnk')->store('courier_verifications', 'public');
-            $kendaraanPath = $request->file('foto_kendaraan')->store('courier_verifications', 'public');
-            
-            // 6. Buat Data Verifikasi (Sudah benar)
+            // 3. Berikan Role Kurir
+            // Ini wajib agar user bisa login. 
+            // Keamanan akses dashboard dijaga oleh status 'pending' di tabel verifikasi.
+            $courierRole = Role::where('name', 'kurir')->first();
+            $user->roles()->attach($courierRole);
+
+            // 4. Upload File ke Storage
+            $storagePath = 'courier_verification/' . $user->id;
+
+            $ktpPath = $request->file('foto_ktp')->store($storagePath, 'public');
+            $simPath = $request->file('foto_sim')->store($storagePath, 'public');
+            $stnkPath = $request->file('foto_stnk')->store($storagePath, 'public');
+            $kendaraanPath = $request->file('foto_kendaraan')->store($storagePath, 'public');
+
+            // 5. Simpan Data Verifikasi
             CourierVerification::create([
                 'user_id' => $user->id,
+                'vehicle_type' => $request->vehicle_type,
                 'vehicle_brand' => $request->vehicle_brand,
                 'vehicle_model' => $request->vehicle_model,
                 'plat_nomor' => $request->plat_nomor,
                 'no_bpkb' => $request->no_bpkb,
                 'no_sim' => $request->no_sim,
+
                 'foto_ktp_path' => $ktpPath,
                 'foto_sim_path' => $simPath,
                 'foto_stnk_path' => $stnkPath,
                 'foto_kendaraan_path' => $kendaraanPath,
-                'status' => 'pending',
+
+                'status' => 'pending', // Status awal: Menunggu Persetujuan
             ]);
 
             DB::commit();
 
-            // [PERBAIKAN] JANGAN LOGIN-KAN USER.
-            // 'Auth::login($user);' DIHAPUS DARI SINI.
-            
-            // [PERBAIKAN] Kembalikan ke halaman login dengan pesan sukses.
-            return redirect(route('courier.login'))->with(
-                'status', 
-                'Registrasi berhasil! Akun Anda akan ditinjau oleh Admin. Silakan login kembali setelah akun disetujui.'
-            );
+            // 6. Auto Login
+            Auth::login($user);
 
+            // 7. Redirect
+            // Arahkan ke dashboard. Middleware 'IsCourier' akan mendeteksi status 'pending'
+            // dan otomatis mengalihkan user ke halaman "Menunggu Persetujuan"
+            return redirect(route('courier.dashboard'));
         } catch (\Exception $e) {
             DB::rollBack();
-            // ... (Kode 'catch' Anda untuk hapus file sudah benar)
-            if (isset($ktpPath)) \Illuminate\Support\Facades\Storage::disk('public')->delete($ktpPath);
-            if (isset($simPath)) \Illuminate\Support\Facades\Storage::disk('public')->delete($simPath);
-            if (isset($stnkPath)) \Illuminate\Support\Facades\Storage::disk('public')->delete($stnkPath);
-            if (isset($kendaraanPath)) \Illuminate\Support\Facades\Storage::disk('public')->delete($kendaraanPath);
+
+            // Cleanup: Hapus file jika registrasi gagal agar tidak menumpuk sampah
+            if (isset($ktpPath)) Storage::disk('public')->delete($ktpPath);
+            if (isset($simPath)) Storage::disk('public')->delete($simPath);
+            if (isset($stnkPath)) Storage::disk('public')->delete($stnkPath);
+            if (isset($kendaraanPath)) Storage::disk('public')->delete($kendaraanPath);
 
             return redirect()->back()->withInput()->withErrors([
-                'submit' => 'Registrasi gagal. Silakan coba lagi. Error: ' . $e->getMessage(),
+                'email' => 'Registrasi gagal: ' . $e->getMessage(),
             ]);
         }
     }
-    
-    // ... (method logout tidak berubah) ...
+
+    public function pending()
+    {
+        return Inertia::render('Courier/Verification/Pending');
+    }
+
+    /**
+     * Menangani logout kurir.
+     */
     public function logout(Request $request)
     {
         Auth::guard('web')->logout();
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect('/');
     }
 }

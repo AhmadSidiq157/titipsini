@@ -1,159 +1,269 @@
 import React from "react";
-import CourierLayout from "../../Layouts/CourierLayout"; // Menggunakan path relatif
+import CourierLayout from "../../Layouts/CourierLayout";
 import { Head, Link, usePage } from "@inertiajs/react";
+import { motion } from "framer-motion"; // [BARU] Animasi
+import {
+    User,
+    Calendar,
+    ChevronRight,
+    ClipboardList,
+    Package,
+    TrendingUp,
+    Clock,
+    MapPin,
+} from "lucide-react";
 
-// [BARU] Import ikon-ikon untuk desain modern
-import { User, Calendar, ChevronRight, ClipboardList } from "lucide-react";
-
-// Komponen helper untuk badge status (Tidak Berubah, sudah bagus)
+// --- Komponen Helper: Badge Status Modern ---
 const StatusBadge = ({ status }) => {
-    let bgColor = "bg-gray-500";
-    let textColor = "text-gray-100";
-    let label = status || "unknown";
+    const styles = {
+        pending: "bg-amber-50 text-amber-700 border-amber-200",
+        processing: "bg-blue-50 text-blue-700 border-blue-200",
+        ready_for_pickup: "bg-indigo-50 text-indigo-700 border-indigo-200",
+        picked_up: "bg-purple-50 text-purple-700 border-purple-200",
+        on_delivery:
+            "bg-orange-50 text-orange-700 border-orange-200 animate-pulse", // Efek berdenyut saat mengantar
+        delivered: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        completed: "bg-green-50 text-green-700 border-green-200",
+        cancelled: "bg-red-50 text-red-700 border-red-200",
+        unknown: "bg-gray-50 text-gray-700 border-gray-200",
+    };
 
-    switch (label) {
-        case "pending":
-            bgColor = "bg-yellow-100";
-            textColor = "text-yellow-800";
-            break;
-        case "processing":
-            bgColor = "bg-cyan-100";
-            textColor = "text-cyan-800";
-            break;
-        case "ready_for_pickup":
-            bgColor = "bg-blue-100";
-            textColor = "text-blue-800";
-            break;
-        case "picked_up":
-            bgColor = "bg-indigo-100";
-            textColor = "text-indigo-800";
-            break;
-        case "on_delivery":
-            bgColor = "bg-purple-100";
-            textColor = "text-purple-800";
-            break;
-        case "delivered":
-        case "completed":
-            bgColor = "bg-green-100";
-            textColor = "text-green-800";
-            break;
-        case "cancelled":
-            bgColor = "bg-red-100";
-            textColor = "text-red-800";
-            break;
-        default:
-            bgColor = "bg-gray-100";
-            textColor = "text-gray-800";
-            break;
-    }
+    const styleClass = styles[status] || styles.unknown;
 
     return (
         <span
-            className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${bgColor} ${textColor}`}
+            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${styleClass}`}
         >
-            {label.replace("_", " ").toUpperCase()}
+            {status ? status.replace("_", " ") : "Unknown"}
         </span>
     );
 };
 
+// --- Komponen Helper: Kartu Statistik ---
+const StatCard = ({ title, value, icon: Icon, color }) => (
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+        <div>
+            <p className="text-sm text-gray-500 font-medium">{title}</p>
+            <h4 className="text-2xl font-extrabold text-gray-800 mt-1">
+                {value}
+            </h4>
+        </div>
+        <div className={`p-3 rounded-xl ${color}`}>
+            <Icon className="w-6 h-6 text-white" />
+        </div>
+    </div>
+);
+
 export default function Dashboard({ auth, tasks }) {
     const { flash } = usePage().props;
+    const user = auth.user;
+
+    // Hitung statistik sederhana dari data tasks yang ada
+    // (Catatan: Untuk produksi, sebaiknya hitung ini di backend controller)
+    const activeTasksCount = tasks.data.length;
+
+    // Animasi container
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.1 },
+        },
+    };
+
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: { y: 0, opacity: 1 },
+    };
 
     return (
-        <CourierLayout
-            user={auth.user}
-            // [MODIFIKASI] Header diubah jadi teks biasa
-            // Ini memperbaiki warning <h2> di dalam <h1>
-            header={"Dashboard Tugas Saya"}
-        >
+        <CourierLayout user={user} header="Dashboard">
             <Head title="Dashboard Kurir" />
 
-            {/* [MODIFIKASI] Latar belakang diubah jadi abu-abu muda */}
-            <div className="py-12 bg-gray-50 min-h-screen">
+            <div className="py-8 bg-gray-50/50 min-h-screen">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {/* Notifikasi Flash (Sudah Benar) */}
+                    {/* --- Sapaan & Header --- */}
+                    <div className="mb-8 px-4 sm:px-0">
+                        <h2 className="text-3xl font-extrabold text-gray-900">
+                            Halo,{" "}
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-500">
+                                {user.name}
+                            </span>
+                            ! 👋
+                        </h2>
+                        <p className="text-gray-500 mt-2">
+                            Siap mengantar kebahagiaan hari ini?
+                        </p>
+                    </div>
+
+                    {/* --- Statistik Ringkas --- */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 px-4 sm:px-0">
+                        <StatCard
+                            title="Tugas Aktif"
+                            value={activeTasksCount}
+                            icon={Package}
+                            color="bg-blue-500"
+                        />
+                        <StatCard
+                            title="Status Anda"
+                            value={
+                                user.courier_status === "available"
+                                    ? "Online"
+                                    : "Sibuk/Offline"
+                            }
+                            icon={Clock}
+                            color={
+                                user.courier_status === "available"
+                                    ? "bg-green-500"
+                                    : "bg-gray-400"
+                            }
+                        />
+                        {/* Placeholder stat */}
+                        <StatCard
+                            title="Performa"
+                            value="100%"
+                            icon={TrendingUp}
+                            color="bg-purple-500"
+                        />
+                    </div>
+
+                    {/* Notifikasi Flash */}
                     {flash.success && (
-                        <div className="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow-sm">
-                            <p>{flash.success}</p>
+                        <div className="mb-6 mx-4 sm:mx-0 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl shadow-sm flex items-center">
+                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                            {flash.success}
                         </div>
                     )}
                     {flash.error && (
-                        <div className="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md shadow-sm">
-                            <p>{flash.error}</p>
+                        <div className="mb-6 mx-4 sm:mx-0 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl shadow-sm">
+                            {flash.error}
                         </div>
                     )}
 
-                    {/* [MODIFIKASI] Judul Halaman Internal */}
-                    <h3 className="text-3xl font-bold text-gray-900 mb-6 px-4 sm:px-0">
-                        Tugas Aktif Anda
-                    </h3>
+                    {/* --- Daftar Tugas --- */}
+                    <div className="px-4 sm:px-0">
+                        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                            <ClipboardList className="w-5 h-5 mr-2 text-gray-500" />
+                            Daftar Tugas Terbaru
+                        </h3>
 
-                    {/* [MODIFIKASI] Ganti Tabel menjadi Card List */}
-                    <div className="space-y-4">
                         {tasks.data.length > 0 ? (
-                            tasks.data.map((task) => (
-                                // [MODIFIKASI] Setiap tugas adalah card yang bisa diklik
-                                <Link
-                                    key={task.id}
-                                    href={route("courier.tasks.show", task.id)}
-                                    className="block group"
-                                >
-                                    <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 transition-all duration-300 group-hover:shadow-md group-hover:border-green-300">
-                                        <div className="p-6 flex items-center justify-between">
-                                            {/* Info Tugas */}
-                                            <div className="space-y-3">
-                                                <div className="flex items-center gap-4">
-                                                    <p className="text-lg font-semibold text-gray-900">
-                                                        Order #{task.id}
-                                                    </p>
-                                                    <StatusBadge
-                                                        status={task.status}
-                                                    />
-                                                </div>
+                            <motion.div
+                                className="space-y-4"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="visible"
+                            >
+                                {tasks.data.map((task) => (
+                                    <motion.div
+                                        key={task.id}
+                                        variants={itemVariants}
+                                    >
+                                        <Link
+                                            href={route(
+                                                "courier.tasks.show",
+                                                task.id
+                                            )}
+                                            className="block group"
+                                        >
+                                            <div className="bg-white rounded-2xl p-6 shadow-[0_2px_8px_rgb(0,0,0,0.04)] border border-gray-100 hover:shadow-lg hover:border-green-200 transition-all duration-300 relative overflow-hidden">
+                                                {/* Dekorasi Hover */}
+                                                <div className="absolute top-0 left-0 w-1 h-full bg-gray-200 group-hover:bg-green-500 transition-colors duration-300"></div>
 
-                                                <div className="flex items-center gap-6 text-sm">
-                                                    <span className="flex items-center text-gray-600">
-                                                        <User className="w-4 h-4 mr-2 text-gray-400" />
-                                                        {task.user
-                                                            ? task.user.name
-                                                            : "Klien Dihapus"}
-                                                    </span>
-                                                    <span className="flex items-center text-gray-500">
-                                                        <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                                                        {new Date(
-                                                            task.created_at
-                                                        ).toLocaleDateString(
-                                                            "id-ID"
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                    {/* Info Utama */}
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <span className="text-lg font-bold text-gray-900">
+                                                                Order #{task.id}
+                                                            </span>
+                                                            <StatusBadge
+                                                                status={
+                                                                    task.status
+                                                                }
+                                                            />
+                                                        </div>
+
+                                                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 text-sm text-gray-500">
+                                                            <div className="flex items-center">
+                                                                <User className="w-4 h-4 mr-2 text-gray-400" />
+                                                                {task.user
+                                                                    ? task.user
+                                                                          .name
+                                                                    : "Klien Dihapus"}
+                                                            </div>
+                                                            <div className="flex items-center">
+                                                                <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                                                                {new Date(
+                                                                    task.created_at
+                                                                ).toLocaleDateString(
+                                                                    "id-ID",
+                                                                    {
+                                                                        day: "numeric",
+                                                                        month: "long",
+                                                                        year: "numeric",
+                                                                        hour: "2-digit",
+                                                                        minute: "2-digit",
+                                                                    }
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Tampilkan Alamat Singkat jika ada */}
+                                                        {task.user_form_details
+                                                            ?.alamat_penjemputan && (
+                                                            <div className="mt-3 flex items-start text-sm text-gray-600 bg-gray-50 p-2 rounded-lg md:w-fit">
+                                                                <MapPin className="w-4 h-4 mr-2 mt-0.5 text-gray-400 flex-shrink-0" />
+                                                                <span className="line-clamp-1">
+                                                                    {
+                                                                        task
+                                                                            .user_form_details
+                                                                            .alamat_penjemputan
+                                                                    }
+                                                                </span>
+                                                            </div>
                                                         )}
-                                                    </span>
+                                                    </div>
+
+                                                    {/* Action Icon */}
+                                                    <div className="flex items-center justify-end">
+                                                        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-green-50 group-hover:text-green-600 transition-colors">
+                                                            <ChevronRight className="w-5 h-5" />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-
-                                            {/* Tombol Aksi (Ikon) */}
-                                            <div className="text-gray-400 transition-all duration-300 group-hover:text-green-600 group-hover:translate-x-1">
-                                                <ChevronRight className="w-6 h-6" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))
+                                        </Link>
+                                    </motion.div>
+                                ))}
+                            </motion.div>
                         ) : (
-                            // [MODIFIKASI] Tampilan "Empty State" yang modern
-                            <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
-                                <div className="p-12 text-center">
-                                    <ClipboardList className="mx-auto h-12 w-12 text-gray-300" />
-                                    <h4 className="mt-4 text-xl font-semibold text-gray-700">
-                                        Belum Ada Tugas
-                                    </h4>
-                                    <p className="mt-1 text-sm text-gray-500">
-                                        Saat ada tugas baru yang diberikan,
-                                        tugas itu akan muncul di sini.
-                                    </p>
+                            // --- Empty State Modern ---
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-white rounded-2xl p-12 text-center border border-dashed border-gray-300"
+                            >
+                                <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <ClipboardList className="w-10 h-10 text-green-500" />
                                 </div>
-                            </div>
+                                <h3 className="text-xl font-bold text-gray-800">
+                                    Tidak Ada Tugas Saat Ini
+                                </h3>
+                                <p className="text-gray-500 mt-2 max-w-md mx-auto">
+                                    Anda sedang santai! Tugas baru yang
+                                    ditugaskan oleh admin akan muncul di sini
+                                    secara otomatis.
+                                </p>
+                            </motion.div>
                         )}
 
-                        {/* TODO: Tambahkan Pagination Links di sini jika perlu */}
+                        {/* Pagination (Jika ada banyak tugas) */}
+                        {tasks.links && tasks.meta && (
+                            <div className="mt-6">
+                                {/* Anda bisa menambahkan komponen Pagination di sini jika tasks menggunakan resource collection */}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

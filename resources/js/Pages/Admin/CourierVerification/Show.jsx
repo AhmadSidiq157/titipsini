@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
 
-// --- [BARU] Modal Kustom untuk Konfirmasi Tolak ---
+// --- Modal Kustom untuk Konfirmasi Tolak ---
 const RejectModal = ({
     show,
     onClose,
@@ -181,6 +181,15 @@ export default function Show({ auth, verification }) {
                         </div>
                         <div className="px-4 py-5 sm:p-6">
                             <dl className="divide-y divide-gray-200">
+                                {/* [BARU] Tipe Kendaraan */}
+                                <DataField
+                                    label="Tipe Kendaraan"
+                                    value={
+                                        verification.vehicle_type
+                                            ? verification.vehicle_type.toUpperCase()
+                                            : "-"
+                                    }
+                                />
                                 <DataField
                                     label="Merek Kendaraan"
                                     value={verification.vehicle_brand}
@@ -210,6 +219,7 @@ export default function Show({ auth, verification }) {
                                     label="Foto SIM"
                                     url={verification.foto_sim_path}
                                 />
+                                {/* [BARU] Foto STNK */}
                                 <ImageField
                                     label="Foto STNK"
                                     url={verification.foto_stnk_path}

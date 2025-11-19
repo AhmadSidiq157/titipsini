@@ -9,27 +9,32 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+// [BARU] Import Controller Auth Khusus Kurir
+use App\Http\Controllers\Courier\AuthController as CourierAuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
-    // Rute Registrasi KLIEN (Lama)
+    // --- Rute Registrasi KLIEN (Standar) ---
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 
     // --- [BARU] Rute Registrasi KURIR ---
-    Route::get('register/courier', [RegisteredUserController::class, 'createCourier'])
+    // Menggunakan CourierAuthController yang baru Anda buat
+    Route::get('register/courier', [CourierAuthController::class, 'showRegisterForm'])
         ->name('register.courier');
 
-    Route::post('register/courier', [RegisteredUserController::class, 'storeCourier']);
-    // --- Akhir Rute Baru ---
+    Route::post('register/courier', [CourierAuthController::class, 'register']);
+    // --- Akhir Rute Kurir ---
 
+    // --- Rute Login (Digunakan Bersama) ---
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
+    // --- Rute Reset Password ---
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 

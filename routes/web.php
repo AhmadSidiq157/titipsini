@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\BranchController;
 // --- Controller Kurir ---
 use App\Http\Controllers\Courier\DashboardController as CourierDashboardController;
 use App\Http\Controllers\Courier\TaskController as CourierTaskController;
+// [PENTING] Kita pakai AuthController sekarang, bukan VerificationController yang hilang
 use App\Http\Controllers\Courier\AuthController as CourierAuthController;
 
 
@@ -45,27 +46,6 @@ use App\Http\Controllers\Courier\AuthController as CourierAuthController;
 |--------------------------------------------------------------------------
 */
 
-// --- [BARU] RUTE LOGIN & REGISTER KURIR ---
-// Rute ini untuk 'Tamu' (yang belum login)
-Route::middleware('guest')->prefix('courier')->name('courier.')->group(function () {
-    // Halaman Login
-    Route::get('login', [CourierAuthController::class, 'showLoginForm'])->name('login');
-    // Proses Login
-    Route::post('login', [CourierAuthController::class, 'login'])->name('login.store');
-    
-    // Halaman Register
-    Route::get('register', [CourierAuthController::class, 'showRegisterForm'])->name('register');
-    // Proses Register (termasuk upload)
-    Route::post('register', [CourierAuthController::class, 'register'])->name('register.store');
-});
-
-// Rute Logout Kurir (terpisah, butuh auth)
-Route::middleware('auth')->prefix('courier')->name('courier.')->group(function () {
-    Route::post('logout', [CourierAuthController::class, 'logout'])->name('logout');
-});
-// --- AKHIR RUTE BARU ---
-
-
 // --- RUTE HALAMAN PUBLIK ---
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
 Route::get('/tentang-kami', fn() => Inertia::render('About'))->name('about');
@@ -74,7 +54,7 @@ Route::post('/contact', [ContactPageController::class, 'store'])->name('contact.
 Route::get('/layanan', [LayananPageController::class, 'show'])->name('layanan.show');
 Route::get('/Mitra/index', [MitraController::class, 'index'])->name('mitra.index');
 
-// --- RUTE UNTUK PENGGUNA TERAUTENTIKASI (KLIEN BIASA) ---
+// --- RUTE UNTUK PENGGUNA TERAUTENTIKASI ---
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -84,7 +64,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
 
-    // --- [BARU] Rute untuk polling status order real-time ---
+    // Rute untuk polling status order real-time
     Route::get('/order/{order}/status', [OrderController::class, 'getStatus'])->name('order.status');
 
     // --- RUTE ORDER KLIEN ---
@@ -141,6 +121,7 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
             Route::post('/{order}/approve', [PindahanManagementController::class, 'approvePayment'])->name('approve');
             Route::post('/{order}/reject', [PindahanManagementController::class, 'rejectPayment'])->name('reject');
             Route::post('/{order}/assign-courier', [PindahanManagementController::class, 'assignCourier'])->name('assignCourier');
+            Route::get('/courier/{courier}/location', [PindahanManagementController::class, 'getCourierLocation'])->name('courier-location');
         });
 
         // Manajemen Verifikasi Kurir
@@ -167,16 +148,18 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
     });
 
 
-// --- RUTE KHUSUS KURIR (YANG SUDAH LOGIN) ---
+// --- RUTE KHUSUS KURIR ---
 Route::middleware(['auth', 'verified', 'courier'])
     ->prefix('courier')
     ->name('courier.')
     ->group(function () {
 
-        // Dashboard & Tugas Kurir
+        Route::get('/verification/pending', [CourierAuthController::class, 'pending'])->name('verification.pending');
         Route::get('/dashboard', [CourierDashboardController::class, 'index'])->name('dashboard');
         Route::get('/tasks/{id}', [CourierTaskController::class, 'show'])->name('tasks.show');
         Route::patch('/tasks/{id}/update-status', [CourierTaskController::class, 'updateStatus'])->name('tasks.updateStatus');
+        Route::post('/tasks/{id}/tracking', [CourierTaskController::class, 'addTrackingNote'])->name('tasks.addTracking');
+        Route::post('/location/update', [CourierTaskController::class, 'updateLocation'])->name('updateLocation');
     });
 
 

@@ -34,6 +34,32 @@ const StatusBadge = ({ status }) => {
     );
 };
 
+// [BARU] Komponen Pagination
+const Pagination = ({ links }) => (
+    <div className="mt-6 flex justify-between items-center">
+        <div className="flex flex-wrap">
+            {links.map((link, key) =>
+                link.url === null ? (
+                    <div
+                        key={key}
+                        className="mr-1 mb-1 px-4 py-2 text-sm leading-4 text-gray-400 border rounded"
+                        dangerouslySetInnerHTML={{ __html: link.label }}
+                    />
+                ) : (
+                    <Link
+                        key={key}
+                        className={`mr-1 mb-1 px-4 py-2 text-sm leading-4 border rounded hover:bg-white focus:border-indigo-500 focus:text-indigo-500 ${
+                            link.active ? "bg-white" : ""
+                        }`}
+                        href={link.url}
+                        dangerouslySetInnerHTML={{ __html: link.label }}
+                    />
+                )
+            )}
+        </div>
+    </div>
+);
+
 export default function Index({ auth, verifications }) {
     const { flash } = usePage().props;
 
@@ -136,6 +162,9 @@ export default function Index({ auth, verifications }) {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* [BARU] Tampilkan Pagination */}
+                            <Pagination links={verifications.links} />
                         </div>
                     </div>
                 </div>

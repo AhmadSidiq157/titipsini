@@ -26,11 +26,13 @@
     },
     "dependencies": {
         "framer-motion": "^12.23.24",
+        "leaflet": "^1.9.4",
         "line-clamp": "^1.0.0",
         "lucide-react": "^0.544.0",
         "react-countup": "^6.5.3",
         "react-icons": "^5.5.0",
         "react-intersection-observer": "^9.16.0",
+        "react-leaflet": "^4.2.1",
         "ziggy-js": "^2.6.0"
     }
 }
