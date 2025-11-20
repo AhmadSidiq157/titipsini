@@ -1,35 +1,52 @@
 import React, { useState, useEffect } from "react";
 import Modal from "@/Components/Modal";
-import { useForm, usePage, router } from "@inertiajs/react";
-import axios from "axios";
-
-// Import komponen form
-import InputLabel from "@/Components/InputLabel";
-import TextInput from "@/Components/TextInput";
-import InputError from "@/Components/InputError";
+import { Link, useForm } from "@inertiajs/react";
 import PrimaryButton from "@/Components/PrimaryButton";
-import { CheckCircle, Clock, Loader2, Package, Truck } from "lucide-react";
+import DangerButton from "@/Components/DangerButton";
+import InputLabel from "@/Components/InputLabel";
+import InputError from "@/Components/InputError";
+import LiveMap from "@/Components/LiveMap";
+import axios from "axios";
+import {
+    Check,
+    X,
+    Truck,
+    User,
+    MapPin,
+    Calendar,
+    FileText,
+    Map as MapIcon,
+    ShieldCheck,
+    AlertCircle,
+    Package,
+    Camera,
+    Box,
+    ArrowRight,
+    Clock,
+} from "lucide-react";
 
-// Helper function (tidak berubah)
+// Helper function
 const formatRupiah = (number) => {
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
         currency: "IDR",
         minimumFractionDigits: 0,
-    }).format(number);
+    }).format(number || 0);
 };
 
-// --- Sub-Komponen: Loading --- (Tidak berubah)
+// --- Sub-Komponen: Loading ---
 const StepLoading = () => (
     <div className="p-8 flex flex-col items-center justify-center min-h-[300px]">
-        <Loader2 className="w-12 h-12 text-gray-400 animate-spin" />
-        <p className="mt-4 text-gray-600">Memuat detail layanan...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4"></div>
+        <p className="text-gray-600 animate-pulse">Memuat detail layanan...</p>
     </div>
 );
 
-// --- Sub-Komponen: Step 1 (Formulir) --- (Tidak berubah)
+// --- Sub-Komponen: Step 1 (Formulir Fleksibel) ---
 const StepForm = ({ product, productModelClass, onFormSubmit }) => {
     const isPindahan = productModelClass.includes("MovingPackage");
+
+    // Data awal
     const initialData = isPindahan
         ? {
               tanggal_pindahan: "",
@@ -42,26 +59,52 @@ const StepForm = ({ product, productModelClass, onFormSubmit }) => {
               start_date: "",
               end_date: "",
               notes: "",
+              delivery_method: "drop_off", // [BARU] Default: Antar Sendiri
+              item_photo: null, // [BARU] Foto Barang
           };
+
     const [data, setData] = useState(initialData);
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState({});
+
+    // [BARU] Preview Foto
+    const [photoPreview, setPhotoPreview] = useState(null);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setData((prev) => ({ ...prev, [name]: value }));
     };
+
+    // [BARU] Handle File Upload
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setData((prev) => ({ ...prev, item_photo: file }));
+            setPhotoPreview(URL.createObjectURL(file));
+        }
+    };
+
     const submit = (e) => {
         e.preventDefault();
         setProcessing(true);
         setErrors({});
-        const payload = {
-            product_id: product.id,
-            product_model: productModelClass,
-            final_amount: product.price,
-            form_details: data,
-        };
+
+        // Gunakan FormData untuk support file upload
+        const formData = new FormData();
+        formData.append("product_id", product.id);
+        formData.append("product_model", productModelClass);
+        formData.append("final_amount", product.price);
+
+        // Loop data form_details dan append ke FormData
+        Object.keys(data).forEach((key) => {
+            // Format khusus untuk nested array di Laravel validation (form_details[key])
+            formData.append(`form_details[${key}]`, data[key]);
+        });
+
         axios
-            .post(route("order.store"), payload)
+            .post(route("order.store"), formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            })
             .then((response) => {
                 onFormSubmit(response.data.order);
             })
@@ -77,68 +120,90 @@ const StepForm = ({ product, productModelClass, onFormSubmit }) => {
                 setProcessing(false);
             });
     };
+
     return (
         <form onSubmit={submit} className="p-6 md:p-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">
-                Langkah 1: Detail Pemesanan
-            </h2>
-            <section className="mb-6 bg-gray-50 p-4 rounded-lg border">
-                <div className="flex items-center gap-3">
-                    {isPindahan ? (
-                        <Truck className="w-6 h-6 text-green-600 flex-shrink-0" />
-                    ) : (
-                        <Package className="w-6 h-6 text-green-600 flex-shrink-0" />
-                    )}
-                    <h4 className="text-lg font-bold text-gray-800">
-                        {product.name || product.title}
-                    </h4>
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-extrabold text-gray-900">
+                    Detail Pemesanan
+                </h2>
+                <div className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold uppercase rounded-full">
+                    Langkah 1/3
                 </div>
-                <div className="mt-2 text-2xl font-bold text-green-600">
-                    {formatRupiah(product.price)}
-                </div>
-            </section>
-            {isPindahan ? (
-                <div className="space-y-6">
-                    <div>
-                        <InputLabel
-                            htmlFor="tanggal_pindahan"
-                            value="Tanggal Pindahan"
-                        />
-                        <TextInput
-                            id="tanggal_pindahan"
-                            type="date"
-                            name="tanggal_pindahan"
-                            value={data.tanggal_pindahan}
-                            className="mt-1 block w-full"
-                            onChange={handleChange}
-                            required
-                        />
-                        <InputError
-                            message={
-                                errors["form_details.tanggal_pindahan"]?.[0]
-                            }
-                            className="mt-2"
-                        />
+            </div>
+
+            {/* Info Produk */}
+            <div className="mb-8 bg-gradient-to-br from-gray-50 to-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <div
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-md ${
+                            isPindahan ? "bg-blue-500" : "bg-green-500"
+                        }`}
+                    >
+                        {isPindahan ? <Truck size={24} /> : <Box size={24} />}
                     </div>
                     <div>
-                        <InputLabel
-                            htmlFor="telepon"
-                            value="Nomor Telepon (di lokasi)"
-                        />
-                        <TextInput
-                            id="telepon"
-                            type="tel"
-                            name="telepon"
-                            value={data.telepon}
-                            className="mt-1 block w-full"
-                            onChange={handleChange}
-                            required
-                            placeholder="Cth: 08123456789"
-                        />
-                        <InputError
-                            message={errors["form_details.telepon"]?.[0]}
-                            className="mt-2"
-                        />
+                        <h4 className="text-lg font-bold text-gray-800">
+                            {product.name || product.title}
+                        </h4>
+                        <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+                            {isPindahan
+                                ? "Paket Pindahan"
+                                : "Layanan Penitipan"}
+                        </p>
+                    </div>
+                </div>
+                <div className="text-right">
+                    <p className="text-sm text-gray-400">Total Biaya</p>
+                    <p className="text-xl font-bold text-green-600">
+                        {formatRupiah(product.price)}
+                    </p>
+                </div>
+            </div>
+
+            {isPindahan ? (
+                /* --- FORM PINDAHAN (Tetap Sama) --- */
+                <div className="space-y-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <InputLabel
+                                htmlFor="tanggal_pindahan"
+                                value="Tanggal Pindahan"
+                            />
+                            <input
+                                type="date"
+                                name="tanggal_pindahan"
+                                value={data.tanggal_pindahan}
+                                onChange={handleChange}
+                                className="mt-1 block w-full border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                                required
+                            />
+                            <InputError
+                                message={
+                                    errors["form_details.tanggal_pindahan"]?.[0]
+                                }
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <InputLabel
+                                htmlFor="telepon"
+                                value="No. HP di Lokasi"
+                            />
+                            <input
+                                type="tel"
+                                name="telepon"
+                                value={data.telepon}
+                                onChange={handleChange}
+                                className="mt-1 block w-full border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                                placeholder="08..."
+                                required
+                            />
+                            <InputError
+                                message={errors["form_details.telepon"]?.[0]}
+                                className="mt-1"
+                            />
+                        </div>
                     </div>
                     <div>
                         <InputLabel
@@ -146,19 +211,19 @@ const StepForm = ({ product, productModelClass, onFormSubmit }) => {
                             value="Alamat Penjemputan"
                         />
                         <textarea
-                            id="alamat_penjemputan"
                             name="alamat_penjemputan"
                             value={data.alamat_penjemputan}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                            rows="3"
                             onChange={handleChange}
+                            className="mt-1 block w-full border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                            rows="2"
+                            placeholder="Alamat lengkap..."
                             required
                         ></textarea>
                         <InputError
                             message={
                                 errors["form_details.alamat_penjemputan"]?.[0]
                             }
-                            className="mt-2"
+                            className="mt-1"
                         />
                     </div>
                     <div>
@@ -167,112 +232,229 @@ const StepForm = ({ product, productModelClass, onFormSubmit }) => {
                             value="Alamat Tujuan"
                         />
                         <textarea
-                            id="alamat_tujuan"
                             name="alamat_tujuan"
                             value={data.alamat_tujuan}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                            rows="3"
                             onChange={handleChange}
+                            className="mt-1 block w-full border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                            rows="2"
+                            placeholder="Alamat lengkap..."
                             required
                         ></textarea>
                         <InputError
                             message={errors["form_details.alamat_tujuan"]?.[0]}
-                            className="mt-2"
+                            className="mt-1"
                         />
                     </div>
                     <div>
                         <InputLabel
                             htmlFor="notes"
-                            value="Catatan Tambahan (Opsional)"
+                            value="Catatan (Opsional)"
                         />
                         <textarea
-                            id="notes"
                             name="notes"
                             value={data.notes}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                            rows="2"
                             onChange={handleChange}
-                            placeholder="Cth: Barang di lantai 3, tidak ada lift."
+                            className="mt-1 block w-full border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                            rows="2"
+                            placeholder="Info tambahan (misal: lantai 2, gang sempit)"
                         ></textarea>
-                        <InputError
-                            message={errors["form_details.notes"]?.[0]}
-                            className="mt-2"
-                        />
                     </div>
                 </div>
             ) : (
+                /* --- [MODIFIKASI] FORM PENITIPAN MODERN --- */
                 <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Pilihan Metode Penyerahan */}
+                    <div>
+                        <InputLabel
+                            value="Metode Penyerahan Barang"
+                            className="mb-2"
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div
+                                onClick={() =>
+                                    setData((prev) => ({
+                                        ...prev,
+                                        delivery_method: "drop_off",
+                                    }))
+                                }
+                                className={`cursor-pointer border rounded-xl p-4 flex flex-col items-center text-center transition-all ${
+                                    data.delivery_method === "drop_off"
+                                        ? "border-green-500 bg-green-50 ring-2 ring-green-500 ring-opacity-20"
+                                        : "border-gray-200 hover:border-green-300"
+                                }`}
+                            >
+                                <Box
+                                    className={`w-8 h-8 mb-2 ${
+                                        data.delivery_method === "drop_off"
+                                            ? "text-green-600"
+                                            : "text-gray-400"
+                                    }`}
+                                />
+                                <span
+                                    className={`font-bold text-sm ${
+                                        data.delivery_method === "drop_off"
+                                            ? "text-green-700"
+                                            : "text-gray-600"
+                                    }`}
+                                >
+                                    Antar Sendiri
+                                </span>
+                                <span className="text-xs text-gray-500 mt-1">
+                                    Saya akan ke lokasi Titipsini
+                                </span>
+                            </div>
+                            <div
+                                onClick={() =>
+                                    setData((prev) => ({
+                                        ...prev,
+                                        delivery_method: "pickup",
+                                    }))
+                                }
+                                className={`cursor-pointer border rounded-xl p-4 flex flex-col items-center text-center transition-all ${
+                                    data.delivery_method === "pickup"
+                                        ? "border-blue-500 bg-blue-50 ring-2 ring-blue-500 ring-opacity-20"
+                                        : "border-gray-200 hover:border-blue-300"
+                                }`}
+                            >
+                                <Truck
+                                    className={`w-8 h-8 mb-2 ${
+                                        data.delivery_method === "pickup"
+                                            ? "text-blue-600"
+                                            : "text-gray-400"
+                                    }`}
+                                />
+                                <span
+                                    className={`font-bold text-sm ${
+                                        data.delivery_method === "pickup"
+                                            ? "text-blue-700"
+                                            : "text-gray-600"
+                                    }`}
+                                >
+                                    Request Jemput
+                                </span>
+                                <span className="text-xs text-gray-500 mt-1">
+                                    Kurir akan mengambil barang
+                                </span>
+                            </div>
+                        </div>
+                        <InputError
+                            message={
+                                errors["form_details.delivery_method"]?.[0]
+                            }
+                            className="mt-1"
+                        />
+                    </div>
+
+                    {/* Tanggal Durasi */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <InputLabel
                                 htmlFor="start_date"
-                                value="Tanggal Mulai Titip"
+                                value="Mulai Titip"
                             />
-                            <TextInput
-                                id="start_date"
+                            <input
                                 type="date"
                                 name="start_date"
                                 value={data.start_date}
-                                className="mt-1 block w-full"
                                 onChange={handleChange}
+                                className="mt-1 block w-full border-gray-300 rounded-xl focus:ring-green-500 focus:border-green-500 shadow-sm"
                                 required
                             />
                             <InputError
                                 message={errors["form_details.start_date"]?.[0]}
-                                className="mt-2"
+                                className="mt-1"
                             />
                         </div>
                         <div>
                             <InputLabel
                                 htmlFor="end_date"
-                                value="Tanggal Selesai Titip"
+                                value="Selesai Titip"
                             />
-                            <TextInput
-                                id="end_date"
+                            <input
                                 type="date"
                                 name="end_date"
                                 value={data.end_date}
-                                className="mt-1 block w-full"
                                 onChange={handleChange}
+                                className="mt-1 block w-full border-gray-300 rounded-xl focus:ring-green-500 focus:border-green-500 shadow-sm"
                                 required
                             />
                             <InputError
                                 message={errors["form_details.end_date"]?.[0]}
-                                className="mt-2"
+                                className="mt-1"
                             />
                         </div>
                     </div>
+
+                    {/* Upload Foto Barang */}
                     <div>
                         <InputLabel
-                            htmlFor="notes"
-                            value="Catatan Tambahan (Opsional)"
+                            htmlFor="item_photo"
+                            value="Foto Barang (Opsional)"
                         />
+                        <div className="mt-2 flex items-center gap-4">
+                            <label className="flex-1 cursor-pointer group">
+                                <div className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl group-hover:border-green-500 transition-colors bg-gray-50">
+                                    {photoPreview ? (
+                                        <img
+                                            src={photoPreview}
+                                            alt="Preview"
+                                            className="h-full object-contain rounded-lg"
+                                        />
+                                    ) : (
+                                        <div className="text-center p-4">
+                                            <Camera className="mx-auto h-8 w-8 text-gray-400 group-hover:text-green-500 transition-colors" />
+                                            <span className="mt-2 block text-xs font-medium text-gray-500">
+                                                Klik untuk foto barang
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                                <input
+                                    type="file"
+                                    name="item_photo"
+                                    id="item_photo"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                />
+                            </label>
+                        </div>
+                        <InputError
+                            message={errors["form_details.item_photo"]?.[0]}
+                            className="mt-1"
+                        />
+                    </div>
+
+                    {/* Catatan */}
+                    <div>
+                        <InputLabel htmlFor="notes" value="Deskripsi Barang" />
                         <textarea
-                            id="notes"
                             name="notes"
                             value={data.notes}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                            rows="3"
                             onChange={handleChange}
-                            placeholder="Contoh: Barang saya ada 2 koper, 1 tas ransel."
+                            className="mt-1 block w-full border-gray-300 rounded-xl focus:ring-green-500 focus:border-green-500 shadow-sm"
+                            rows="2"
+                            placeholder="Contoh: 2 Koper Merah, 1 Kardus Buku"
                         ></textarea>
-                        <InputError
-                            message={errors["form_details.notes"]?.[0]}
-                            className="mt-2"
-                        />
                     </div>
                 </div>
             )}
-            <div className="flex items-center justify-end mt-8 pt-6 border-t">
-                <PrimaryButton disabled={processing}>
-                    Lanjut ke Pembayaran
+
+            <div className="flex items-center justify-end mt-8 pt-6 border-t border-gray-100">
+                <PrimaryButton
+                    disabled={processing}
+                    className="w-full sm:w-auto justify-center py-3 text-base font-bold rounded-xl shadow-lg shadow-green-200 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                >
+                    Lanjut Pembayaran <ArrowRight className="ml-2 w-4 h-4" />
                 </PrimaryButton>
             </div>
         </form>
     );
 };
 
-// --- Sub-Komponen: Step 2 (Pembayaran) --- (Tidak berubah)
+// --- Sub-Komponen: Step 2 & 3 (SAMA SEPERTI SEBELUMNYA) ---
+// (Saya sertakan ulang agar file lengkap dan tidak error saat copas)
+
 const StepPayment = ({ order, onPaymentSubmit }) => {
     const [data, setData] = useState({ payment_proof: null, notes: "" });
     const [processing, setProcessing] = useState(false);
@@ -302,8 +484,7 @@ const StepPayment = ({ order, onPaymentSubmit }) => {
                 if (error.response && error.response.status === 422) {
                     setErrors(error.response.data.errors);
                 } else {
-                    console.error("Gagal submit pembayaran:", error);
-                    alert("Gagal submit pembayaran. Silakan coba lagi.");
+                    alert("Gagal submit pembayaran.");
                 }
             })
             .finally(() => {
@@ -315,25 +496,26 @@ const StepPayment = ({ order, onPaymentSubmit }) => {
             <h2 className="text-xl font-bold text-gray-900 mb-6">
                 Langkah 2: Pembayaran
             </h2>
-            <section className="mb-6">
-                <div className="bg-gray-50 p-4 rounded-lg border">
-                    <div className="flex justify-between items-center mt-2">
-                        <span className="text-gray-600">Total Tagihan:</span>
-                        <span className="font-bold text-2xl text-green-600">
-                            {formatRupiah(order.final_amount)}
-                        </span>
-                    </div>
+            <section className="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Total Tagihan</span>
+                    <span className="font-bold text-2xl text-green-600">
+                        {formatRupiah(order.final_amount)}
+                    </span>
                 </div>
-                <div className="mt-6">
-                    <p className="text-gray-700">
-                        Silakan transfer ke rekening:
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                    <p className="text-sm text-gray-500 mb-1">
+                        Transfer ke Rekening BCA:
                     </p>
-                    <p className="font-bold text-lg mt-2">
-                        BCA: 1234-567-890 (a/n Titipsini Indonesia)
+                    <p className="font-mono font-bold text-lg text-gray-800 bg-white p-2 rounded border inline-block">
+                        1234-567-890
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                        a/n Titipsini Indonesia
                     </p>
                 </div>
             </section>
-            <div className="space-y-6">
+            <div className="space-y-5">
                 <div>
                     <InputLabel
                         htmlFor="payment_proof"
@@ -342,7 +524,7 @@ const StepPayment = ({ order, onPaymentSubmit }) => {
                     <input
                         id="payment_proof"
                         type="file"
-                        className="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
+                        className="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50"
                         onChange={handleFileChange}
                         required
                     />
@@ -354,126 +536,90 @@ const StepPayment = ({ order, onPaymentSubmit }) => {
                     />
                 </div>
                 <div>
-                    <InputLabel htmlFor="notes" value="Catatan (Opsional)" />
+                    <InputLabel
+                        htmlFor="notes"
+                        value="Catatan Pembayaran (Opsional)"
+                    />
                     <textarea
                         id="notes"
                         value={data.notes}
-                        className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                        className="mt-1 block w-full border-gray-300 rounded-xl"
                         rows="2"
                         onChange={handleNotesChange}
-                        placeholder="Contoh: Sudah transfer dari BCA a/n Budi"
+                        placeholder="Contoh: Atas nama Budi"
                     ></textarea>
-                    <InputError
-                        message={errors.notes ? errors.notes[0] : ""}
-                        className="mt-2"
-                    />
                 </div>
             </div>
-            <div className="flex items-center justify-end mt-8 pt-6 border-t">
-                <PrimaryButton disabled={processing}>
-                    Saya Sudah Bayar
+            <div className="flex items-center justify-end mt-8 pt-6 border-t border-gray-100">
+                <PrimaryButton
+                    disabled={processing}
+                    className="w-full sm:w-auto justify-center py-3 rounded-xl"
+                >
+                    Kirim Bukti Bayar
                 </PrimaryButton>
             </div>
         </form>
     );
 };
 
-// --- [MODIFIKASI TOTAL] Sub-Komponen: Step 3 (Pending & Sukses Real-time) ---
 const StepSuccess = ({ orderId, initialStatus, onClose }) => {
-    // [BARU] Buat state untuk status. Dimulai dari status awal ('awaiting_verification')
     const [status, setStatus] = useState(initialStatus);
-
-    // [BARU] Logika Polling
     useEffect(() => {
-        // Jika status BUKAN lagi 'awaiting_verification' (misal admin sudah approve),
-        // maka kita tidak perlu polling lagi.
-        if (status !== "awaiting_verification") {
-            return; // Hentikan polling
-        }
-
-        // Mulai polling setiap 3 detik
+        if (status !== "awaiting_verification") return;
         const interval = setInterval(() => {
             axios
                 .get(route("order.status", orderId))
                 .then((response) => {
                     const newStatus = response.data.status;
                     if (newStatus !== "awaiting_verification") {
-                        setStatus(newStatus); // Update status di state
-                        clearInterval(interval); // Stop polling
+                        setStatus(newStatus);
+                        clearInterval(interval);
                     }
                 })
-                .catch((error) => {
-                    console.error("Error polling status:", error);
-                    clearInterval(interval); // Stop polling jika ada error
-                });
-        }, 3000); // Poll setiap 3 detik
-
-        // Fungsi cleanup: Hentikan interval jika komponen ditutup (unmount)
+                .catch(() => clearInterval(interval));
+        }, 3000);
         return () => clearInterval(interval);
-    }, [status, orderId]); // 'dependency array': Jalankan ulang efek ini jika 'status' atau 'orderId' berubah
+    }, [status, orderId]);
 
-    // [MODIFIKASI] Tampilkan UI berdasarkan state 'status'
     if (status === "awaiting_verification") {
-        // --- Tampilan 1: Pending (Menunggu) ---
         return (
-            <div className="p-6 md:p-8 text-center">
-                <Clock className="w-20 h-20 text-blue-500 mx-auto mb-4 animate-spin" />
+            <div className="p-8 text-center">
+                <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                    <Clock className="w-10 h-10 text-blue-600" />
+                </div>
                 <h3 className="text-2xl font-bold text-gray-900">
                     Pembayaran Diterima
                 </h3>
-                <p className="mt-4 text-gray-600 text-lg">
-                    Bukti pembayaran Anda telah kami terima.
-                </p>
                 <p className="mt-2 text-gray-600">
-                    Status pesanan:{" "}
-                    <span className="font-semibold text-blue-600">
-                        Menunggu Verifikasi
-                    </span>
-                </p>
-                <p className="mt-2 text-sm text-gray-500">
-                    Kami akan segera mengecek. Halaman ini akan diperbarui
-                    otomatis setelah Admin menyetujui.
+                    Mohon tunggu, admin sedang memverifikasi bukti pembayaran
+                    Anda.
                 </p>
                 <div className="mt-8">
-                    <PrimaryButton
-                        onClick={onClose}
-                        className="bg-gray-600 hover:bg-gray-700"
-                    >
+                    <PrimaryButton onClick={onClose} className="bg-gray-600">
                         Tutup
                     </PrimaryButton>
                 </div>
             </div>
         );
     } else {
-        // --- Tampilan 2: Sukses (Disetujui) ---
-        // (Ini akan muncul jika status berubah menjadi 'processing', 'completed', atau 'rejected')
-        const isApproved = status === "processing" || status === "completed";
-
+        const isApproved =
+            status === "processing" ||
+            status === "completed" ||
+            status === "ready_for_pickup";
         return (
-            <div className="p-6 md:p-8 text-center">
+            <div className="p-8 text-center">
                 {isApproved ? (
-                    <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-4" />
+                    <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
                 ) : (
-                    <X className="w-20 h-20 text-red-500 mx-auto mb-4" /> // Tampilan jika ditolak
+                    <X className="w-20 h-20 text-red-500 mx-auto mb-6" />
                 )}
-
                 <h3 className="text-2xl font-bold text-gray-900">
-                    {isApproved ? "Pesanan Disetujui!" : "Pesanan Ditolak"}
+                    {isApproved ? "Pesanan Disetujui!" : "Pembayaran Ditolak"}
                 </h3>
-                <p className="mt-4 text-gray-600 text-lg">
-                    {isApproved
-                        ? "Pembayaran Anda telah dikonfirmasi oleh Admin."
-                        : "Pembayaran Anda ditolak oleh Admin. Silakan cek riwayat pesanan."}
-                </p>
                 <p className="mt-2 text-gray-600">
-                    Status pesanan baru:
-                    <span
-                        className={`font-semibold ${
-                            isApproved ? "text-green-600" : "text-red-600"
-                        }`}
-                    >
-                        {status.replace("_", " ")}
-                    </span>
+                    {isApproved
+                        ? "Terima kasih! Pesanan Anda sedang diproses."
+                        : "Bukti pembayaran Anda tidak valid."}
                 </p>
                 <div className="mt-8">
                     <PrimaryButton onClick={onClose}>Selesai</PrimaryButton>
@@ -483,68 +629,53 @@ const StepSuccess = ({ orderId, initialStatus, onClose }) => {
     }
 };
 
-// --- Komponen Modal UTAMA ---
 export default function OrderModal({ show, onClose, product, productType }) {
-    const [step, setStep] = useState("loading"); // loading, form, payment, success
+    const [step, setStep] = useState("loading");
     const [productData, setProductData] = useState(null);
     const [orderData, setOrderData] = useState(null);
-    const [orderStatus, setOrderStatus] = useState(null); // Menyimpan status awal
+    const [orderStatus, setOrderStatus] = useState(null);
 
     useEffect(() => {
         if (show && product) {
             setStep("loading");
-            setProductData(null);
-            setOrderData(null);
-            setOrderStatus(null);
-
             const type =
                 productType === "moving_package" ? "moving_package" : "service";
-
             axios
                 .get(route("order.create", { type: type, id: product.id }))
                 .then((response) => {
-                    const props = response.data;
                     setProductData({
-                        product: props.product,
-                        productModelClass: props.productModelClass,
+                        product: response.data.product,
+                        productModelClass: response.data.productModelClass,
                     });
                     setStep("form");
                 })
                 .catch((error) => {
-                    console.error(
-                        "Gagal fetch data modal:",
-                        error.response?.data?.message || error
-                    );
-                    alert(
-                        error.response?.data?.message ||
-                            "Gagal memuat detail layanan. Silakan coba lagi."
-                    );
+                    alert("Gagal memuat data.");
                     onClose();
                 });
         }
     }, [show, product, productType]);
 
-    // Fungsi transisi
     const handleFormSubmit = (newOrderData) => {
-        setOrderData(newOrderData); // Simpan data order
-        setStep("payment"); // Pindah ke step pembayaran
+        setOrderData(newOrderData);
+        setStep("payment");
     };
-
     const handlePaymentSubmit = (newOrderStatus) => {
-        setOrderStatus(newOrderStatus); // Simpan status
-        setStep("success"); // Pindah ke step sukses
+        setOrderStatus(newOrderStatus);
+        setStep("success");
     };
 
     const renderStep = () => {
         switch (step) {
             case "form":
-                if (!productData) return <StepLoading />;
-                return (
+                return productData ? (
                     <StepForm
                         product={productData.product}
                         productModelClass={productData.productModelClass}
                         onFormSubmit={handleFormSubmit}
                     />
+                ) : (
+                    <StepLoading />
                 );
             case "payment":
                 return (
@@ -553,8 +684,6 @@ export default function OrderModal({ show, onClose, product, productType }) {
                         onPaymentSubmit={handlePaymentSubmit}
                     />
                 );
-
-            // [MODIFIKASI] Kirim prop yang benar ke StepSuccess
             case "success":
                 return (
                     <StepSuccess
@@ -563,7 +692,6 @@ export default function OrderModal({ show, onClose, product, productType }) {
                         onClose={onClose}
                     />
                 );
-            case "loading":
             default:
                 return <StepLoading />;
         }

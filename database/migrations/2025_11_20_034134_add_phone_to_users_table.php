@@ -11,12 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('curricula', function (Blueprint $table) {
-            $table->id();
-            $table->string('title');
-            $table->string('icon_name'); // e.g., 'Library', 'BrainCircuit'
-            $table->json('points');
-            $table->timestamps();
+        Schema::table('users', function (Blueprint $table) {
+            // Tambahkan kolom phone setelah email
+            $table->string('phone', 20)->nullable()->after('email');
         });
     }
 
@@ -25,6 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('curricula');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('phone');
+        });
     }
 };

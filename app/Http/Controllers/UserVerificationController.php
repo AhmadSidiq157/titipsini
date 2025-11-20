@@ -6,79 +6,86 @@ use App\Models\UserVerification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 class UserVerificationController extends Controller
 {
     /**
-     * Menampilkan form verifikasi.
-     * Juga akan menampilkan data lama jika user pernah ditolak (rejected).
+     * Menampilkan form verifikasi (Halaman Full).
+     * (Ini hanya fallback jika user mengakses URL langsung, jarang dipakai dengan Modal)
      */
     public function create()
     {
         $user = Auth::user();
-        $verificationData = $user->verification; // Ambil data verifikasi yg ada (jika ada)
+        $verification = $user->verification;
 
-        // Jika status sudah 'approved' atau 'pending', jangan biarkan isi form lagi
-        if ($verificationData) {
-            if ($verificationData->status === 'approved') {
-                return redirect()->route('dashboard'); // Atau ke halaman order
+        if ($verification) {
+            if ($verification->status === 'approved') {
+                return redirect()->route('dashboard');
             }
-            if ($verificationData->status === 'pending') {
+            if ($verification->status === 'pending') {
                 return redirect()->route('verification.pending');
             }
         }
 
-        // Jika 'rejected' atau null, tampilkan form.
         return Inertia::render('Verification/Create', [
-            'verification' => $verificationData, // Kirim data lama (yg rejected) ke form
+            'verification' => $verification
         ]);
     }
 
     /**
-     * Menyimpan data verifikasi (termasuk upload KTP).
+     * Menyimpan data verifikasi dari Modal.
      */
     public function store(Request $request)
     {
-        $user = Auth::user();
-
-        $validated = $request->validate([
+        $request->validate([
             'legal_name' => 'required|string|max:255',
-            'id_card_type' => ['required', Rule::in(['KTP', 'SIM', 'Passport'])],
+            'id_card_type' => 'required|string|in:KTP,SIM,Passport',
             'id_card_number' => 'required|string|max:50',
             'address_on_id' => 'required|string',
-            'gender' => ['required', Rule::in(['laki-laki', 'perempuan'])],
-            'id_card_path' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'gender' => 'required|string|in:laki-laki,perempuan',
+            'id_card_path' => 'required|image|max:2048',
         ]);
 
-        // 1. Upload file KTP/SIM
-        $path = $request->file('id_card_path')->store('id_cards', 'public');
+        $user = Auth::user();
+        $path = $request->file('id_card_path')->store('verification_ids', 'public');
 
-        // 2. Simpan data ke database
-        // Gunakan updateOrCreate untuk menangani jika user resubmit (setelah ditolak)
         $user->verification()->updateOrCreate(
-            ['user_id' => $user->id], // Cari berdasarkan user_id
-            [ // Data untuk di-update atau di-create
-                'legal_name' => $validated['legal_name'],
-                'id_card_type' => $validated['id_card_type'],
-                'id_card_number' => $validated['id_card_number'],
-                'address_on_id' => $validated['address_on_id'],
-                'gender' => $validated['gender'],
+            ['user_id' => $user->id],
+            [
+                'legal_name' => $request->legal_name,
+                'id_card_type' => $request->id_card_type,
+                'id_card_number' => $request->id_card_number,
+                'address_on_id' => $request->address_on_id,
+                'gender' => $request->gender,
                 'id_card_path' => $path,
-                'status' => 'pending', // Set status kembali ke pending
-                'rejection_notes' => null, // Hapus catatan penolakan lama
+                'status' => 'pending', // Set status ke pending
+                'rejection_notes' => null,
             ]
         );
 
-        // 3. Redirect ke halaman "pending"
-        return redirect()->route('verification.pending');
+        // [MODIFIKASI PENTING UNTUK MODAL]
+        // Jangan redirect ke route('verification.pending').
+        // Redirect back() agar tetap di halaman Layanan/Welcome
+        // dan Modal akan otomatis berubah tampilan karena status user berubah.
+        return redirect()->back()->with('success', 'Data verifikasi berhasil dikirim.');
     }
-
     /**
-     * Menampilkan halaman "Menunggu Verifikasi".
+     * Menampilkan halaman pending (Fallback).
      */
     public function pending()
     {
         return Inertia::render('Verification/Pending');
+    }
+
+    public function checkStatus()
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        if (!$user || !$user->verification) {
+            return response()->json(['status' => 'null']);
+        }
+
+        return response()->json(['status' => $user->verification->status]);
     }
 }

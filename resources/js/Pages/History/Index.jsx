@@ -1,9 +1,20 @@
-import React, { useEffect } from "react"; // <-- [BARU] Import useEffect
+import React, { useEffect } from "react";
 import GuestLayout from "@/Layouts/GuestLayout";
-import { Head, Link, router } from "@inertiajs/react"; // <-- [BARU] Import router
-import { Check, X, Clock, Package, Truck, DollarSign } from "lucide-react";
+import { Head, Link, router } from "@inertiajs/react";
+import {
+    Check,
+    X,
+    Clock,
+    Package,
+    Truck,
+    DollarSign,
+    User,
+    Calendar,
+    MapPin,
+    ChevronRight,
+    AlertCircle,
+} from "lucide-react";
 
-// ... (Helper formatRupiah, StatusBadge, Pagination tidak berubah)
 const formatRupiah = (number) => {
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
@@ -13,226 +24,225 @@ const formatRupiah = (number) => {
 };
 
 const StatusBadge = ({ status }) => {
-    let bgColor = "bg-gray-100 text-gray-800";
-    let Icon = Clock;
-
-    switch (status) {
-        case "awaiting_payment":
-            bgColor = "bg-yellow-100 text-yellow-800";
-            Icon = DollarSign;
-            break;
-        case "awaiting_verification":
-            bgColor = "bg-blue-100 text-blue-800";
-            Icon = Clock;
-            break;
-        case "processing":
-            bgColor = "bg-cyan-100 text-cyan-800";
-            Icon = Package;
-            break;
-        case "ready_for_pickup":
-            bgColor = "bg-indigo-100 text-indigo-800";
-            Icon = Truck;
-            break;
-        case "on_delivery":
-            bgColor = "bg-purple-100 text-purple-800";
-            Icon = Truck;
-            break;
-        case "completed":
-            bgColor = "bg-green-100 text-green-800";
-            Icon = Check;
-            break;
-        case "cancelled":
-        case "rejected":
-            bgColor = "bg-red-100 text-red-800";
-            Icon = X;
-            break;
-    }
+    const styles = {
+        awaiting_payment: "bg-yellow-50 text-yellow-700 border-yellow-200",
+        awaiting_verification: "bg-blue-50 text-blue-700 border-blue-200",
+        processing: "bg-cyan-50 text-cyan-700 border-cyan-200",
+        ready_for_pickup: "bg-indigo-50 text-indigo-700 border-indigo-200",
+        picked_up: "bg-purple-50 text-purple-700 border-purple-200",
+        on_delivery:
+            "bg-orange-50 text-orange-700 border-orange-200 animate-pulse",
+        completed: "bg-green-50 text-green-700 border-green-200",
+        cancelled: "bg-red-50 text-red-700 border-red-200",
+    };
+    const styleClass =
+        styles[status] || "bg-gray-50 text-gray-700 border-gray-200";
 
     return (
         <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${bgColor}`}
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${styleClass}`}
         >
-            <Icon className="w-3 h-3" />
-            {status.replace("_", " ").charAt(0).toUpperCase() +
-                status.replace("_", " ").slice(1)}
+            {status.replace("_", " ")}
         </span>
     );
 };
 
-const Pagination = ({ links }) => (
-    <div className="mt-6 flex justify-between items-center">
-        <div className="flex flex-wrap">
-            {links.map((link, key) =>
-                link.url === null ? (
+// [BARU] Komponen Kartu Order Modern
+const OrderCard = ({ order }) => {
+    const details = order.user_form_details || {};
+    const isPindahan = !!details.alamat_penjemputan;
+
+    return (
+        <div className="bg-white rounded-2xl p-6 shadow-[0_4px_20px_rgb(0,0,0,0.04)] border border-gray-100 mb-6 hover:shadow-md transition-shadow">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div className="flex items-center gap-4">
                     <div
-                        key={key}
-                        className="mr-1 mb-1 px-4 py-2 text-sm leading-4 text-gray-400 border rounded"
-                        dangerouslySetInnerHTML={{ __html: link.label }}
-                    />
-                ) : (
-                    <Link
-                        key={key}
-                        className={`mr-1 mb-1 px-4 py-2 text-sm leading-4 border rounded hover:bg-white focus:border-indigo-500 focus:text-indigo-500 ${
-                            link.active ? "bg-white" : ""
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-sm ${
+                            isPindahan ? "bg-blue-500" : "bg-green-500"
                         }`}
-                        href={link.url}
-                        dangerouslySetInnerHTML={{ __html: link.label }}
-                    />
-                )
+                    >
+                        {isPindahan ? (
+                            <Truck size={24} />
+                        ) : (
+                            <Package size={24} />
+                        )}
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900">
+                            {order.orderable
+                                ? order.orderable.name || order.orderable.title
+                                : "Layanan Tidak Tersedia"}
+                        </h3>
+                        <p className="text-sm text-gray-500 flex items-center">
+                            <Calendar size={14} className="mr-1" />
+                            {new Date(order.created_at).toLocaleDateString(
+                                "id-ID",
+                                { dateStyle: "long" }
+                            )}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <StatusBadge status={order.status} />
+                    <span className="text-lg font-bold text-green-600 bg-green-50 px-3 py-1 rounded-lg">
+                        {formatRupiah(order.final_amount)}
+                    </span>
+                </div>
+            </div>
+
+            {/* Info Kurir (Jika Ada) */}
+            {order.courier && (
+                <div className="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200 flex items-center gap-4">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-gray-400 shadow-sm">
+                        <User size={20} />
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-xs text-gray-500 uppercase font-bold">
+                            Kurir Bertugas
+                        </p>
+                        <p className="text-sm font-bold text-gray-900">
+                            {order.courier.name}
+                        </p>
+                        {order.courier.courier_verification && (
+                            <p className="text-xs text-gray-600 mt-0.5">
+                                {
+                                    order.courier.courier_verification
+                                        .vehicle_brand
+                                }{" "}
+                                •{" "}
+                                {order.courier.courier_verification.plat_nomor}
+                            </p>
+                        )}
+                    </div>
+                    {/* Tombol Chat WA Kurir */}
+                    <a
+                        href={`https://wa.me/${order.courier.phone}`}
+                        target="_blank"
+                        className="text-green-600 hover:text-green-700 font-semibold text-sm"
+                    >
+                        Chat WA
+                    </a>
+                </div>
             )}
+
+            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                {/* Tracking Terakhir */}
+                <div className="text-sm text-gray-500">
+                    {order.trackings && order.trackings.length > 0 ? (
+                        <span className="flex items-center text-blue-600">
+                            <Clock size={14} className="mr-1.5" />
+                            {order.trackings[0].description}
+                        </span>
+                    ) : (
+                        <span>Belum ada update tracking.</span>
+                    )}
+                </div>
+
+                {/* Tombol Aksi */}
+                <div>
+                    {order.status === "awaiting_payment" ? (
+                        <Link
+                            href={route("order.payment", order.id)}
+                            className="px-4 py-2 bg-green-600 text-white text-xs font-semibold rounded-md hover:bg-green-700"
+                        >
+                            Bayar Sekarang
+                        </Link>
+                    ) : (
+                        // [PERBAIKAN] Tombol Detail sekarang aktif dan mengarah ke history.show
+                        <Link
+                            href={route("history.show", order.id)} // <-- Rute baru
+                            className="px-4 py-2 bg-blue-50 text-blue-600 text-xs font-semibold rounded-md hover:bg-blue-100 border border-blue-200"
+                        >
+                            Detail & Lacak
+                        </Link>
+                    )}
+                </div>
+            </div>
         </div>
+    );
+};
+
+const Pagination = ({ links }) => (
+    <div className="mt-8 flex justify-center gap-2">
+        {links.map((link, key) =>
+            link.url === null ? (
+                <div
+                    key={key}
+                    className="px-4 py-2 text-sm text-gray-400 border border-transparent rounded-lg"
+                    dangerouslySetInnerHTML={{ __html: link.label }}
+                />
+            ) : (
+                <Link
+                    key={key}
+                    href={link.url}
+                    className={`px-4 py-2 text-sm font-bold border rounded-lg transition-all ${
+                        link.active
+                            ? "bg-green-600 text-white border-green-600 shadow-md"
+                            : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                    }`}
+                    dangerouslySetInnerHTML={{ __html: link.label }}
+                />
+            )
+        )}
     </div>
 );
-// --- Akhir Helper ---
 
 export default function Index({ auth, orders }) {
-    // [BARU] Logika Polling
     useEffect(() => {
-        // Tentukan interval (setiap 7 detik)
         const interval = setInterval(() => {
-            // Panggil Inertia untuk me-reload HANYA data 'orders'
             router.reload({
                 only: ["orders"],
                 preserveState: true,
                 preserveScroll: true,
             });
-        }, 7000); // 7000 ms = 7 detik
-
-        // Hentikan interval jika user pindah halaman
+        }, 7000);
         return () => clearInterval(interval);
-    }, []); // '[]' berarti jalankan sekali saja
+    }, []);
 
     return (
         <>
-            <Head title="Riwayat Pesanan Saya" />
-
-            <div className="py-12 md:py-20 bg-gray-50 min-h-screen">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Judul Halaman */}
-                    <div className="mb-12">
-                        <h1 className="text-4xl font-extrabold text-gray-800">
-                            Riwayat Pesanan Saya
+            <Head title="Riwayat Pesanan" />
+            <div className="py-12 md:py-20 bg-gray-50/50 min-h-screen">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+                    <div className="mb-10 text-center sm:text-left">
+                        <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
+                            Riwayat Pesanan
                         </h1>
                         <p className="mt-2 text-lg text-gray-600">
-                            Lihat semua riwayat transaksi penitipan dan pindahan
-                            Anda.
-                        </p>
-                        {/* [BARU] Teks indikator polling */}
-                        <p className="mt-2 text-sm text-gray-500 flex items-center">
-                            <Clock className="w-4 h-4 mr-1.5 animate-spin" />
-                            Status pesanan akan diperbarui secara otomatis.
+                            Pantau status pesanan Anda secara real-time di sini.
                         </p>
                     </div>
 
-                    {/* Tabel Riwayat */}
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full bg-white">
-                                    <thead className="bg-gray-100">
-                                        <tr>
-                                            <th className="py-3 px-4 border-b text-left">
-                                                Layanan
-                                            </th>
-                                            <th className="py-3 px-4 border-b text-left">
-                                                Tanggal
-                                            </th>
-                                            <th className="py-3 px-4 border-b text-left">
-                                                Total
-                                            </th>
-                                            <th className="py-3 px-4 border-b text-left">
-                                                Status Pesanan
-                                            </th>
-                                            <th className="py-3 px-4 border-b text-left">
-                                                Aksi
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {orders.data.length > 0 ? (
-                                            orders.data.map((order) => (
-                                                <tr
-                                                    key={order.id}
-                                                    className="hover:bg-gray-50"
-                                                >
-                                                    <td className="py-4 px-4 border-b font-medium">
-                                                        {order.orderable
-                                                            ? order.orderable
-                                                                  .name ||
-                                                              order.orderable
-                                                                  .title
-                                                            : "Layanan Dihapus"}
-                                                    </td>
-                                                    <td className="py-4 px-4 border-b text-sm text-gray-600">
-                                                        {new Date(
-                                                            order.created_at
-                                                        ).toLocaleDateString(
-                                                            "id-ID",
-                                                            {
-                                                                dateStyle:
-                                                                    "long",
-                                                            }
-                                                        )}
-                                                    </td>
-                                                    <td className="py-4 px-4 border-b font-semibold">
-                                                        {formatRupiah(
-                                                            order.final_amount
-                                                        )}
-                                                    </td>
-                                                    <td className="py-4 px-4 border-b">
-                                                        <StatusBadge
-                                                            status={
-                                                                order.status
-                                                            }
-                                                        />
-                                                    </td>
-                                                    <td className="py-4 px-4 border-b">
-                                                        {/* Tombol Aksi Dinamis */}
-                                                        {order.status ===
-                                                        "awaiting_payment" ? (
-                                                            <Link
-                                                                href={route(
-                                                                    "order.payment",
-                                                                    order.id
-                                                                )}
-                                                                className="px-4 py-2 bg-green-600 text-white text-xs font-semibold rounded-md hover:bg-green-700"
-                                                            >
-                                                                Bayar Sekarang
-                                                            </Link>
-                                                        ) : (
-                                                            <button
-                                                                disabled
-                                                                className="px-4 py-2 bg-gray-200 text-gray-500 text-xs font-semibold rounded-md cursor-not-allowed"
-                                                            >
-                                                                Detail
-                                                            </button>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td
-                                                    colSpan="5"
-                                                    className="py-10 px-4 border-b text-center text-gray-500"
-                                                >
-                                                    Anda belum memiliki riwayat
-                                                    pesanan.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-
+                    {orders.data.length > 0 ? (
+                        <div>
+                            {orders.data.map((order) => (
+                                <OrderCard key={order.id} order={order} />
+                            ))}
                             <Pagination links={orders.links} />
                         </div>
-                    </div>
+                    ) : (
+                        <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-dashed border-gray-300">
+                            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Package size={32} className="text-gray-400" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-800">
+                                Belum Ada Pesanan
+                            </h3>
+                            <p className="text-gray-500 mt-2 mb-6">
+                                Anda belum melakukan pemesanan layanan apapun.
+                            </p>
+                            <Link
+                                href="/layanan"
+                                className="inline-flex items-center px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-200"
+                            >
+                                Pesan Sekarang
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </div>
         </>
     );
 }
 
-// Tugaskan GuestLayout
 Index.layout = (page) => <GuestLayout children={page} />;

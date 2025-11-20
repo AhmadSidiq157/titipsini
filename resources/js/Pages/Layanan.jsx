@@ -12,13 +12,15 @@ import {
     Star,
     Truck,
     PackageCheck,
+    ChevronLeft,
+    ChevronRight,
 } from "lucide-react";
-import OrderModal from "@/Pages/Order/Partials/OrderModal"; // <-- Import Modal
+// Import Modal Order & Verifikasi
+import OrderModal from "@/Pages/Order/Partials/OrderModal";
+import VerificationModal from "@/Pages/Order/Partials/VerificationModal"; // <-- Pastikan import ini ada
 
-// ... (Semua komponen statis Anda: LayananHero, StatsAndFeatures, HowItWorks, dll)
-// ... (Saya akan singkat agar fokus pada perbaikan)
+// --- 1. Komponen Hero (Tidak Berubah) ---
 const LayananHero = () => {
-    // ... (Isi komponen ini sama persis seperti sebelumnya)
     const { settings } = usePage().props;
     const phoneNumber = settings.contact_phone
         ? settings.contact_phone.replace(/\D/g, "")
@@ -41,8 +43,7 @@ const LayananHero = () => {
                         </h1>
                         <p className="mt-6 text-lg text-gray-600">
                             Solusi terpercaya untuk kebutuhan pindahan dan
-                            penyimpanan barang Anda. Dengan layanan profesional
-                            dan harga terjangkau.
+                            penyimpanan barang Anda.
                         </p>
                         <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                             <a
@@ -67,8 +68,8 @@ const LayananHero = () => {
                     <div>
                         <img
                             src="images/hero-services.jpg"
-                            alt="Layanan Pindahan Titipsini"
-                            className="w-full h-auto"
+                            alt="Layanan Pindahan"
+                            className="w-full h-auto rounded-lg shadow-lg"
                         />
                     </div>
                 </div>
@@ -76,6 +77,8 @@ const LayananHero = () => {
         </section>
     );
 };
+
+// --- 2. Stats & Features (Tidak Berubah) ---
 const StatsAndFeatures = () => {
     const stats = [
         { icon: <Users />, value: "10K+", label: "Pelanggan Puas" },
@@ -109,7 +112,6 @@ const StatsAndFeatures = () => {
                 "Proses pickup dan delivery yang efisien sesuai jadwal Anda.",
         },
     ];
-
     return (
         <section className="py-16 sm:py-24 bg-white">
             <div className="container mx-auto px-4">
@@ -163,6 +165,8 @@ const StatsAndFeatures = () => {
         </section>
     );
 };
+
+// --- 3. How It Works (Tidak Berubah) ---
 const HowItWorks = () => {
     const steps = [
         {
@@ -223,6 +227,8 @@ const HowItWorks = () => {
         </section>
     );
 };
+
+// --- 4. About Us (Tidak Berubah) ---
 const AboutUs = () => (
     <section className="py-16 sm:py-24 bg-white">
         <div className="container mx-auto px-4">
@@ -234,15 +240,11 @@ const AboutUs = () => (
                     <p className="mt-4 text-gray-600">
                         Titipsini adalah platform digital yang menghubungkan
                         Anda dengan layanan pindahan dan penyimpanan barang
-                        terpercaya. Kami hadir untuk memberikan solusi praktis
-                        bagi kebutuhan logistik Anda dengan standar kualitas
-                        tinggi.
+                        terpercaya.
                     </p>
                     <p className="mt-4 text-gray-600">
                         Dengan pengalaman bertahun-tahun dan tim profesional,
-                        kami berkomitmen memberikan layanan terbaik untuk
-                        kepuasan pelanggan. Setiap barang yang Anda titipkan
-                        akan ditangani dengan hati-hati dan profesional.
+                        kami berkomitmen memberikan layanan terbaik.
                     </p>
                     <div className="mt-6 flex items-center gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <PackageCheck className="w-10 h-10 text-green-600 flex-shrink-0" />
@@ -267,158 +269,108 @@ const AboutUs = () => (
         </div>
     </section>
 );
-const Pricing = ({ packages, onOrderClick }) => {
-    // ... (Isi komponen Pricing sama persis)
-    const { settings } = usePage().props;
-    const phoneNumber = settings.contact_phone
-        ? settings.contact_phone.replace(/\D/g, "")
-        : "";
-    const message = settings.whatsapp_message
-        ? encodeURIComponent(settings.whatsapp_message)
-        : "";
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
 
-    return (
-        <section id="pricing" className="py-16 sm:py-24 bg-gray-50">
-            <div className="container mx-auto px-4">
-                <div className="text-center">
-                    <h2 className="text-4xl font-bold text-gray-900 tracking-tight">
-                        Paket Pindahan Titipsini
-                    </h2>
-                    <p className="mt-4 max-w-2xl mx-auto text-gray-600">
-                        Pilih paket yang paling sesuai dengan kebutuhan pindahan
-                        Anda. Transparan, aman, dan tanpa biaya tersembunyi.
-                    </p>
-                </div>
-
-                <div className="mt-12 flex flex-col lg:flex-row items-stretch justify-center gap-8">
-                    {packages && packages.length > 0 ? (
-                        packages.map((plan) => (
-                            <div
-                                key={plan.id}
-                                className={`w-full max-w-md bg-white rounded-xl shadow-lg p-8 relative flex flex-col transition-transform duration-300 ${
-                                    plan.popular
-                                        ? "border-2 border-green-600"
-                                        : "border border-gray-200"
-                                }`}
-                            >
-                                {plan.popular ? (
-                                    <span className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs font-bold px-4 py-1 rounded-full">
-                                        Paling Populer
-                                    </span>
-                                ) : null}
-                                <div>
-                                    <h3 className="text-2xl font-bold text-gray-900">
-                                        {plan.name}
-                                    </h3>
-
-                                    <p className="text-gray-500 text-sm mt-1 min-h-[40px]">
-                                        {plan.description}
-                                    </p>
-                                </div>
-
-                                <ul className="mt-6 space-y-3 flex-grow">
-                                    {Array.isArray(plan.features) &&
-                                        plan.features.map((feature, i) => (
-                                            <li
-                                                key={i}
-                                                className="flex items-center gap-3 text-gray-600"
-                                            >
-                                                <CheckCircle2
-                                                    size={16}
-                                                    className="text-green-500 flex-shrink-0"
-                                                />
-                                                {feature}
-                                            </li>
-                                        ))}
-                                </ul>
-
-                                <button
-                                    type="button"
-                                    onClick={() => onOrderClick(plan)} // Panggil handler
-                                    className="w-full inline-block text-center mt-8 font-semibold py-3 px-6 rounded-lg shadow-md transition-colors bg-gray-800 text-white hover:bg-gray-900"
-                                >
-                                    Pilih Paket
-                                </button>
-                            </div>
-                        ))
-                    ) : (
-                        <p className="text-center text-gray-600 col-span-full">
-                            Paket pindahan akan segera tersedia.
-                        </p>
-                    )}
-                </div>
-            </div>
-        </section>
-    );
-};
+// --- 5. Testimonials (Tidak Berubah) ---
 const Testimonials = () => {
-    // ... (Isi komponen ini sama persis seperti sebelumnya)
     const reviews = [
         {
             name: "Rizki A.",
-            text: '"Pelayanan sangat memuaskan! Barang sampai dengan aman dan tepat waktu. Recommended banget!"',
+            text: '"Pelayanan sangat memuaskan! Barang sampai dengan aman."',
             img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200",
         },
         {
             name: "Lisa M.",
-            text: '"Tim nya profesional dan harga transparan. Gak ada biaya tambahan yang mengejutkan."',
+            text: '"Tim nya profesional dan harga transparan."',
             img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200",
         },
         {
             name: "Lina Y.",
-            text: '"Sudah 3x pakai jasa Titipsini, selalu puas dengan pelayanannya. Keep it up!"',
+            text: '"Sudah 3x pakai jasa Titipsini, selalu puas."',
             img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=200",
         },
         {
             name: "Sari D.",
-            text: '"Tracking real-time sangat membantu. Bisa pantau barang sampai mana. Terima kasih Titipsini!"',
+            text: '"Tracking real-time sangat membantu."',
             img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200",
         },
     ];
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const goToPrevious = () =>
+        setCurrentIndex((prev) => (prev === 0 ? reviews.length - 1 : prev - 1));
+    const goToNext = () =>
+        setCurrentIndex((prev) => (prev === reviews.length - 1 ? 0 : prev + 1));
+
     return (
-        <section className="py-16 sm:py-24 bg-gray-50">
-            <div className="container mx-auto px-4">
-                <div className="text-center">
-                    <h2 className="text-4xl font-bold text-gray-900 tracking-tight">
-                        Ulasan Pelanggan Titipsini
+        <section className="py-16 bg-gray-50">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center mb-12">
+                    <h2 className="text-3xl font-bold text-gray-800">
+                        Testimoni Pelanggan
                     </h2>
                 </div>
-                <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {reviews.map((review) => (
-                        <div
-                            key={review.name}
-                            className="bg-white p-6 rounded-xl shadow-lg border border-gray-100"
+                <div className="max-w-3xl mx-auto relative">
+                    <div className="absolute top-1/2 -translate-y-1/2 left-0 md:-left-16">
+                        <button
+                            onClick={goToPrevious}
+                            className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition"
                         >
-                            <div className="flex text-yellow-400 mb-4">
-                                {[...Array(5)].map((_, i) => (
-                                    <Star
-                                        key={i}
-                                        fill="currentColor"
-                                        size={20}
-                                    />
-                                ))}
-                            </div>
-                            <p className="text-gray-600 italic">
-                                {review.text}
-                            </p>
-                            <div className="mt-4 flex items-center gap-3">
-                                <img
-                                    src={review.img}
-                                    alt={review.name}
-                                    className="w-10 h-10 rounded-full object-cover"
+                            <ChevronLeft className="text-gray-600" />
+                        </button>
+                    </div>
+                    <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-100 text-center transition-opacity duration-500">
+                        <div className="flex justify-center mb-4">
+                            {[...Array(5)].map((_, i) => (
+                                <Star
+                                    key={i}
+                                    className="text-yellow-400 fill-current"
+                                    size={20}
                                 />
-                                <span className="font-semibold text-gray-800">
-                                    {review.name}
-                                </span>
+                            ))}
+                        </div>
+                        <p className="text-lg italic text-gray-700 mb-6 min-h-[100px]">
+                            "{reviews[currentIndex].text}"
+                        </p>
+                        <div className="flex items-center justify-center">
+                            <img
+                                src={reviews[currentIndex].img}
+                                alt={reviews[currentIndex].name}
+                                className="w-12 h-12 rounded-full mr-4"
+                            />
+                            <div>
+                                <p className="font-bold text-gray-800">
+                                    {reviews[currentIndex].name}
+                                </p>
                             </div>
                         </div>
+                    </div>
+                    <div className="absolute top-1/2 -translate-y-1/2 right-0 md:-right-16">
+                        <button
+                            onClick={goToNext}
+                            className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition"
+                        >
+                            <ChevronRight className="text-gray-600" />
+                        </button>
+                    </div>
+                </div>
+                <div className="flex justify-center mt-6 space-x-2">
+                    {reviews.map((_, index) => (
+                        <button
+                            key={index}
+                            onClick={() => setCurrentIndex(index)}
+                            className={`w-3 h-3 rounded-full transition-colors ${
+                                currentIndex === index
+                                    ? "bg-green-600"
+                                    : "bg-gray-300 hover:bg-green-400"
+                            }`}
+                        ></button>
                     ))}
                 </div>
             </div>
         </section>
     );
 };
+
+// --- 6. Savings (Tidak Berubah) ---
 const Savings = () => (
     <section className="py-16 sm:py-24 bg-white">
         <div className="container mx-auto px-4">
@@ -466,8 +418,9 @@ const Savings = () => (
         </div>
     </section>
 );
+
+// --- 7. CTA Section (Tidak Berubah) ---
 const CtaSection = () => {
-    // ... (Isi komponen ini sama persis seperti sebelumnya)
     const { settings } = usePage().props;
     const phoneNumber = settings.contact_phone
         ? settings.contact_phone.replace(/\D/g, "")
@@ -484,8 +437,7 @@ const CtaSection = () => {
                     Siap untuk Pindahan Tanpa Ribet?
                 </h2>
                 <p className="mt-4 max-w-2xl mx-auto text-green-200">
-                    Hubungi kami sekarang dan dapatkan konsultasi gratis untuk
-                    kebutuhan pindahan Anda.
+                    Hubungi kami sekarang dan dapatkan konsultasi gratis.
                 </p>
                 <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
                     <a
@@ -510,30 +462,114 @@ const CtaSection = () => {
     );
 };
 
-// --- Komponen Utama Halaman Layanan ---
+// --- 8. Pricing Section (MODIFIKASI UTAMA) ---
+const Pricing = ({ packages, onOrderClick }) => {
+    return (
+        <section id="pricing" className="py-16 sm:py-24 bg-gray-50">
+            <div className="container mx-auto px-4">
+                <div className="text-center">
+                    <h2 className="text-4xl font-bold text-gray-900 tracking-tight">
+                        Paket Pindahan Titipsini
+                    </h2>
+                    <p className="mt-4 max-w-2xl mx-auto text-gray-600">
+                        Pilih paket yang paling sesuai dengan kebutuhan pindahan
+                        Anda.
+                    </p>
+                </div>
+
+                <div className="mt-12 flex flex-col lg:flex-row items-stretch justify-center gap-8">
+                    {packages && packages.length > 0 ? (
+                        packages.map((plan) => (
+                            <div
+                                key={plan.id}
+                                className={`w-full max-w-md bg-white rounded-xl shadow-lg p-8 relative flex flex-col transition-transform duration-300 ${
+                                    plan.popular
+                                        ? "border-2 border-green-600"
+                                        : "border border-gray-200"
+                                }`}
+                            >
+                                {plan.popular && (
+                                    <span className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs font-bold px-4 py-1 rounded-full">
+                                        Paling Populer
+                                    </span>
+                                )}
+                                <div>
+                                    <h3 className="text-2xl font-bold text-gray-900">
+                                        {plan.name}
+                                    </h3>
+                                    <p className="text-gray-500 text-sm mt-1 min-h-[40px]">
+                                        {plan.description}
+                                    </p>
+                                </div>
+
+                                <ul className="mt-6 space-y-3 flex-grow">
+                                    {Array.isArray(plan.features) &&
+                                        plan.features.map((feature, i) => (
+                                            <li
+                                                key={i}
+                                                className="flex items-center gap-3 text-gray-600"
+                                            >
+                                                <CheckCircle2
+                                                    size={16}
+                                                    className="text-green-500 flex-shrink-0"
+                                                />
+                                                {feature}
+                                            </li>
+                                        ))}
+                                </ul>
+
+                                {/* [PERBAIKAN FINAL] Tombol untuk trigger Modal */}
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        onOrderClick(plan); // Memanggil handler dari Layanan
+                                    }}
+                                    className="w-full inline-block text-center mt-8 font-semibold py-3 px-6 rounded-lg shadow-md transition-colors bg-gray-800 text-white hover:bg-gray-900 cursor-pointer"
+                                >
+                                    Pilih Paket
+                                </button>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-center text-gray-600 col-span-full">
+                            Paket pindahan akan segera tersedia.
+                        </p>
+                    )}
+                </div>
+            </div>
+        </section>
+    );
+};
+
+// ==================================================================
+// MAIN PAGE COMPONENT (KOMPONEN UTAMA)
+// ==================================================================
 const Layanan = ({ packages }) => {
+    // Ambil props global dari backend
     const { auth, userVerificationStatus } = usePage().props;
 
+    // State Modal
     const [isOrderModalOpen, setOrderModalOpen] = useState(false);
     const [selectedPackage, setSelectedPackage] = useState(null);
+    const [isVerificationModalOpen, setVerificationModalOpen] = useState(false);
 
-    // --- Logika 4 Kasus ---
+    // Handler Klik Tombol (Logika 4 Kasus)
     const handleOrderClick = (pkg) => {
+        // 1. Cek Login
         if (!auth.user) {
             router.get(route("login"));
             return;
         }
-        if (
-            userVerificationStatus === null ||
-            userVerificationStatus === "rejected"
-        ) {
-            router.get(route("verification.create"));
+
+        // 2 & 3. Cek Verifikasi (Belum/Ditolak/Pending)
+        // [PERBAIKAN] Buka modal verifikasi, jangan redirect
+        if (userVerificationStatus !== "approved") {
+            setVerificationModalOpen(true);
             return;
         }
-        if (userVerificationStatus === "pending") {
-            router.get(route("verification.pending"));
-            return;
-        }
+
+        // 4. Verifikasi OK -> Buka Modal Order
         if (userVerificationStatus === "approved") {
             setSelectedPackage(pkg);
             setOrderModalOpen(true);
@@ -551,22 +587,46 @@ const Layanan = ({ packages }) => {
             <Testimonials />
             <Savings />
 
+            {/* Kirim handler ke Pricing */}
             <Pricing packages={packages} onOrderClick={handleOrderClick} />
 
             <CtaSection />
 
-            {/* --- [PERBAIKAN] Render Modal dengan prop 'productType' --- */}
+            {/* Render Modal Order */}
             <OrderModal
                 show={isOrderModalOpen}
                 onClose={() => setOrderModalOpen(false)}
-                product={selectedPackage} // <-- [PERBAIKAN] Ganti 'service' jadi 'product'
-                productType="moving_package"
+                product={selectedPackage} // Kirim data paket sebagai 'product'
+                productType="moving_package" // Beritahu modal ini adalah Pindahan
+            />
+
+            {/* Render Modal Verifikasi */}
+            <VerificationModal
+                show={isVerificationModalOpen}
+                onClose={() => setVerificationModalOpen(false)}
+                status={userVerificationStatus}
+                // [BARU] Handler ketika verifikasi sukses (dari dalam modal)
+                onVerificationSuccess={() => {
+                    setVerificationModalOpen(false); // 1. Tutup modal verifikasi
+
+                    // 2. Refresh data user (agar status 'approved' terbaca oleh Inertia)
+                    router.reload({
+                        only: ["userVerificationStatus", "auth"],
+                        onSuccess: () => {
+                            // 3. Buka modal order untuk paket yang tadi dipilih
+                            // (Pastikan 'selectedPackage' masih ada isinya)
+                            if (selectedPackage) {
+                                setOrderModalOpen(true);
+                            }
+                        },
+                    });
+                }}
             />
         </>
     );
 };
 
-// Assigning the layout for this page
+// Assign Layout
 Layanan.layout = (page) => <GuestLayout children={page} />;
 
 export default Layanan;

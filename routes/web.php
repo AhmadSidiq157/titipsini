@@ -8,13 +8,10 @@ use Inertia\Inertia;
 // App Controllers
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ContactPageController;
-use App\Http\Controllers\InternshipPageController;
-use App\Http\Controllers\JobVacancyController;
 use App\Http\Controllers\LayananPageController;
-use App\Http\Controllers\ProgramPageController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\UserVerificationController;
-// use App\Http\Controllers\MitraController;
+use App\Http\Controllers\MitraController;
 use App\Http\Controllers\HistoryController;
 
 // Admin Controllers
@@ -24,10 +21,6 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\WelcomeController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\MovingPackageController;
-use App\Http\Controllers\Admin\InternshipPositionController;
-use App\Http\Controllers\Admin\InternshipProjectController;
-use App\Http\Controllers\Admin\CareerProgramController;
-use App\Http\Controllers\Admin\CurriculumController;
 use App\Http\Controllers\Admin\OrderManagementController;
 use App\Http\Controllers\Admin\PindahanManagementController;
 use App\Http\Controllers\Admin\CourierVerificationController;
@@ -36,7 +29,6 @@ use App\Http\Controllers\Admin\BranchController;
 // --- Controller Kurir ---
 use App\Http\Controllers\Courier\DashboardController as CourierDashboardController;
 use App\Http\Controllers\Courier\TaskController as CourierTaskController;
-// [PENTING] Kita pakai AuthController sekarang, bukan VerificationController yang hilang
 use App\Http\Controllers\Courier\AuthController as CourierAuthController;
 
 
@@ -46,34 +38,13 @@ use App\Http\Controllers\Courier\AuthController as CourierAuthController;
 |--------------------------------------------------------------------------
 */
 
-// --- [BARU] RUTE LOGIN & REGISTER KURIR ---
-// Rute ini untuk 'Tamu' (yang belum login)
-Route::middleware('guest')->prefix('courier')->name('courier.')->group(function () {
-    // Halaman Login
-    Route::get('login', [CourierAuthController::class, 'showLoginForm'])->name('login');
-    // Proses Login
-    Route::post('login', [CourierAuthController::class, 'login'])->name('login.store');
-    
-    // Halaman Register
-    Route::get('register', [CourierAuthController::class, 'showRegisterForm'])->name('register');
-    // Proses Register (termasuk upload)
-    Route::post('register', [CourierAuthController::class, 'register'])->name('register.store');
-});
-
-// Rute Logout Kurir (terpisah, butuh auth)
-Route::middleware('auth')->prefix('courier')->name('courier.')->group(function () {
-    Route::post('logout', [CourierAuthController::class, 'logout'])->name('logout');
-});
-// --- AKHIR RUTE BARU ---
-
-
 // --- RUTE HALAMAN PUBLIK ---
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
 Route::get('/tentang-kami', fn() => Inertia::render('About'))->name('about');
 Route::get('/contact', [ContactPageController::class, 'show'])->name('contact.show');
 Route::post('/contact', [ContactPageController::class, 'store'])->name('contact.store');
 Route::get('/layanan', [LayananPageController::class, 'show'])->name('layanan.show');
-// Route::get('/Mitra/index', [MitraController::class, 'index'])->name('mitra.index');
+Route::get('/Mitra/index', [MitraController::class, 'index'])->name('mitra.index');
 
 // --- RUTE UNTUK PENGGUNA TERAUTENTIKASI ---
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -83,19 +54,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
 
-    // Rute untuk polling status order real-time
+    // Riwayat Pesanan
+    Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
+    Route::get('/history/{order}', [HistoryController::class, 'show'])->name('history.show');
+
+    // Polling Status Order Real-time
     Route::get('/order/{order}/status', [OrderController::class, 'getStatus'])->name('order.status');
 
-    // --- RUTE ORDER KLIEN ---
+    // --- RUTE ORDER & PEMBAYARAN ---
     Route::prefix('order')->name('order.')->group(function () {
-        Route::get('/', [OrderController::class, 'index'])->name('index');
+        // [PENTING] Rute ini sekarang dipanggil oleh Axios di Modal (mengembalikan JSON)
         Route::get('/create', [OrderController::class, 'create'])->name('create');
-        Route::get('/{order}/payment', [OrderController::class, 'payment'])->name('payment');
-        Route::get('/{order}/success', [OrderController::class, 'success'])->name('success');
+
+        // Proses submit order (Langkah 1 Modal)
         Route::post('/', [OrderController::class, 'store'])->name('store')->middleware('isVerified');
+
+        // Halaman/Proses pembayaran (Langkah 2 Modal & Link dari History)
+        Route::get('/{order}/payment', [OrderController::class, 'payment'])->name('payment');
         Route::post('/{order}/payment', [OrderController::class, 'submitPayment'])->name('submitPayment')->middleware('isVerified');
+
+        // Halaman Sukses (Legacy/Fallback)
+        Route::get('/{order}/success', [OrderController::class, 'success'])->name('success');
     });
 
     // --- RUTE VERIFIKASI KTP KLIEN ---
@@ -103,6 +83,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/create', [UserVerificationController::class, 'create'])->name('create');
         Route::post('/', [UserVerificationController::class, 'store'])->name('store');
         Route::get('/pending', [UserVerificationController::class, 'pending'])->name('pending');
+        Route::get('/check-status', [UserVerificationController::class, 'checkStatus'])->name('check_status');
     });
 });
 
@@ -124,19 +105,22 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
         Route::post('verifications/{userVerification}/approve', [UserManagementController::class, 'verificationApprove'])->name('verification.approve');
         Route::post('verifications/{userVerification}/reject', [UserManagementController::class, 'verificationReject'])->name('verification.reject');
 
-        // Resources untuk Layanan & Paket
+        // Resources (CRUD)
         Route::resource('services', ServiceController::class);
         Route::resource('moving-packages', MovingPackageController::class);
         Route::resource('branches', BranchController::class);
 
-        // Manajemen Pesanan Admin
+        // Manajemen Pesanan PENITIPAN
         Route::prefix('orders')->name('orders.')->group(function () {
             Route::get('/', [OrderManagementController::class, 'index'])->name('index');
             Route::get('/{order}', [OrderManagementController::class, 'show'])->name('show');
             Route::post('/{order}/approve', [OrderManagementController::class, 'approvePayment'])->name('approve');
             Route::post('/{order}/reject', [OrderManagementController::class, 'rejectPayment'])->name('reject');
+            Route::post('/{order}/complete', [OrderManagementController::class, 'completeOrder'])->name('complete');
+            Route::post('/{order}/assign-courier', [OrderManagementController::class, 'assignCourier'])->name('assignCourier');
         });
 
+        // Manajemen Pesanan PINDAHAN (dengan Tracking & Kurir)
         Route::prefix('pindahan')->name('pindahan.')->group(function () {
             Route::get('/', [PindahanManagementController::class, 'index'])->name('index');
             Route::post('/{order}/approve', [PindahanManagementController::class, 'approvePayment'])->name('approve');
@@ -145,12 +129,11 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
             Route::get('/courier/{courier}/location', [PindahanManagementController::class, 'getCourierLocation'])->name('courier-location');
         });
 
-        // Manajemen Verifikasi Kurir
+        // Manajemen Verifikasi KURIR
         Route::prefix('courier-verifications')
             ->name('courier_verifications.')
             ->controller(CourierVerificationController::class)
             ->group(function () {
-
                 Route::get('/', 'index')->name('index');
                 Route::get('/{verification}', 'show')->name('show');
                 Route::post('/{verification}/approve', 'approve')->name('approve');
@@ -174,12 +157,14 @@ Route::middleware(['auth', 'verified', 'courier'])
     ->prefix('courier')
     ->name('courier.')
     ->group(function () {
-        
-        // [MODIFIKASI] Baris 'Route::get('/verification/pending', ...)' DIHAPUS.
-        // Karena method 'pending' tidak ada di AuthController dan tidak diperlukan.
+        // Verifikasi Kurir (Pending page)
+        Route::get('/verification/pending', [CourierAuthController::class, 'pending'])->name('verification.pending');
 
+        // Dashboard & Tugas
         Route::get('/dashboard', [CourierDashboardController::class, 'index'])->name('dashboard');
         Route::get('/tasks/{id}', [CourierTaskController::class, 'show'])->name('tasks.show');
+
+        // Aksi Kurir
         Route::patch('/tasks/{id}/update-status', [CourierTaskController::class, 'updateStatus'])->name('tasks.updateStatus');
         Route::post('/tasks/{id}/tracking', [CourierTaskController::class, 'addTrackingNote'])->name('tasks.addTracking');
         Route::post('/location/update', [CourierTaskController::class, 'updateLocation'])->name('updateLocation');

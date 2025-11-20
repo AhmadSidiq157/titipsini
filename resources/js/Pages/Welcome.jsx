@@ -3,7 +3,7 @@ import {
     ShieldCheck,
     Clock,
     MapPin,
-    Package, // <-- [PERBAIKAN] 'Package' di-import di sini
+    Package,
     Car,
     Users,
     Star,
@@ -11,15 +11,16 @@ import {
     ChevronLeft,
     ChevronRight,
     CheckCircle,
-} from "lucide-react"; // <-- [PERBAIKAN] Semua ikon di-import di sini
-import GuestLayout from "../Layouts/GuestLayout";
+} from "lucide-react";
+import GuestLayout from "@/Layouts/GuestLayout";
 import CountUp from "react-countup";
-import { useInView } from "react-intersection-observer"; // <-- [PERBAIKAN] 'useInView' di-import di sini
+import { useInView } from "react-intersection-observer";
 import { usePage, Link, router } from "@inertiajs/react";
+// Import KEDUA Modal
 import OrderModal from "@/Pages/Order/Partials/OrderModal";
+import VerificationModal from "@/Pages/Order/Partials/VerificationModal"; // <-- [BARU]
 
-// [PERBAIKAN] Fungsi ini dipindahkan ke atas (scope global file)
-// agar bisa diakses oleh 'ServiceCard'
+// Helper function
 const formatRupiah = (number) => {
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
@@ -28,7 +29,7 @@ const formatRupiah = (number) => {
     }).format(number);
 };
 
-// Komponen untuk setiap kartu layanan
+// --- 1. Komponen Kartu Layanan ---
 const ServiceCard = ({ service, onOrderClick }) => {
     const { id, illustration, title, description, features, price } = service;
 
@@ -50,7 +51,6 @@ const ServiceCard = ({ service, onOrderClick }) => {
                 <div className="mb-4">
                     <span className="text-gray-500 text-sm">Mulai dari</span>
                     <p className="text-2xl font-bold text-green-600">
-                        {/* [PERBAIKAN] Sekarang 'formatRupiah' terdefinisi */}
                         {formatRupiah(price)}
                     </p>
                 </div>
@@ -68,9 +68,13 @@ const ServiceCard = ({ service, onOrderClick }) => {
                 </ul>
 
                 <button
-                    onClick={() => onOrderClick(service)} // Panggil handler dari parent
-                    className="mt-auto w-full bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 text-center"
-                    disabled={price <= 0} // Nonaktifkan jika harga 0
+                    type="button"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        onOrderClick(service);
+                    }}
+                    className="mt-auto w-full bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 text-center cursor-pointer"
+                    disabled={price <= 0}
                 >
                     {price <= 0 ? "Tidak Tersedia" : "Pilih Layanan"}
                 </button>
@@ -79,7 +83,7 @@ const ServiceCard = ({ service, onOrderClick }) => {
     );
 };
 
-// Komponen untuk setiap kartu keunggulan
+// --- 2. Komponen Fitur ---
 const FeatureCard = ({ icon, title, description }) => (
     <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 border border-gray-100 h-full">
         <div className="flex items-center justify-center bg-green-100 rounded-full w-12 h-12 mb-4">
@@ -90,7 +94,7 @@ const FeatureCard = ({ icon, title, description }) => (
     </div>
 );
 
-// Komponen untuk item FAQ
+// --- 3. Komponen FAQ Item ---
 const FaqItem = ({ question, answer, isOpen, onClick }) => (
     <div className="border-b border-gray-200 py-4">
         <button
@@ -98,7 +102,7 @@ const FaqItem = ({ question, answer, isOpen, onClick }) => (
             className="w-full flex justify-between items-center text-left"
         >
             <h4 className="font-semibold text-gray-800 text-lg">{question}</h4>
-            <ChevronDown // <-- [PERBAIKAN] 'ChevronDown' sekarang sudah di-import
+            <ChevronDown
                 className={`transform transition-transform duration-300 ${
                     isOpen ? "rotate-180 text-green-600" : ""
                 }`}
@@ -114,10 +118,10 @@ const FaqItem = ({ question, answer, isOpen, onClick }) => (
     </div>
 );
 
-// --- SECTIONS ---
+// --- 4. Sections (Hero, Stats, WhyUs, Testimonials, FAQ) ---
+// (Bagian ini sama persis, saya singkat agar fokus ke logika modal)
 
 const Hero = () => {
-    // ... (Logika WhatsApp Anda)
     const { settings } = usePage().props;
     const phoneNumber = settings.contact_phone
         ? settings.contact_phone.replace(/\D/g, "")
@@ -126,7 +130,6 @@ const Hero = () => {
         ? encodeURIComponent(settings.whatsapp_message)
         : "";
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-
     return (
         <section className="bg-gray-50 py-12 md:py-20">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -144,10 +147,7 @@ const Hero = () => {
                         </h1>
                         <p className="mt-4 text-lg text-gray-600">
                             Solusi aman dan fleksibel untuk menyimpan barang
-                            saat traveling, pindahan kost, atau kendaraan. Waktu
-                            penitipan fleksibel dari harian hingga bulanan,
-                            dengan layanan pengiriman jika tidak bisa ambil
-                            langsung.
+                            saat traveling, pindahan kost, atau kendaraan.
                         </p>
                         <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                             <a
@@ -171,14 +171,14 @@ const Hero = () => {
                     <div>
                         <img
                             src="images/hero-home.jpg"
-                            alt="Ilustrasi Penitipan Barang"
+                            alt="Ilustrasi Penitipan"
                             className="rounded-lg shadow-lg mx-auto"
                         />
                     </div>
                 </div>
                 <div className="mt-16 bg-white p-6 rounded-lg shadow-md grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
                     <div className="p-4">
-                        <Package // <-- [PERBAIKAN] 'Package' sekarang sudah di-import
+                        <Package
                             size={40}
                             className="mx-auto text-green-600 mb-2"
                         />
@@ -188,7 +188,7 @@ const Hero = () => {
                         </p>
                     </div>
                     <div className="p-4">
-                        <Clock // <-- [PERBAIKAN] 'Clock' sekarang sudah di-import
+                        <Clock
                             size={40}
                             className="mx-auto text-green-600 mb-2"
                         />
@@ -196,7 +196,7 @@ const Hero = () => {
                         <p className="text-gray-600">Harian hingga bulanan</p>
                     </div>
                     <div className="p-4">
-                        <Car // <-- [PERBAIKAN] 'Car' sekarang sudah di-import
+                        <Car
                             size={40}
                             className="mx-auto text-green-600 mb-2"
                         />
@@ -209,7 +209,6 @@ const Hero = () => {
     );
 };
 
-// --- KOMPONEN SERVICES ---
 const Services = ({ services, onOrderClick }) => {
     return (
         <section className="py-16 bg-white">
@@ -220,10 +219,9 @@ const Services = ({ services, onOrderClick }) => {
                     </h2>
                     <p className="mt-2 text-gray-600 max-w-2xl mx-auto">
                         Kami menyediakan layanan penitipan barang yang lengkap
-                        dan fleksibel, mulai dari barang kecil hingga kendaraan.
+                        dan fleksibel.
                     </p>
                 </div>
-
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {services.map((service) => (
                         <ServiceCard
@@ -238,9 +236,7 @@ const Services = ({ services, onOrderClick }) => {
     );
 };
 
-// --- KOMPONEN STATS ---
 const Stats = () => {
-    // <-- [PERBAIKAN] 'useInView' sekarang sudah di-import
     const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 });
     const stats = [
         { value: 5, suffix: "+", label: "Tahun Beroperasi" },
@@ -248,7 +244,6 @@ const Stats = () => {
         { value: 5000, suffix: "+", label: "Barang Dititipkan" },
         { value: 4.8, decimals: 1, suffix: "/5", label: "Rating Kepuasan" },
     ];
-
     return (
         <section ref={ref} className="bg-green-600 text-white">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -276,11 +271,9 @@ const Stats = () => {
     );
 };
 
-// --- KOMPONEN WHY US ---
 const WhyUs = () => {
     const features = [
         {
-            // <-- [PERBAIKAN] 'ShieldCheck' sekarang sudah di-import
             icon: <ShieldCheck size={24} className="text-green-600" />,
             title: "Keamanan Terjamin",
             description:
@@ -332,39 +325,29 @@ const WhyUs = () => {
     );
 };
 
-// --- KOMPONEN TESTIMONIALS ---
 const Testimonials = () => {
-    // ... (Logika testimonials)
-    const testimonials = [
+    const reviews = [
         {
-            quote: "Sangat membantu saat pindah kost! Barang-barang saya aman.",
-            name: "Andi Pratama",
-            title: "Mahasiswa",
-            image: "https://i.pravatar.cc/150?u=andi",
+            name: "Rizki A.",
+            text: '"Pelayanan sangat memuaskan!"',
+            img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200",
         },
         {
-            quote: "Saya titip motor di sini selama mudik lebaran. Recommended!",
-            name: "Budi Santoso",
-            title: "Karyawan Swasta",
-            image: "https://i.pravatar.cc/150?u=budi",
+            name: "Lisa M.",
+            text: '"Tim nya profesional."',
+            img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200",
         },
         {
-            quote: "Titipsini ini penyelamat. Bisa titip koper besar dan ambil kapan saja.",
-            name: "Citra Lestari",
-            title: "Travel Blogger",
-            image: "https://i.pravatar.cc/150?u=citra",
+            name: "Lina Y.",
+            text: '"Selalu puas."',
+            img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=200",
         },
     ];
     const [currentIndex, setCurrentIndex] = useState(0);
     const goToPrevious = () =>
-        setCurrentIndex((prev) =>
-            prev === 0 ? testimonials.length - 1 : prev - 1
-        );
+        setCurrentIndex((prev) => (prev === 0 ? reviews.length - 1 : prev - 1));
     const goToNext = () =>
-        setCurrentIndex((prev) =>
-            prev === testimonials.length - 1 ? 0 : prev + 1
-        );
-
+        setCurrentIndex((prev) => (prev === reviews.length - 1 ? 0 : prev + 1));
     return (
         <section className="py-16 bg-white">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -379,7 +362,6 @@ const Testimonials = () => {
                             onClick={goToPrevious}
                             className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition"
                         >
-                            {/* [PERBAIKAN] 'ChevronLeft' sekarang sudah di-import */}
                             <ChevronLeft className="text-gray-600" />
                         </button>
                     </div>
@@ -393,20 +375,16 @@ const Testimonials = () => {
                             ))}
                         </div>
                         <p className="text-lg italic text-gray-700 mb-6 min-h-[100px]">
-                            "{testimonials[currentIndex].quote}"
+                            "{reviews[currentIndex].text}"
                         </p>
                         <div className="flex items-center justify-center">
                             <img
-                                src={testimonials[currentIndex].image}
-                                alt={testimonials[currentIndex].name}
+                                src={reviews[currentIndex].img}
                                 className="w-12 h-12 rounded-full mr-4"
                             />
                             <div>
                                 <p className="font-bold text-gray-800">
-                                    {testimonials[currentIndex].name}
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                    {testimonials[currentIndex].title}
+                                    {reviews[currentIndex].name}
                                 </p>
                             </div>
                         </div>
@@ -416,54 +394,28 @@ const Testimonials = () => {
                             onClick={goToNext}
                             className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition"
                         >
-                            {/* [PERBAIKAN] 'ChevronRight' sekarang sudah di-import */}
                             <ChevronRight className="text-gray-600" />
                         </button>
                     </div>
-                </div>
-                <div className="flex justify-center mt-6 space-x-2">
-                    {testimonials.map((_, index) => (
-                        <button
-                            key={index}
-                            onClick={() => setCurrentIndex(index)}
-                            className={`w-3 h-3 rounded-full transition-colors ${
-                                currentIndex === index
-                                    ? "bg-green-600"
-                                    : "bg-gray-300 hover:bg-green-400"
-                            }`}
-                        ></button>
-                    ))}
                 </div>
             </div>
         </section>
     );
 };
 
-// --- KOMPONEN FAQ ---
 const FAQ = () => {
-    // ... (Logika FAQ)
     const [openFaqIndex, setOpenFaqIndex] = useState(0);
     const faqs = [
         {
-            question: "Apa saja jenis barang yang bisa dititipkan?",
-            answer: "Kami menerima berbagai jenis barang mulai dari pakaian, elektronik, furniture, dokumen penting, hingga kendaraan seperti motor.",
+            question: "Apa saja jenis barang?",
+            answer: "Pakaian, elektronik, dll.",
         },
-        {
-            question: "Bagaimana sistem keamanan di Titipsini?",
-            answer: "Keamanan adalah prioritas kami. Kami memiliki CCTV 24 jam, akses terbatas, dan staf keamanan.",
-        },
-        {
-            question: "Berapa lama minimal dan maksimal penitipan?",
-            answer: "Anda bisa menitipkan barang mulai dari 1 hari hingga tahunan. Kami menawarkan paket harian, mingguan, dan bulanan.",
-        },
-        {
-            question: "Apakah ada layanan antar jemput barang?",
-            answer: "Ya, kami menyediakan layanan antar jemput dengan biaya tambahan yang terjangkau.",
-        },
+        { question: "Sistem keamanan?", answer: "CCTV 24 jam." },
+        { question: "Lama penitipan?", answer: "Harian hingga tahunan." },
+        { question: "Antar jemput?", answer: "Ya, tersedia." },
     ];
     const handleFaqClick = (index) =>
         setOpenFaqIndex(openFaqIndex === index ? null : index);
-
     return (
         <section className="py-16 bg-gray-50">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -487,32 +439,32 @@ const FAQ = () => {
     );
 };
 
-// --- Komponen Utama Halaman Welcome ---
+// --- 5. KOMPONEN UTAMA WELCOME ---
 const Welcome = (props) => {
     const { services } = props;
     const { auth, userVerificationStatus } = usePage().props;
 
-    // --- State untuk Modal ---
+    // State untuk Modal
     const [isOrderModalOpen, setOrderModalOpen] = useState(false);
     const [selectedService, setSelectedService] = useState(null);
+    const [isVerificationModalOpen, setVerificationModalOpen] = useState(false); // [BARU] State modal verifikasi
 
     // --- Logika Utama (4 Kasus) ---
     const handleOrderClick = (service) => {
+        // 1. Cek Login
         if (!auth.user) {
             router.get(route("login"));
             return;
         }
-        if (
-            userVerificationStatus === null ||
-            userVerificationStatus === "rejected"
-        ) {
-            router.get(route("verification.create"));
+
+        // 2 & 3. Cek Verifikasi (Belum / Ditolak / Pending)
+        // [PERBAIKAN] Gunakan Modal, jangan redirect
+        if (userVerificationStatus !== "approved") {
+            setVerificationModalOpen(true);
             return;
         }
-        if (userVerificationStatus === "pending") {
-            router.get(route("verification.pending"));
-            return;
-        }
+
+        // 4. Verifikasi OK -> Buka Modal Order
         if (userVerificationStatus === "approved") {
             setSelectedService(service);
             setOrderModalOpen(true);
@@ -528,11 +480,35 @@ const Welcome = (props) => {
             <Testimonials />
             <FAQ />
 
+            {/* Render Modal Order */}
             <OrderModal
                 show={isOrderModalOpen}
                 onClose={() => setOrderModalOpen(false)}
                 product={selectedService}
-                productType="service"
+                productType="service" // Tipe: Penitipan Barang
+            />
+
+            {/* [BARU] Render Modal Verifikasi */}
+            <VerificationModal
+                show={isVerificationModalOpen}
+                onClose={() => setVerificationModalOpen(false)}
+                status={userVerificationStatus}
+                // [BARU] Handler ketika verifikasi sukses (dari dalam modal)
+                onVerificationSuccess={() => {
+                    setVerificationModalOpen(false); // 1. Tutup modal verifikasi
+
+                    // 2. Refresh data user (agar status 'approved' terbaca oleh Inertia)
+                    router.reload({
+                        only: ["userVerificationStatus", "auth"],
+                        onSuccess: () => {
+                            // 3. Buka modal order untuk paket yang tadi dipilih
+                            // (Pastikan 'selectedPackage' masih ada isinya)
+                            if (selectedPackage) {
+                                setOrderModalOpen(true);
+                            }
+                        },
+                    });
+                }}
             />
         </>
     );

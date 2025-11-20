@@ -61,7 +61,7 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. Validasi dasar (berlaku untuk semua jenis pesanan)
+        // 1. Validasi dasar
         $baseRules = [
             'product_id' => 'required|integer',
             'product_model' => ['required', 'string', Rule::in([Service::class, MovingPackage::class])],
@@ -69,19 +69,21 @@ class OrderController extends Controller
             'form_details' => 'required|array',
         ];
 
-        // 2. Tentukan aturan validasi dinamis berdasarkan product_model
+        // 2. Validasi Dinamis
         $modelClass = $request->input('product_model');
         $formDetailRules = [];
 
         if ($modelClass === Service::class) {
-            // Aturan untuk 'Penitipan'
+            // --- [UPDATE] Aturan Penitipan Barang ---
             $formDetailRules = [
                 'form_details.start_date' => 'required|date|after_or_equal:today',
                 'form_details.end_date' => 'required|date|after:form_details.start_date',
+                'form_details.delivery_method' => 'required|string|in:drop_off,pickup', // Baru
+                'form_details.item_photo' => 'nullable|image|max:2048', // Baru
                 'form_details.notes' => 'nullable|string|max:1000',
             ];
         } elseif ($modelClass === MovingPackage::class) {
-            // Aturan untuk 'Pindahan'
+            // Aturan Pindahan (Tetap)
             $formDetailRules = [
                 'form_details.tanggal_pindahan' => 'required|date|after_or_equal:today',
                 'form_details.telepon' => 'required|string|max:20',
@@ -91,30 +93,36 @@ class OrderController extends Controller
             ];
         }
 
-        // 3. Gabungkan semua aturan dan jalankan validasi
+        // 3. Validasi
         $validatedData = $request->validate(array_merge($baseRules, $formDetailRules));
+        $formDetails = $validatedData['form_details'];
 
-        // 4. Cari model produk (logika lama Anda, sudah benar)
+        // 4. [BARU] Handle Upload Foto Barang (Khusus Penitipan)
+        if ($request->hasFile('form_details.item_photo')) {
+            $path = $request->file('form_details.item_photo')->store('order_items', 'public');
+            $formDetails['item_photo_path'] = $path; // Simpan path
+            unset($formDetails['item_photo']); // Hapus objek file mentah agar tidak masuk JSON
+        }
+
+        // 5. Cari Produk
         $product = $modelClass::find($validatedData['product_id']);
         if (!$product) {
             throw ValidationException::withMessages(['product_id' => 'Produk tidak valid.']);
         }
 
-        // 5. Buat Order baru (logika lama Anda, sudah benar)
+        // 6. Buat Order
         $order = $product->orders()->create([
             'user_id' => Auth::id(),
             'final_amount' => $validatedData['final_amount'],
-            'user_form_details' => $validatedData['form_details'], // <-- Gunakan data yg sudah divalidasi
-            'status' => 'awaiting_payment', // Status: Menunggu pembayaran
+            'user_form_details' => $formDetails, // Data JSON yang sudah diproses
+            'status' => 'awaiting_payment',
         ]);
 
-        // 6. Return JSON (logika lama Anda, sudah benar)
-        $order->load('orderable'); // Muat detail produk untuk Step 2
+        $order->load('orderable');
         return response()->json([
             'order' => $order
         ]);
     }
-
     /**
      * Menampilkan halaman upload pembayaran (Langkah 3).
      */

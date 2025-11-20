@@ -19,12 +19,13 @@ import {
     Flag,
     Send,
     Map as MapIcon,
+    Box,
+    Truck,
+    ShieldAlert,
 } from "lucide-react";
 import axios from "axios";
-// Import Komponen Peta
 import LiveMap from "@/Components/LiveMap";
 
-// Daftar status
 const statusOptions = [
     { value: "ready_for_pickup", label: "🚀 Siap Diambil (Menuju Lokasi)" },
     { value: "picked_up", label: "📦 Barang Sudah Diambil" },
@@ -43,28 +44,34 @@ const formatRupiah = (number) => {
 };
 
 export default function TaskShow({ auth, task }) {
-    const { flash } = usePage().props;
+    // [UPDATE] Ambil 'settings' dari props global
+    const { flash, settings } = usePage().props;
 
-    // --- State Lokal untuk Peta Instan ---
-    const [currentPos, setCurrentPos] = useState({
-        lat: auth.user.latitude ? parseFloat(auth.user.latitude) : null,
-        lng: auth.user.longitude ? parseFloat(auth.user.longitude) : null,
-    });
+    // --- SETUP KONTAK ADMIN (Dari Settings) ---
+    const adminPhone = settings.contact_phone
+        ? settings.contact_phone.replace(/\D/g, "")
+        : "";
+    // Ganti 0 dengan 62
+    const adminWaTarget = adminPhone.startsWith("0")
+        ? "62" + adminPhone.slice(1)
+        : adminPhone;
 
-    // --- Form Data ---
-    // 1. Form Update Status Utama
+    const adminWaLink = `https://wa.me/${adminWaTarget}?text=${encodeURIComponent(
+        `Halo Admin, saya Kurir ${auth.user.name}. Saya butuh bantuan untuk Order #${task.id}.`
+    )}`;
+
+    // Form Update Status Utama
     const { data, setData, patch, processing, errors } = useForm({
         status: task.status || "ready_for_pickup",
     });
 
-    // 2. Form Tambah Catatan Tracking
+    // Form Tambah Catatan Tracking
     const trackingForm = useForm({
         note: "",
     });
 
-    // --- [LOGIKA GPS LIVE TRACKING] ---
+    // --- LOGIKA GPS LIVE TRACKING ---
     useEffect(() => {
-        // Hanya jalankan GPS jika status aktif
         const isActive = [
             "ready_for_pickup",
             "picked_up",
@@ -76,11 +83,6 @@ export default function TaskShow({ auth, task }) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const { latitude, longitude } = position.coords;
-
-                        // 1. Update tampilan peta lokal (Instan)
-                        setCurrentPos({ lat: latitude, lng: longitude });
-
-                        // 2. Kirim ke server (Background)
                         axios
                             .post(route("courier.updateLocation"), {
                                 lat: latitude,
@@ -93,15 +95,30 @@ export default function TaskShow({ auth, task }) {
                     (err) => console.error("GPS Error", err),
                     { enableHighAccuracy: true }
                 );
-            }, 5000); // Update setiap 5 detik agar smooth
+            }, 10000);
 
             return () => clearInterval(intervalId);
         }
     }, [task.status]);
 
-    // --- Handlers ---
+    // State Lokal Peta (Visual)
+    const [currentPos, setCurrentPos] = useState({
+        lat: auth.user.latitude ? parseFloat(auth.user.latitude) : null,
+        lng: auth.user.longitude ? parseFloat(auth.user.longitude) : null,
+    });
 
-    // [PERBAIKAN PENTING] Nama fungsi submit status
+    // Update state peta jika GPS berubah
+    useEffect(() => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                setCurrentPos({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                });
+            });
+        }
+    }, []);
+
     const submitStatus = (e) => {
         e.preventDefault();
         patch(route("courier.tasks.updateStatus", task.id), {
@@ -122,10 +139,12 @@ export default function TaskShow({ auth, task }) {
     const orderable = task.orderable || {};
     const client = task.user || {};
     const isPindahan = !!details.alamat_penjemputan;
+    const isPenitipanPickup =
+        !isPindahan && details.delivery_method === "pickup";
     const trackings = task.trackings || [];
 
-    // --- Helper Links ---
-    const getWaLink = (phoneNumber) => {
+    // --- Helper Links (Untuk Klien) ---
+    const getClientWaLink = (phoneNumber) => {
         if (!phoneNumber) return "#";
         let cleanNumber = phoneNumber.replace(/\D/g, "");
         if (cleanNumber.startsWith("0"))
@@ -152,7 +171,7 @@ export default function TaskShow({ auth, task }) {
             <Head title={`Tugas #${task.id}`} />
 
             <div className="min-h-screen bg-gray-50/50 pb-20">
-                {/* --- HEADER --- */}
+                {/* HEADER */}
                 <div className="bg-white border-b border-gray-100 sticky top-0 z-10 bg-opacity-80 backdrop-blur-md">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
                         <div>
@@ -180,10 +199,10 @@ export default function TaskShow({ auth, task }) {
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* --- KOLOM KIRI: DETAIL PENGIRIMAN --- */}
+                        {/* --- KOLOM KIRI --- */}
                         <div className="lg:col-span-2 space-y-8">
-                            {/* [BARU] LIVE MAP COMPONENT */}
-                            {isPindahan && (
+                            {/* LIVE MAP COMPONENT */}
+                            {(isPindahan || isPenitipanPickup) && (
                                 <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100">
                                     <div className="p-4 pb-0 mb-4">
                                         <h3 className="text-lg font-bold text-gray-900 flex items-center">
@@ -195,8 +214,6 @@ export default function TaskShow({ auth, task }) {
                                             otomatis saat aktif.
                                         </p>
                                     </div>
-
-                                    {/* Peta menggunakan State Lokal 'currentPos' */}
                                     <LiveMap
                                         courierLat={currentPos.lat}
                                         courierLng={currentPos.lng}
@@ -204,10 +221,9 @@ export default function TaskShow({ auth, task }) {
                                 </div>
                             )}
 
-                            {/* KARTU KLIEN */}
+                            {/* KARTU KLIEN (Hubungi Klien) */}
                             <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-green-50 rounded-full blur-3xl -mr-16 -mt-16 opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
-
                                 <div className="relative flex items-center justify-between">
                                     <div className="flex items-center gap-4">
                                         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-100 to-emerald-50 flex items-center justify-center text-green-600 shadow-sm">
@@ -230,8 +246,11 @@ export default function TaskShow({ auth, task }) {
                                             <Phone size={18} />
                                         </a>
                                         <a
-                                            href={getWaLink(details.telepon)}
+                                            href={getClientWaLink(
+                                                details.telepon
+                                            )}
                                             target="_blank"
+                                            rel="noopener noreferrer"
                                             className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600 hover:bg-green-500 hover:text-white transition-all shadow-sm hover:shadow-md"
                                         >
                                             <MessageCircle size={18} />
@@ -256,13 +275,11 @@ export default function TaskShow({ auth, task }) {
                                         <Navigation
                                             size={20}
                                             className="text-blue-500"
-                                        />
+                                        />{" "}
                                         Rute Perjalanan
                                     </h3>
-
                                     <div className="relative pl-4">
                                         <div className="absolute left-[1.65rem] top-4 bottom-8 w-0.5 bg-gradient-to-b from-blue-400 to-green-400 border-l-2 border-dashed border-gray-300"></div>
-
                                         <div className="relative flex gap-6 mb-10 group">
                                             <div className="relative z-10 flex-shrink-0 w-12 h-12 rounded-full bg-blue-50 border-4 border-white shadow-md flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform duration-300">
                                                 <Package size={20} />
@@ -289,7 +306,6 @@ export default function TaskShow({ auth, task }) {
                                                 </a>
                                             </div>
                                         </div>
-
                                         <div className="relative flex gap-6 group">
                                             <div className="relative z-10 flex-shrink-0 w-12 h-12 rounded-full bg-green-50 border-4 border-white shadow-md flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform duration-300">
                                                 <MapPin size={20} />
@@ -318,31 +334,70 @@ export default function TaskShow({ auth, task }) {
                                         </div>
                                     </div>
                                 </div>
+                            ) : isPenitipanPickup ? (
+                                <div className="bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full opacity-50"></div>
+                                    <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                        <Truck
+                                            size={20}
+                                            className="text-blue-500"
+                                        />{" "}
+                                        Tugas Penjemputan
+                                    </h3>
+                                    <div className="relative flex gap-6 group items-start">
+                                        <div className="relative z-10 flex-shrink-0 w-12 h-12 rounded-full bg-blue-500 border-4 border-white shadow-lg flex items-center justify-center text-white">
+                                            <MapPin size={24} />
+                                        </div>
+                                        <div className="flex-grow pt-1">
+                                            <p className="text-xs font-bold text-blue-500 uppercase tracking-wider mb-1">
+                                                Lokasi Jemput
+                                            </p>
+                                            <p className="text-gray-900 text-xl font-bold leading-snug mb-2">
+                                                {client.address ||
+                                                    "Alamat sesuai profil klien"}
+                                            </p>
+                                            <a
+                                                href={getMapsLink(
+                                                    client.address
+                                                )}
+                                                target="_blank"
+                                                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg shadow-md hover:bg-blue-700 transition"
+                                            >
+                                                <MapPin
+                                                    size={16}
+                                                    className="mr-2"
+                                                />{" "}
+                                                Buka Google Maps
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
                             ) : (
                                 <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 text-center">
-                                    <p className="text-gray-500">
-                                        Ini adalah layanan penitipan standar.
-                                        Lihat detail di bawah.
-                                    </p>
+                                    <Box
+                                        size={48}
+                                        className="mx-auto text-gray-300 mb-4"
+                                    />
+                                    <h4 className="text-lg font-bold text-gray-700">
+                                        Layanan Standar
+                                    </h4>
                                 </div>
                             )}
 
                             {/* TRACKING TIMELINE */}
                             <div className="bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
                                 <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center">
-                                    <Flag className="w-5 h-5 mr-2 text-purple-500" />
-                                    Tracking & Catatan Perjalanan
+                                    <Flag className="w-5 h-5 mr-2 text-purple-500" />{" "}
+                                    Timeline
                                 </h3>
-
-                                {/* Form Catatan Manual */}
                                 <form
                                     onSubmit={submitTracking}
                                     className="mb-8 flex gap-2"
                                 >
                                     <input
                                         type="text"
-                                        className="flex-1 border-gray-200 rounded-xl text-sm focus:ring-green-500 focus:border-green-500 bg-gray-50"
-                                        placeholder="Tulis catatan (cth: Macet, Isi Bensin, Sampai lokasi)..."
+                                        className="flex-1 border-gray-200 rounded-xl text-sm bg-gray-50"
+                                        placeholder="Catatan (cth: Macet)..."
                                         value={trackingForm.data.note}
                                         onChange={(e) =>
                                             trackingForm.setData(
@@ -356,12 +411,11 @@ export default function TaskShow({ auth, task }) {
                                             trackingForm.processing ||
                                             !trackingForm.data.note
                                         }
-                                        className="bg-gray-900 text-white p-3 rounded-xl hover:bg-gray-800 disabled:opacity-50"
+                                        className="bg-gray-900 text-white p-3 rounded-xl"
                                     >
                                         <Send size={18} />
                                     </button>
                                 </form>
-
                                 <div className="space-y-6 relative pl-2">
                                     <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-gray-200"></div>
                                     {trackings.length > 0 ? (
@@ -371,127 +425,115 @@ export default function TaskShow({ auth, task }) {
                                                 className="relative flex gap-4 items-start"
                                             >
                                                 <div
-                                                    className={`relative z-10 w-7 h-7 rounded-full border-2 border-white shadow-sm flex items-center justify-center
-                                                ${
-                                                    index === 0
-                                                        ? "bg-green-500 text-white"
-                                                        : "bg-gray-200 text-gray-500"
-                                                }`}
+                                                    className={`relative z-10 w-7 h-7 rounded-full border-2 border-white shadow-sm flex items-center justify-center ${
+                                                        index === 0
+                                                            ? "bg-green-500 text-white"
+                                                            : "bg-gray-200 text-gray-500"
+                                                    }`}
                                                 >
                                                     <Clock size={12} />
                                                 </div>
-                                                <div className="flex-1 bg-gray-50 p-3 rounded-xl rounded-tl-none text-sm border border-gray-100">
-                                                    <div className="flex justify-between items-start mb-1">
-                                                        <span
-                                                            className={`font-bold text-xs uppercase tracking-wide px-2 py-0.5 rounded-full 
-                                                        ${
-                                                            log.status ===
-                                                            "Info Kurir"
-                                                                ? "bg-blue-100 text-blue-700"
-                                                                : "bg-green-100 text-green-700"
-                                                        }`}
-                                                        >
-                                                            {log.status}
-                                                        </span>
-                                                        <span className="text-xs text-gray-400">
-                                                            {new Date(
-                                                                log.created_at
-                                                            ).toLocaleString(
-                                                                "id-ID",
-                                                                {
-                                                                    hour: "2-digit",
-                                                                    minute: "2-digit",
-                                                                    day: "numeric",
-                                                                    month: "short",
-                                                                }
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-gray-700">
-                                                        {log.description}
-                                                    </p>
+                                                <div className="flex-1 bg-gray-50 p-3 rounded-xl text-sm">
+                                                    <p>{log.description}</p>
                                                 </div>
                                             </div>
                                         ))
                                     ) : (
-                                        <p className="text-gray-500 text-sm italic pl-8">
-                                            Belum ada riwayat perjalanan.
+                                        <p className="text-gray-400 text-sm italic pl-6">
+                                            Belum ada histori.
                                         </p>
                                     )}
                                 </div>
                             </div>
 
-                            {/* 4. DETAIL LAINNYA */}
+                            {/* DETAIL LAIN */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                    <div className="flex items-center gap-3 mb-2 text-gray-400">
-                                        <Calendar size={18} />
-                                        <span className="text-xs font-bold uppercase tracking-wider">
-                                            Tanggal Jadwal
-                                        </span>
-                                    </div>
+                                    <p className="text-xs font-bold uppercase text-gray-400 mb-1">
+                                        Tanggal Jadwal
+                                    </p>
                                     <p className="text-lg font-semibold text-gray-800">
                                         {formattedDate}
                                     </p>
                                 </div>
                                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                    <div className="flex items-center gap-3 mb-2 text-gray-400">
-                                        <FileText size={18} />
-                                        <span className="text-xs font-bold uppercase tracking-wider">
-                                            Catatan
-                                        </span>
-                                    </div>
+                                    <p className="text-xs font-bold uppercase text-gray-400 mb-1">
+                                        Catatan
+                                    </p>
                                     <p className="text-gray-800 italic">
-                                        "
-                                        {details.notes ||
-                                            "Tidak ada catatan khusus"}
-                                        "
+                                        "{details.notes || "-"}"
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* --- KOLOM KANAN: PANEL AKSI --- */}
+                        {/* --- KOLOM KANAN: AKSI --- */}
                         <div className="lg:col-span-1">
-                            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 sticky top-24">
-                                <h3 className="font-bold text-gray-900 mb-4">
-                                    Update Status
-                                </h3>
+                            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 sticky top-24 space-y-6">
+                                <div>
+                                    <h3 className="font-bold text-gray-900 mb-4">
+                                        Update Status
+                                    </h3>
+                                    <form
+                                        onSubmit={submitStatus}
+                                        className="space-y-4"
+                                    >
+                                        <select
+                                            value={data.status}
+                                            onChange={(e) =>
+                                                setData(
+                                                    "status",
+                                                    e.target.value
+                                                )
+                                            }
+                                            className="w-full border-gray-200 rounded-xl text-sm"
+                                        >
+                                            {statusOptions.map((opt) => (
+                                                <option
+                                                    key={opt.value}
+                                                    value={opt.value}
+                                                >
+                                                    {opt.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <PrimaryButton
+                                            className="w-full justify-center py-3"
+                                            disabled={processing}
+                                        >
+                                            Update Status
+                                        </PrimaryButton>
+                                    </form>
+                                </div>
 
-                                {flash.success && (
-                                    <div className="mb-4 p-3 bg-green-100 text-green-700 text-sm rounded-md">
-                                        {flash.success}
+                                {/* [MODIFIKASI] Tombol Hubungi Admin (Dynamic WA) */}
+                                <div className="bg-red-50 rounded-2xl p-6 border border-red-100 text-center">
+                                    <p className="text-sm text-red-800 font-medium mb-3 flex justify-center items-center">
+                                        <ShieldAlert className="w-4 h-4 mr-2" />{" "}
+                                        Butuh Bantuan Darurat?
+                                    </p>
+                                    <a
+                                        href={adminWaLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block w-full py-2.5 bg-white border border-red-200 text-red-600 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors"
+                                    >
+                                        Hubungi Admin
+                                    </a>
+                                </div>
+
+                                {details.item_photo_path && (
+                                    <div className="pt-6 border-t border-gray-100">
+                                        <p className="text-xs font-bold text-gray-400 uppercase mb-2">
+                                            Foto Barang
+                                        </p>
+                                        <img
+                                            src={`/storage/${details.item_photo_path}`}
+                                            alt="Barang"
+                                            className="w-full rounded-xl border"
+                                        />
                                     </div>
                                 )}
-
-                                {/* [PERBAIKAN] Form ini sekarang memanggil 'submitStatus' */}
-                                <form
-                                    onSubmit={submitStatus}
-                                    className="space-y-4"
-                                >
-                                    <select
-                                        value={data.status}
-                                        onChange={(e) =>
-                                            setData("status", e.target.value)
-                                        }
-                                        className="w-full border-gray-200 rounded-xl text-sm"
-                                    >
-                                        {statusOptions.map((opt) => (
-                                            <option
-                                                key={opt.value}
-                                                value={opt.value}
-                                            >
-                                                {opt.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <PrimaryButton
-                                        className="w-full justify-center py-3"
-                                        disabled={processing}
-                                    >
-                                        Update Status
-                                    </PrimaryButton>
-                                </form>
                             </div>
                         </div>
                     </div>
