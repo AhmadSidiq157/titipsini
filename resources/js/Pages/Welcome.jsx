@@ -229,7 +229,7 @@ const Services = ({ services, onOrderClick }) => {
                         <ServiceCard
                             key={service.id}
                             service={service}
-                            onOrderClick={onOrderClick} // <-- Kirim handler
+                            onOrderClick={onOrderClick}
                         />
                     ))}
                 </div>
@@ -522,10 +522,7 @@ const Welcome = (props) => {
     return (
         <>
             <Hero />
-            <Services
-                services={services}
-                onOrderClick={handleOrderClick} // <-- Kirim handler
-            />
+            <Services services={services} onOrderClick={handleOrderClick} />
             <Stats />
             <WhyUs />
             <Testimonials />
@@ -534,7 +531,7 @@ const Welcome = (props) => {
             <OrderModal
                 show={isOrderModalOpen}
                 onClose={() => setOrderModalOpen(false)}
-                product={selectedService} // <-- [PERBAIKAN] Ganti 'service' jadi 'product'
+                product={selectedService}
                 productType="service"
             />
         </>

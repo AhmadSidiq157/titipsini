@@ -14,7 +14,7 @@ use App\Http\Controllers\LayananPageController;
 use App\Http\Controllers\ProgramPageController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\UserVerificationController;
-use App\Http\Controllers\MitraController;
+// use App\Http\Controllers\MitraController;
 use App\Http\Controllers\HistoryController;
 
 // Admin Controllers
@@ -46,13 +46,34 @@ use App\Http\Controllers\Courier\AuthController as CourierAuthController;
 |--------------------------------------------------------------------------
 */
 
+// --- [BARU] RUTE LOGIN & REGISTER KURIR ---
+// Rute ini untuk 'Tamu' (yang belum login)
+Route::middleware('guest')->prefix('courier')->name('courier.')->group(function () {
+    // Halaman Login
+    Route::get('login', [CourierAuthController::class, 'showLoginForm'])->name('login');
+    // Proses Login
+    Route::post('login', [CourierAuthController::class, 'login'])->name('login.store');
+    
+    // Halaman Register
+    Route::get('register', [CourierAuthController::class, 'showRegisterForm'])->name('register');
+    // Proses Register (termasuk upload)
+    Route::post('register', [CourierAuthController::class, 'register'])->name('register.store');
+});
+
+// Rute Logout Kurir (terpisah, butuh auth)
+Route::middleware('auth')->prefix('courier')->name('courier.')->group(function () {
+    Route::post('logout', [CourierAuthController::class, 'logout'])->name('logout');
+});
+// --- AKHIR RUTE BARU ---
+
+
 // --- RUTE HALAMAN PUBLIK ---
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
 Route::get('/tentang-kami', fn() => Inertia::render('About'))->name('about');
 Route::get('/contact', [ContactPageController::class, 'show'])->name('contact.show');
 Route::post('/contact', [ContactPageController::class, 'store'])->name('contact.store');
 Route::get('/layanan', [LayananPageController::class, 'show'])->name('layanan.show');
-Route::get('/Mitra/index', [MitraController::class, 'index'])->name('mitra.index');
+// Route::get('/Mitra/index', [MitraController::class, 'index'])->name('mitra.index');
 
 // --- RUTE UNTUK PENGGUNA TERAUTENTIKASI ---
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -153,8 +174,10 @@ Route::middleware(['auth', 'verified', 'courier'])
     ->prefix('courier')
     ->name('courier.')
     ->group(function () {
+        
+        // [MODIFIKASI] Baris 'Route::get('/verification/pending', ...)' DIHAPUS.
+        // Karena method 'pending' tidak ada di AuthController dan tidak diperlukan.
 
-        Route::get('/verification/pending', [CourierAuthController::class, 'pending'])->name('verification.pending');
         Route::get('/dashboard', [CourierDashboardController::class, 'index'])->name('dashboard');
         Route::get('/tasks/{id}', [CourierTaskController::class, 'show'])->name('tasks.show');
         Route::patch('/tasks/{id}/update-status', [CourierTaskController::class, 'updateStatus'])->name('tasks.updateStatus');

@@ -472,7 +472,7 @@ export default function Register() {
                                     : "DAFTAR & KIRIM VERIFIKASI"}
                             </PrimaryButton>
                             <Link
-                                href={route("login")}
+                                href={route("courier.login")}
                                 className="mt-6 underline text-sm text-gray-600 hover:text-gray-900"
                             >
                                 Sudah punya akun? Login

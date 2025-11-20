@@ -132,8 +132,6 @@ export default function Index({ auth, verifications, filters }) {
                                     </tbody>
                                 </table>
                             </div>
-
-                            {/* TODO: Tambahkan Pagination Links */}
                         </div>
                     </div>
                 </div>
