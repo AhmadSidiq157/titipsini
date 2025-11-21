@@ -4,9 +4,9 @@ import PrimaryButton from "@/Components/PrimaryButton";
 import TextInput from "@/Components/TextInput";
 import { Transition } from "@headlessui/react";
 import { Link, useForm, usePage } from "@inertiajs/react";
-import { User, Mail, Save } from "lucide-react"; // [BARU] Import Ikon
+import { User, Mail, Save } from "lucide-react";
 
-export default function UpdateProfileInformation({
+export default function UpdateProfileInformationForm({
     mustVerifyEmail,
     status,
     className = "",
@@ -21,6 +21,7 @@ export default function UpdateProfileInformation({
 
     const submit = (e) => {
         e.preventDefault();
+        // [PENTING] Menggunakan 'patch' agar sesuai dengan route Laravel (Route::patch)
         patch(route("profile.update"));
     };
 
@@ -126,7 +127,9 @@ export default function UpdateProfileInformation({
                         show={recentlySuccessful}
                         enter="transition ease-in-out"
                         enterFrom="opacity-0"
+                        enterTo="opacity-100"
                         leave="transition ease-in-out"
+                        leaveFrom="opacity-100"
                         leaveTo="opacity-0"
                     >
                         <p className="text-sm text-green-600 font-medium">

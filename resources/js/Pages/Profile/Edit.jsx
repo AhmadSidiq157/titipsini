@@ -2,10 +2,13 @@ import React from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import AdminLayout from "@/Layouts/AdminLayout";
 import CourierLayout from "@/Layouts/CourierLayout";
-import { Head, useForm, usePage } from "@inertiajs/react";
+
+import { Head, useForm, usePage, router } from "@inertiajs/react";
+
 import DeleteUserForm from "./Partials/DeleteUserForm";
 import UpdatePasswordForm from "./Partials/UpdatePasswordForm";
-// [BARU] Import ikon-ikon cantik
+
+// Icons
 import {
     User,
     Mail,
@@ -15,23 +18,23 @@ import {
     Lock,
     ShieldAlert,
 } from "lucide-react";
-import InputError from "@/Components/InputError"; // Pastikan import komponen ini
-import PrimaryButton from "@/Components/PrimaryButton"; // Pastikan import komponen ini
+
+import InputError from "@/Components/InputError";
+import PrimaryButton from "@/Components/PrimaryButton";
 
 export default function Edit({ mustVerifyEmail, status }) {
     const { auth } = usePage().props;
 
-    const { data, setData, post, processing, errors, recentlySuccessful } =
-        useForm({
-            name: auth.user.name || "",
-            email: auth.user.email || "",
-            phone: auth.user.phone || "", // Pastikan kolom 'phone' ada di tabel users Anda
-            address: auth.user.address || "", // Pastikan kolom 'address' ada di tabel users Anda
-        });
+    const { data, setData, processing, errors, recentlySuccessful } = useForm({
+        name: auth.user.name || "",
+        email: auth.user.email || "",
+        phone: auth.user.phone || "",
+        address: auth.user.address || "",
+    });
 
     const submit = (e) => {
         e.preventDefault();
-        post(route("profile.update"));
+        router.patch(route("profile.update"), data);
     };
 
     return (
@@ -40,7 +43,6 @@ export default function Edit({ mustVerifyEmail, status }) {
 
             <div className="py-12 bg-gray-50 min-h-screen">
                 <div className="mx-auto max-w-4xl space-y-8 px-4 sm:px-6 lg:px-8">
-                    {/* Header Halaman */}
                     <div className="mb-8">
                         <h2 className="text-3xl font-extrabold text-gray-900">
                             Pengaturan Akun
@@ -51,7 +53,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                         </p>
                     </div>
 
-                    {/* === KARTU 1: INFORMASI PRIBADI === */}
+                    {/* === INFORMASI PRIBADI === */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                         <div className="p-6 sm:p-8 border-b border-gray-100">
                             <div className="flex items-center gap-3 mb-6">
@@ -71,7 +73,7 @@ export default function Edit({ mustVerifyEmail, status }) {
 
                             <form onSubmit={submit} className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {/* Input Nama */}
+                                    {/* Nama */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Nama Lengkap
@@ -99,7 +101,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                                         />
                                     </div>
 
-                                    {/* Input Email */}
+                                    {/* Email */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Email Address
@@ -128,7 +130,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                                     </div>
                                 </div>
 
-                                {/* Input Nomor HP */}
+                                {/* Telepon */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Nomor Telepon
@@ -153,7 +155,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                                     />
                                 </div>
 
-                                {/* Input Alamat */}
+                                {/* Alamat */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Alamat Lengkap
@@ -181,7 +183,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                                     />
                                 </div>
 
-                                {/* Tombol Simpan */}
+                                {/* Tombol simpan */}
                                 <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-100">
                                     {recentlySuccessful && (
                                         <p className="text-sm text-green-600 font-medium animate-pulse">
@@ -200,7 +202,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                         </div>
                     </div>
 
-                    {/* === KARTU 2: GANTI PASSWORD === */}
+                    {/* GANTI PASSWORD */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                         <div className="p-6 sm:p-8">
                             <div className="flex items-center gap-3 mb-6">
@@ -223,7 +225,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                         </div>
                     </div>
 
-                    {/* === KARTU 3: HAPUS AKUN === */}
+                    {/* HAPUS AKUN */}
                     <div className="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden">
                         <div className="p-6 sm:p-8">
                             <div className="flex items-center gap-3 mb-6">
@@ -240,6 +242,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                                     </p>
                                 </div>
                             </div>
+
                             <div className="max-w-xl">
                                 <DeleteUserForm />
                             </div>
@@ -251,12 +254,11 @@ export default function Edit({ mustVerifyEmail, status }) {
     );
 }
 
-// --- LAYOUT DINAMIS (TETAP SAMA) ---
+// === DYNAMIC LAYOUT ===
 Edit.layout = (page) => {
     const { auth } = page.props;
     const user = auth.user;
 
-    // Header string untuk layout admin/kurir
     const header = "Pengaturan Profil";
 
     const hasRole = (roleName) => {
@@ -279,7 +281,6 @@ Edit.layout = (page) => {
         );
     }
 
-    // Default Klien
     return (
         <AuthenticatedLayout
             user={user}
