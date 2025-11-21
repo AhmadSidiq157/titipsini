@@ -18,13 +18,9 @@ class DatabaseSeeder extends Seeder
             SettingSeeder::class, // Seeder baru yang kita buat untuk settings
             ServiceSeeder::class, // Seeder baru untuk services
             MovingPackageSeeder::class, // Seeder baru untuk moving packages
-            InternshipPositionSeeder::class, // Seeder baru untuk internship positions
-            InternshipProjectSeeder::class, // Seeder baru untuk internship projects
-            CareerProgramSeeder::class, // Seeder baru untuk career programs
-            CurriculumSeeder::class,    // Seeder baru untuk curriculums
+              // Seeder baru untuk curriculums
         ]);
 
-        // KODE BARU YANG BENAR
         $adminUser = User::factory()->create([
             'name' => 'Ulul Azmi A. Latala',
             'email' => 'ullulazmia.l@gmail.com',

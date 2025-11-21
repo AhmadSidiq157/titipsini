@@ -5,23 +5,18 @@ import {
     LogOut,
     History,
     LayoutDashboard,
-    Truck,
     Menu,
     X,
     ChevronRight,
+    ChevronDown,
+    LogIn,
+    UserPlus,
 } from "lucide-react";
 
-// Helper (tidak berubah)
+// Helper Role
 const hasRole = (user, roleName) => {
     if (!user || !user.roles) return false;
     return user.roles.some((role) => role.name === roleName);
-};
-const isClient = (user) => {
-    if (!user) return false;
-    if (!user.roles || user.roles.length === 0) {
-        return true;
-    }
-    return !hasRole(user, "admin") && !hasRole(user, "kurir");
 };
 
 export default function Header() {
@@ -32,16 +27,16 @@ export default function Header() {
     const dropdownRef = useRef(null);
 
     const user = auth?.user;
-    const userIsClient = isClient(user);
     const userIsAdmin = hasRole(user, "admin");
     const userIsCourier = hasRole(user, "kurir");
 
+    // Handle Logout
     const handleLogout = (e) => {
         e.preventDefault();
         router.post(route("logout"));
     };
 
-    // Tutup dropdown jika klik di luar
+    // Klik di luar dropdown untuk menutup
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (
@@ -56,165 +51,171 @@ export default function Header() {
             document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Tutup menu mobile saat navigasi
+    // Tutup mobile menu saat ganti halaman
     useEffect(() => {
         setMobileMenuOpen(false);
     }, [url]);
 
-    // Helper function untuk class link aktif (Desktop & Mobile terpisah)
+    // Helper Class Link Aktif
     const getLinkClass = (path, isMobile = false) => {
         const isActive = path === "/" ? url === "/" : url.startsWith(path);
 
         if (isMobile) {
-            // Style Mobile: Minimalis Rounded (Modern)
             return isActive
                 ? "flex items-center justify-between px-4 py-3 text-sm font-bold text-green-700 bg-green-50 rounded-xl transition-colors"
                 : "flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-xl transition-colors";
         }
 
-        // Style Desktop: Simple Text (Asli Anda)
         return isActive
-            ? "text-green-600 font-medium"
+            ? "text-green-600 font-semibold"
             : "text-gray-600 font-medium hover:text-green-600 transition-colors";
     };
 
     return (
         <header className="bg-white shadow-sm sticky top-0 z-50 font-sans">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between items-center py-4">
+                <div className="flex justify-between items-center h-16">
                     {/* LOGO */}
                     <Link
-                        href="/"
-                        className="text-2xl font-bold text-gray-800 flex-shrink-0"
+                        href={route("home")}
+                        className="flex items-center gap-1 z-50 group"
                     >
-                        Titipsini<span className="text-green-500">.com</span>
+                        <span className="text-2xl font-bold text-gray-800 tracking-tight group-hover:text-green-700 transition-colors">
+                            Titipsini
+                        </span>
+                        <span className="text-2xl font-bold text-green-500 group-hover:text-green-600 transition-colors">
+                            .com
+                        </span>
                     </Link>
 
-                    {/* --- DESKTOP NAVIGATION (ASLI ANDA) --- */}
+                    {/* --- DESKTOP NAVIGATION --- */}
                     <nav className="hidden md:flex items-center space-x-8">
-                        <Link href="/" className={getLinkClass("/")}>
+                        <Link
+                            href={route("home")}
+                            className={getLinkClass("/")}
+                        >
                             Beranda
                         </Link>
                         <Link
-                            href="/layanan"
-                            className={getLinkClass("/layanan")}
+                            href={route("penitipan.index")}
+                            className={getLinkClass("/penitipan")}
+                        >
+                            Penitipan
+                        </Link>
+                        {/* [FIX] Gunakan pindahan.index */}
+                        <Link
+                            href={route("pindahan.index")}
+                            className={getLinkClass("/pindahan")}
                         >
                             Pindahan
                         </Link>
                         <Link
-                            href="/tentang-kami"
+                            href={route("about")}
                             className={getLinkClass("/tentang-kami")}
                         >
                             Tentang Kami
                         </Link>
                         <Link
-                            href="/contact"
+                            href={route("contact.show")}
                             className={getLinkClass("/contact")}
                         >
                             Kontak
                         </Link>
                     </nav>
 
-                    {/* --- DESKTOP USER MENU (ASLI ANDA) --- */}
-                    <div className="hidden md:block" ref={dropdownRef}>
-                        {!user && (
-                            <div className="flex items-center space-x-2">
+                    {/* --- DESKTOP RIGHT SECTION (AKUN) --- */}
+                    <div className="hidden md:block">
+                        {!user ? (
+                            // JIKA BELUM LOGIN
+                            <div className="flex items-center gap-3">
                                 <Link
                                     href={route("login")}
-                                    className="inline-flex items-center px-3 py-2 border border-gray-300 text-gray-700 font-semibold text-sm rounded-md hover:bg-gray-50 transition whitespace-nowrap"
+                                    className="flex items-center px-4 py-2 border border-gray-300 text-gray-700 font-semibold text-sm rounded-lg hover:bg-gray-50 hover:text-green-600 transition-all"
                                 >
-                                    Login
+                                    <LogIn className="w-4 h-4 mr-2" />
+                                    Masuk
                                 </Link>
                                 <Link
                                     href={route("register")}
-                                    className="inline-flex items-center px-3 py-2 bg-green-500 text-white font-semibold text-sm rounded-md hover:bg-green-600 transition whitespace-nowrap"
+                                    className="flex items-center px-4 py-2 bg-green-600 text-white font-semibold text-sm rounded-lg hover:bg-green-700 shadow-sm hover:shadow-md transition-all transform hover:-translate-y-0.5"
                                 >
+                                    <UserPlus className="w-4 h-4 mr-2" />
                                     Daftar
                                 </Link>
                             </div>
-                        )}
-
-                        {user && (
-                            <div className="relative flex items-center space-x-2">
+                        ) : (
+                            // JIKA SUDAH LOGIN (DROPDOWN TANPA AVATAR)
+                            <div className="relative" ref={dropdownRef}>
                                 <button
                                     onClick={() => setMenuOpen(!menuOpen)}
-                                    className={`flex items-center space-x-2 px-3 py-2 rounded-md transition ${
-                                        userIsAdmin || userIsCourier
-                                            ? "bg-red-100 hover:bg-red-200"
-                                            : "bg-gray-100 hover:bg-gray-200"
-                                    }`}
+                                    className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-50 transition-all focus:outline-none text-gray-700"
                                 >
-                                    <span
-                                        className={`font-semibold truncate max-w-[100px] ${
-                                            userIsAdmin || userIsCourier
-                                                ? "text-red-800"
-                                                : "text-gray-800"
-                                        }`}
-                                    >
-                                        {user.name}
+                                    <span className="text-sm font-bold max-w-[150px] truncate">
+                                        Hi, {user.name}
                                     </span>
-                                    <svg
-                                        className={`w-4 h-4 transform transition-transform duration-200 ${
+                                    <ChevronDown
+                                        className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
                                             menuOpen ? "rotate-180" : ""
-                                        } ${
-                                            userIsAdmin || userIsCourier
-                                                ? "text-red-600"
-                                                : "text-gray-600"
                                         }`}
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            d="M19 9l-7 7-7-7"
-                                        />
-                                    </svg>
+                                    />
                                 </button>
 
+                                {/* Dropdown Content */}
                                 {menuOpen && (
-                                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 transform origin-top-right transition-all duration-200 ease-out animate-dropdownShow">
-                                        {userIsAdmin || userIsCourier ? (
-                                            <Link
-                                                href={route("dashboard")}
-                                                className="flex items-center gap-2 px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-t-xl transition-all"
-                                            >
-                                                {userIsAdmin ? (
-                                                    <LayoutDashboard className="w-4 h-4 text-gray-500" />
-                                                ) : (
-                                                    <Truck className="w-4 h-4 text-gray-500" />
-                                                )}
-                                                Kembali ke Dashboard
-                                            </Link>
-                                        ) : (
-                                            <>
-                                                <Link
-                                                    href={route("profile.edit")}
-                                                    className="flex items-center gap-2 px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-t-xl transition-all"
-                                                >
-                                                    <User className="w-4 h-4 text-gray-500" />{" "}
-                                                    Profil Saya
-                                                </Link>
+                                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl ring-1 ring-black ring-opacity-5 py-2 transform origin-top-right transition-all duration-200 z-50">
+                                        {/* Header Dropdown */}
+                                        <div className="px-4 py-3 border-b border-gray-100 mb-1">
+                                            <p className="text-sm font-bold text-gray-800 truncate">
+                                                {user.name}
+                                            </p>
+                                            <p className="text-xs text-gray-500 truncate">
+                                                {user.email}
+                                            </p>
+                                        </div>
+
+                                        {/* Menu Items */}
+                                        <div className="py-1">
+                                            {(userIsAdmin || userIsCourier) && (
                                                 <Link
                                                     href={route(
-                                                        "history.index"
+                                                        userIsCourier
+                                                            ? "courier.dashboard"
+                                                            : "admin.dashboard"
                                                     )}
-                                                    className="flex items-center gap-2 px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-all"
+                                                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-green-600"
                                                 >
-                                                    <History className="w-4 h-4 text-gray-500" />{" "}
-                                                    Riwayat Pesanan
+                                                    <LayoutDashboard className="w-4 h-4 mr-3" />
+                                                    Dashboard
                                                 </Link>
-                                            </>
-                                        )}
-                                        <button
-                                            onClick={handleLogout}
-                                            className="flex items-center gap-2 w-full text-left px-5 py-3 text-sm text-red-600 hover:bg-red-50 rounded-b-xl transition-all"
-                                        >
-                                            <LogOut className="w-4 h-4 text-red-500" />{" "}
-                                            Logout
-                                        </button>
+                                            )}
+
+                                            <Link
+                                                href={route("profile.edit")}
+                                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-green-600"
+                                            >
+                                                <User className="w-4 h-4 mr-3" />
+                                                Profil Saya
+                                            </Link>
+
+                                            <Link
+                                                href={route("history.index")}
+                                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-green-600"
+                                            >
+                                                <History className="w-4 h-4 mr-3" />
+                                                Riwayat Pesanan
+                                            </Link>
+                                        </div>
+
+                                        {/* Logout */}
+                                        <div className="border-t border-gray-100 mt-1 pt-1">
+                                            <button
+                                                onClick={handleLogout}
+                                                className="flex w-full items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                            >
+                                                <LogOut className="w-4 h-4 mr-3" />
+                                                Keluar
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -237,32 +238,43 @@ export default function Header() {
                 </div>
             </div>
 
-            {/* --- MOBILE MENU OVERLAY (MODERN & TERPISAH) --- */}
+            {/* --- MOBILE MENU OVERLAY --- */}
             {mobileMenuOpen && (
-                <div className="md:hidden absolute top-16 left-0 w-full bg-white shadow-xl border-t border-gray-100 animate-in slide-in-from-top-5 duration-200 z-40">
-                    <div className="p-4 space-y-6">
-                        {/* 1. Navigasi Utama */}
+                <div className="md:hidden absolute top-16 left-0 w-full bg-white shadow-xl border-t border-gray-100 animate-in slide-in-from-top-5 duration-200 z-40 h-screen bg-opacity-95 backdrop-blur-sm">
+                    <div className="p-4 space-y-6 bg-white h-full overflow-y-auto pb-20">
+                        {/* Mobile Navigation Links */}
                         <div className="space-y-1">
-                            <Link href="/" className={getLinkClass("/", true)}>
+                            <Link
+                                href={route("home")}
+                                className={getLinkClass("/", true)}
+                            >
                                 <span>Beranda</span>
                                 <ChevronRight className="w-4 h-4 opacity-50" />
                             </Link>
                             <Link
-                                href="/layanan"
-                                className={getLinkClass("/layanan", true)}
+                                href={route("penitipan.index")}
+                                className={getLinkClass("/penitipan", true)}
+                            >
+                                <span>Penitipan</span>
+                                <ChevronRight className="w-4 h-4 opacity-50" />
+                            </Link>
+
+                            <Link
+                                href={route("pindahan.index")}
+                                className={getLinkClass("/pindahan", true)}
                             >
                                 <span>Pindahan</span>
                                 <ChevronRight className="w-4 h-4 opacity-50" />
                             </Link>
                             <Link
-                                href="/tentang-kami"
+                                href={route("about")}
                                 className={getLinkClass("/tentang-kami", true)}
                             >
                                 <span>Tentang Kami</span>
                                 <ChevronRight className="w-4 h-4 opacity-50" />
                             </Link>
                             <Link
-                                href="/contact"
+                                href={route("contact.show")}
                                 className={getLinkClass("/contact", true)}
                             >
                                 <span>Kontak</span>
@@ -270,77 +282,70 @@ export default function Header() {
                             </Link>
                         </div>
 
-                        {/* 2. User Section (Dipisah Garis) */}
+                        {/* Mobile Account Section */}
                         <div className="pt-4 border-t border-gray-100">
                             {user ? (
-                                <>
-                                    {/* User Info */}
-                                    <div className="flex items-center gap-3 mb-4 px-2">
-                                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-lg">
-                                            {user.name.charAt(0)}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold text-gray-900 truncate">
-                                                {user.name}
-                                            </p>
-                                            <p className="text-xs text-gray-500 truncate">
-                                                {user.email}
-                                            </p>
-                                        </div>
+                                <div className="bg-gray-50 rounded-xl p-4">
+                                    <div className="mb-4">
+                                        <p className="text-sm font-bold text-gray-900 truncate">
+                                            Hi, {user.name}
+                                        </p>
+                                        <p className="text-xs text-gray-500 truncate">
+                                            {user.email}
+                                        </p>
                                     </div>
 
-                                    {/* User Actions Grid */}
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {userIsAdmin || userIsCourier ? (
+                                    <div className="space-y-2">
+                                        {(userIsAdmin || userIsCourier) && (
                                             <Link
-                                                href={route("dashboard")}
-                                                className="flex items-center justify-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-100 transition border border-gray-100"
+                                                href={route(
+                                                    userIsCourier
+                                                        ? "courier.dashboard"
+                                                        : "admin.dashboard"
+                                                )}
+                                                className="flex items-center w-full p-3 bg-white rounded-lg text-sm font-medium text-gray-700 border border-gray-200"
                                             >
-                                                <LayoutDashboard className="w-4 h-4" />
+                                                <LayoutDashboard className="w-4 h-4 mr-3 text-gray-500" />
                                                 Dashboard
                                             </Link>
-                                        ) : (
-                                            <>
-                                                <Link
-                                                    href={route("profile.edit")}
-                                                    className="flex items-center justify-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-100 transition border border-gray-100"
-                                                >
-                                                    <User className="w-4 h-4" />
-                                                    Profil
-                                                </Link>
-                                                <Link
-                                                    href={route(
-                                                        "history.index"
-                                                    )}
-                                                    className="flex items-center justify-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-100 transition border border-gray-100"
-                                                >
-                                                    <History className="w-4 h-4" />
-                                                    Riwayat
-                                                </Link>
-                                            </>
                                         )}
+                                        <Link
+                                            href={route("profile.edit")}
+                                            className="flex items-center w-full p-3 bg-white rounded-lg text-sm font-medium text-gray-700 border border-gray-200"
+                                        >
+                                            <User className="w-4 h-4 mr-3 text-gray-500" />
+                                            Profil Saya
+                                        </Link>
+                                        <Link
+                                            href={route("history.index")}
+                                            className="flex items-center w-full p-3 bg-white rounded-lg text-sm font-medium text-gray-700 border border-gray-200"
+                                        >
+                                            <History className="w-4 h-4 mr-3 text-gray-500" />
+                                            Riwayat Pesanan
+                                        </Link>
                                         <button
                                             onClick={handleLogout}
-                                            className="col-span-2 flex items-center justify-center gap-2 p-3 bg-red-50 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-100 transition border border-red-100"
+                                            className="flex items-center w-full p-3 bg-red-50 rounded-lg text-sm font-medium text-red-600 border border-red-100"
                                         >
-                                            <LogOut className="w-4 h-4" />
+                                            <LogOut className="w-4 h-4 mr-3" />
                                             Keluar
                                         </button>
                                     </div>
-                                </>
+                                </div>
                             ) : (
-                                /* Guest Actions */
                                 <div className="grid grid-cols-2 gap-3">
                                     <Link
                                         href={route("login")}
-                                        className="flex justify-center py-3 px-4 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition text-center"
+                                        className="flex items-center justify-center gap-2 py-3 px-4 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition"
                                     >
+                                        <LogIn className="w-4 h-4" />
                                         Masuk
                                     </Link>
                                     <Link
                                         href={route("register")}
-                                        className="flex justify-center py-3 px-4 bg-green-600 rounded-xl text-sm font-bold text-white hover:bg-green-700 transition text-center shadow-sm"
+                                        className="flex items-center justify-center gap-2 py-3 px-4 bg-green-600 rounded-xl text-sm font-bold text-white hover:bg-green-700 transition shadow-sm"
                                     >
+                                        <UserPlus className="w-4 h-4" />
                                         Daftar
                                     </Link>
                                 </div>

@@ -3,9 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\CareerProgram;
-use App\Models\InternshipPosition;
-use App\Models\JobVacancy;
 use App\Models\MovingPackage;
 use App\Models\Service;
 use App\Models\User;
@@ -31,11 +28,9 @@ class DashboardController extends Controller
             $stats = [
                 'total_users' => User::count(),
                 'new_users_this_week' => User::where('created_at', '>=', Carbon::now()->subWeek())->count(),
-                'total_job_vacancies' => JobVacancy::count(),
                 'total_services' => Service::count(),
                 'total_moving_packages' => MovingPackage::count(),
-                'total_internship_positions' => InternshipPosition::count(),
-                'total_career_programs' => CareerProgram::count(),
+               
             ];
             $recent_activities = [
                 ['type' => 'user_registered', 'description' => 'User baru, Budi Santoso, telah mendaftar.', 'time' => '5 menit lalu'],

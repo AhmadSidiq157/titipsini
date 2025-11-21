@@ -38,15 +38,38 @@ use App\Http\Controllers\Courier\AuthController as CourierAuthController;
 |--------------------------------------------------------------------------
 */
 
+// --- RUTE LOGIN & REGISTER KURIR (Tamu) ---
+Route::middleware('guest')->prefix('courier')->name('courier.')->group(function () {
+    Route::get('login', [CourierAuthController::class, 'showLoginForm'])->name('login');
+    Route::post('login', [CourierAuthController::class, 'login'])->name('login.store');
+    Route::get('register', [CourierAuthController::class, 'showRegisterForm'])->name('register');
+    Route::post('register', [CourierAuthController::class, 'register'])->name('register.store');
+});
+
+// Rute Logout Kurir
+Route::middleware('auth')->prefix('courier')->name('courier.')->group(function () {
+    Route::post('logout', [CourierAuthController::class, 'logout'])->name('logout');
+});
+
+
 // --- RUTE HALAMAN PUBLIK ---
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
 Route::get('/tentang-kami', fn() => Inertia::render('About'))->name('about');
 Route::get('/contact', [ContactPageController::class, 'show'])->name('contact.show');
 Route::post('/contact', [ContactPageController::class, 'store'])->name('contact.store');
-Route::get('/layanan', [LayananPageController::class, 'show'])->name('layanan.show');
-Route::get('/Mitra/index', [MitraController::class, 'index'])->name('mitra.index');
 
-// --- RUTE UNTUK PENGGUNA TERAUTENTIKASI ---
+// [PERUBAHAN UTAMA: Layanan menjadi Pindahan]
+// Ini agar sesuai dengan Header.jsx yang memanggil route('pindahan.index')
+Route::get('/pindahan', [LayananPageController::class, 'pindahan'])->name('pindahan.index');
+
+// [ROUTE] Layanan Penitipan
+Route::get('/penitipan', [LayananPageController::class, 'penitipan'])->name('penitipan.index');
+
+// [ROUTE] Mitra
+Route::get('/mitra', [MitraController::class, 'index'])->name('mitra.index');
+
+
+// --- RUTE UNTUK PENGGUNA TERAUTENTIKASI (CLIENT) ---
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -64,17 +87,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- RUTE ORDER & PEMBAYARAN ---
     Route::prefix('order')->name('order.')->group(function () {
-        // [PENTING] Rute ini sekarang dipanggil oleh Axios di Modal (mengembalikan JSON)
         Route::get('/create', [OrderController::class, 'create'])->name('create');
-
-        // Proses submit order (Langkah 1 Modal)
         Route::post('/', [OrderController::class, 'store'])->name('store')->middleware('isVerified');
-
-        // Halaman/Proses pembayaran (Langkah 2 Modal & Link dari History)
         Route::get('/{order}/payment', [OrderController::class, 'payment'])->name('payment');
         Route::post('/{order}/payment', [OrderController::class, 'submitPayment'])->name('submitPayment')->middleware('isVerified');
-
-        // Halaman Sukses (Legacy/Fallback)
         Route::get('/{order}/success', [OrderController::class, 'success'])->name('success');
     });
 
@@ -106,7 +122,8 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
         Route::post('verifications/{userVerification}/reject', [UserManagementController::class, 'verificationReject'])->name('verification.reject');
 
         // Resources (CRUD)
-        Route::resource('services', ServiceController::class);
+        // Route::resource otomatis membuat route untuk index, create, store, edit, update, destroy
+        Route::resource('services', ServiceController::class); 
         Route::resource('moving-packages', MovingPackageController::class);
         Route::resource('branches', BranchController::class);
 
@@ -120,7 +137,7 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
             Route::post('/{order}/assign-courier', [OrderManagementController::class, 'assignCourier'])->name('assignCourier');
         });
 
-        // Manajemen Pesanan PINDAHAN (dengan Tracking & Kurir)
+        // Manajemen Pesanan PINDAHAN
         Route::prefix('pindahan')->name('pindahan.')->group(function () {
             Route::get('/', [PindahanManagementController::class, 'index'])->name('index');
             Route::post('/{order}/approve', [PindahanManagementController::class, 'approvePayment'])->name('approve');

@@ -4,21 +4,29 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Order; // <-- TAMBAHKAN INI
+use App\Models\Order;
 
 class Service extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
+    // Gunakan fillable agar lebih eksplisit dan aman
+    protected $fillable = [
+        'title',
+        'description',
+        'price',        // Wajib ada untuk controller baru
+        'illustration', // Wajib ada untuk upload gambar
+        'features',     // Wajib ada untuk array fitur
+    ];
 
     protected $casts = [
-        'features' => 'array',
+        'features' => 'array',   // Konversi otomatis JSON <-> Array
+        'price'    => 'integer', // Memastikan harga selalu angka
     ];
 
     /**
      * Dapatkan semua order untuk service ini.
-     * * TAMBAHKAN FUNGSI INI
+     * Relasi Polymorphic ke model Order.
      */
     public function orders()
     {

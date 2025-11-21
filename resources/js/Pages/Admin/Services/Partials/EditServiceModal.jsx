@@ -1,31 +1,47 @@
-// resources/js/Pages/Admin/Services/Partials/EditServiceModal.jsx
-
 import Modal from "@/Components/Modal";
 import { useForm } from "@inertiajs/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function EditServiceModal({ show, onClose, service }) {
-    const { data, setData, put, processing, errors, reset } = useForm({
-        title: "",
-        description: "",
-        price: 0, // <-- 1. DITAMBAHKAN
-        illustration: "",
-        features: [],
-    });
+    // State untuk preview gambar
+    const [preview, setPreview] = useState(null);
+
+    const { data, setData, post, processing, errors, reset, clearErrors } =
+        useForm({
+            _method: "PUT", // [PENTING] Trik agar Laravel membaca ini sebagai Update meski pakai POST
+            title: "",
+            description: "",
+            price: 0,
+            illustration: null, // Nanti diisi file object jika user ganti gambar
+            features: [],
+        });
 
     useEffect(() => {
         if (service) {
             setData({
-                title: service.title,
-                description: service.description,
-                price: service.price, // <-- 2. DITAMBAHKAN
-                illustration: service.illustration,
+                _method: "PUT",
+                title: service.title || "",
+                description: service.description || "",
+                price: service.price || 0,
+                illustration: null, // Reset file input
                 features: service.features || [""],
             });
-        }
-    }, [service]);
 
-    // Fungsi-fungsi handle feature sama persis dengan AddServiceModal
+            // Set preview ke gambar yang sudah ada di database
+            setPreview(service.illustration || "/images/placeholder.jpg");
+            clearErrors();
+        }
+    }, [service, show]);
+
+    // Handler Ganti Gambar
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setData("illustration", file);
+            setPreview(URL.createObjectURL(file)); // Preview gambar baru
+        }
+    };
+
     const handleAddFeature = () => {
         setData("features", [...data.features, ""]);
     };
@@ -45,7 +61,11 @@ export default function EditServiceModal({ show, onClose, service }) {
 
     const submit = (e) => {
         e.preventDefault();
-        put(route("admin.services.update", service.id), {
+
+        // Gunakan POST dengan forceFormData karena ada file upload
+        // Laravel akan melihat _method: 'PUT' dan menganggapnya sebagai update
+        post(route("admin.services.update", service.id), {
+            forceFormData: true,
             onSuccess: () => {
                 reset();
                 onClose();
@@ -59,8 +79,9 @@ export default function EditServiceModal({ show, onClose, service }) {
                 <h2 className="text-lg font-medium text-gray-900">
                     Edit Layanan
                 </h2>
-                {/* Formnya sama persis dengan AddServiceModal, hanya value-nya dari state ini */}
+
                 <div className="mt-6 space-y-4">
+                    {/* Input Judul */}
                     <div>
                         <label
                             htmlFor="title"
@@ -73,7 +94,7 @@ export default function EditServiceModal({ show, onClose, service }) {
                             id="title"
                             value={data.title}
                             onChange={(e) => setData("title", e.target.value)}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                         />
                         {errors.title && (
                             <p className="text-sm text-red-600 mt-1">
@@ -82,7 +103,7 @@ export default function EditServiceModal({ show, onClose, service }) {
                         )}
                     </div>
 
-                    {/* --- 3. BLOK INPUT HARGA DITAMBAHKAN --- */}
+                    {/* Input Harga */}
                     <div>
                         <label
                             htmlFor="price"
@@ -95,8 +116,7 @@ export default function EditServiceModal({ show, onClose, service }) {
                             id="price"
                             value={data.price}
                             onChange={(e) => setData("price", e.target.value)}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                            placeholder="Contoh: 100000"
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                         />
                         {errors.price && (
                             <p className="text-sm text-red-600 mt-1">
@@ -104,8 +124,45 @@ export default function EditServiceModal({ show, onClose, service }) {
                             </p>
                         )}
                     </div>
-                    {/* --- AKHIR BLOK --- */}
 
+                    {/* --- INPUT GAMBAR (PREVIEW & CHANGE) --- */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Gambar Ilustrasi
+                        </label>
+
+                        {/* Tampilkan Preview */}
+                        {preview && (
+                            <div className="mt-2 mb-2">
+                                <p className="text-xs text-gray-500 mb-1">
+                                    Preview saat ini:
+                                </p>
+                                <img
+                                    src={preview}
+                                    alt="Service Preview"
+                                    className="h-32 w-auto object-cover rounded-md border border-gray-200"
+                                />
+                            </div>
+                        )}
+
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                            *Biarkan kosong jika tidak ingin mengubah gambar.
+                        </p>
+                        {errors.illustration && (
+                            <p className="text-sm text-red-600 mt-1">
+                                {errors.illustration}
+                            </p>
+                        )}
+                    </div>
+                    {/* --- END INPUT GAMBAR --- */}
+
+                    {/* Input Deskripsi */}
                     <div>
                         <label
                             htmlFor="description"
@@ -120,7 +177,7 @@ export default function EditServiceModal({ show, onClose, service }) {
                                 setData("description", e.target.value)
                             }
                             rows="3"
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                         ></textarea>
                         {errors.description && (
                             <p className="text-sm text-red-600 mt-1">
@@ -128,12 +185,17 @@ export default function EditServiceModal({ show, onClose, service }) {
                             </p>
                         )}
                     </div>
+
+                    {/* Fitur (Dynamic Input) */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700">
                             Fitur
                         </label>
                         {data.features.map((feature, index) => (
-                            <div key={index} className="flex items-center mt-2">
+                            <div
+                                key={index}
+                                className="flex items-center mt-2 gap-2"
+                            >
                                 <input
                                     type="text"
                                     value={feature}
@@ -143,12 +205,12 @@ export default function EditServiceModal({ show, onClose, service }) {
                                             e.target.value
                                         )
                                     }
-                                    className="block w-full border-gray-300 rounded-md shadow-sm"
+                                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => handleRemoveFeature(index)}
-                                    className="ml-2 text-red-500 hover:text-red-700"
+                                    className="text-red-500 hover:text-red-700 font-bold px-2"
                                 >
                                     &times;
                                 </button>
@@ -157,27 +219,28 @@ export default function EditServiceModal({ show, onClose, service }) {
                         <button
                             type="button"
                             onClick={handleAddFeature}
-                            className="mt-2 text-sm text-indigo-600 hover:text-indigo-900"
+                            className="mt-2 text-sm text-green-600 hover:text-green-900 font-medium"
                         >
-                            Tambah Fitur
+                            + Tambah Fitur
                         </button>
                     </div>
                 </div>
 
-                <div className="mt-6 flex justify-end">
+                {/* Action Buttons */}
+                <div className="mt-6 flex justify-end space-x-3">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="mr-3 px-4 py-2 text-gray-700"
+                        className="px-4 py-2 bg-white text-gray-700 rounded-md border border-gray-300 hover:bg-gray-50"
                     >
                         Batal
                     </button>
                     <button
                         type="submit"
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-md"
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
                         disabled={processing}
                     >
-                        Perbarui
+                        {processing ? "Menyimpan..." : "Simpan Perubahan"}
                     </button>
                 </div>
             </form>
