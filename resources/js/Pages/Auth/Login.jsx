@@ -42,13 +42,10 @@ export default function Login({ status, canResetPassword }) {
                     transition={{ duration: 0.5 }}
                     className="mb-8 text-center"
                 >
-                    <Link
-                        href="/"
-                        className="text-4xl font-extrabold text-gray-800 tracking-tight flex items-center justify-center gap-1"
-                    >
+                    <div className="text-4xl font-extrabold text-gray-800 tracking-tight flex items-center justify-center gap-1">
                         Titipsini
                         <span className="text-green-600">.com</span>
-                    </Link>
+                    </div>
                     <h2 className="text-2xl font-bold text-gray-800 mt-4">
                         Selamat Datang
                     </h2>

@@ -219,7 +219,7 @@ const WhyUs = () => {
     );
 };
 
-// --- [NEW] SYARAT & KETENTUAN SECTION ---
+//  SYARAT & KETENTUAN SECTION
 const TermsSection = () => {
     const terms = [
         {
@@ -240,7 +240,6 @@ const TermsSection = () => {
         <section className="py-24 bg-white">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="max-w-4xl mx-auto bg-emerald-50 rounded-[2.5rem] p-8 md:p-12 border border-emerald-100 relative overflow-hidden">
-                    {/* Decoration Icon */}
                     <FileText className="absolute -top-6 -right-6 w-48 h-48 text-emerald-100/50 rotate-12" />
 
                     <div className="relative z-10">
@@ -382,7 +381,7 @@ const FAQ = () => {
     const faqs = [
         {
             q: "Apa saja syarat untuk menitipkan barang?",
-            a: "Cukup KTP/SIM/Paspor asli. Untuk kendaraan, perlu STNK asli.",
+            a: "Cukup KTP/SIM asli. Untuk kendaraan, perlu STNK asli.",
         },
         {
             q: "Bagaimana perhitungan biayanya?",
@@ -462,10 +461,7 @@ const Welcome = () => {
                 <Hero />
                 <Stats />
                 <WhyUs />
-
-                {/* [BARU] Section Syarat & Ketentuan */}
                 <TermsSection />
-
                 <Testimonials />
                 <FAQ />
 

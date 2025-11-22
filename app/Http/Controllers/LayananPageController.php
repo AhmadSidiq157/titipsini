@@ -8,6 +8,7 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Service;       // Model Layanan (Gudang/Barang)
 use App\Models\MovingPackage; // Model Paket Pindahan
+use App\Models\Branch;        // [PENTING] Jangan lupa import Model Branch
 
 class LayananPageController extends Controller
 {
@@ -23,6 +24,9 @@ class LayananPageController extends Controller
         
         // Ambil data service juga (jika diperlukan di footer/rekomendasi)
         $services = Service::all();
+        
+        // [PERBAIKAN] Ambil data cabang untuk dropdown di modal
+        $branches = Branch::all();
 
         $user = Auth::user();
         $verificationStatus = null;
@@ -35,7 +39,8 @@ class LayananPageController extends Controller
         // Render ke file Pindahan.jsx
         return Inertia::render('Pindahan', [
             'packages' => $packages,
-            'services' => $services, // Opsional jika tidak dipakai di page Pindahan bisa dihapus
+            'services' => $services, 
+            'branches' => $branches, // [PERBAIKAN] Kirim data cabang ke view
             'userVerificationStatus' => $verificationStatus,
         ]);
     }
@@ -49,6 +54,9 @@ class LayananPageController extends Controller
     {
         $services = Service::all();
         
+        // [PERBAIKAN] Ambil data cabang juga untuk halaman penitipan (jika modal order dipakai di sini juga)
+        $branches = Branch::all();
+        
         $user = Auth::user();
         $verificationStatus = null;
 
@@ -60,6 +68,7 @@ class LayananPageController extends Controller
         // Render ke file Penitipan.jsx
         return Inertia::render('Penitipan', [
             'services' => $services,
+            'branches' => $branches, // [PERBAIKAN] Kirim data cabang ke view
             'userVerificationStatus' => $verificationStatus,
         ]);
     }
