@@ -123,15 +123,8 @@ const LayananHero = () => {
     );
 };
 
-// --- 2. STATS & FEATURES (Clean White) ---
-const StatsAndFeatures = () => {
-    const stats = [
-        { icon: <Users />, value: "10K+", label: "Pelanggan Puas" },
-        { icon: <Truck />, value: "500+", label: "Pengiriman/Bulan" },
-        { icon: <ShieldCheck />, value: "99%", label: "Tingkat Keamanan" },
-        { icon: <Phone />, value: "24/7", label: "Layanan Support" },
-    ];
-
+// --- 2. FEATURES ONLY (Stats Removed) ---
+const Features = () => {
     const features = [
         {
             icon: <ShieldCheck />,
@@ -162,22 +155,6 @@ const StatsAndFeatures = () => {
     return (
         <section className="py-24 bg-white">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-24 border-b-2 border-emerald-100 pb-12">
-                    {stats.map((stat, index) => (
-                        <div key={index} className="text-center">
-                            <div className="inline-flex justify-center text-emerald-600 mb-3">
-                                {React.cloneElement(stat.icon, { size: 32 })}
-                            </div>
-                            <p className="text-3xl md:text-4xl font-extrabold text-emerald-950 mb-1">
-                                {stat.value}
-                            </p>
-                            <p className="text-emerald-600 font-bold uppercase tracking-wider text-xs">
-                                {stat.label}
-                            </p>
-                        </div>
-                    ))}
-                </div>
-
                 <div className="text-center mb-16 max-w-3xl mx-auto">
                     <span className="text-emerald-600 font-bold tracking-widest uppercase text-xs">
                         Keunggulan Kami
@@ -440,55 +417,7 @@ const Savings = () => (
     </section>
 );
 
-// --- 6. ABOUT US (Soft Green) ---
-const AboutUs = () => (
-    <section className="py-24 bg-emerald-50/30">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-                <div>
-                    <span className="text-emerald-600 font-bold tracking-widest uppercase text-xs">
-                        Tentang Kami
-                    </span>
-                    <h2 className="text-3xl md:text-4xl font-bold text-emerald-950 mt-3 mb-6 tracking-tight">
-                        Partner Pindahan Terpercaya
-                    </h2>
-                    <p className="text-emerald-800 text-lg mb-8 leading-relaxed font-light">
-                        Titipsini adalah platform digital yang menghubungkan
-                        Anda dengan layanan pindahan dan penyimpanan barang
-                        terpercaya. Kami berkomitmen memberikan keamanan dan
-                        kenyamanan terbaik.
-                    </p>
-
-                    <div className="bg-white p-6 rounded-2xl border border-emerald-100 flex items-center gap-5 shadow-sm">
-                        <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
-                            <PackageCheck className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-emerald-900">
-                                Sertifikat ISO 9001:2015
-                            </h4>
-                            <p className="text-sm text-emerald-700">
-                                Standar kualitas internasional
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div className="relative">
-                    <div className="absolute -inset-4 bg-emerald-100 rounded-[2.5rem]"></div>
-                    <img
-                        src="images/who-us.jpg"
-                        alt="Tim Titipsini"
-                        className="relative rounded-[2rem] shadow-xl w-full h-auto object-cover border-4 border-white"
-                        onError={(e) => {
-                            e.target.src =
-                                "https://placehold.co/600x500/059669/ffffff?text=About+Us";
-                        }}
-                    />
-                </div>
-            </div>
-        </div>
-    </section>
-);
+// --- 6. ABOUT US REMOVED ---
 
 // --- 7. CTA SECTION (White) ---
 const CtaSection = () => {
@@ -560,15 +489,14 @@ const Layanan = ({ packages }) => {
         <GuestLayout>
             <Head title="Layanan Pindahan & Penyimpanan" />
             <div className="font-sans bg-white selection:bg-emerald-200 selection:text-emerald-900">
-                {/* URUTAN SUDAH DISESUAIKAN DENGAN ALUR TERBAIK */}
+                {/* URUTAN SEKSI */}
                 <LayananHero />
-                <StatsAndFeatures />
+                <Features /> {/* Sebelumnya StatsAndFeatures */}
                 <HowItWorks />
                 <Pricing packages={packages} onOrderClick={handleOrderClick} />
                 <Savings />
-                <AboutUs />
+                {/* AboutUs Removed */}
                 <CtaSection />
-
                 {/* Modals */}
                 <OrderModal
                     show={isOrderModalOpen}

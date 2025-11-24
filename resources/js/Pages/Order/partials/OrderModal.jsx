@@ -259,7 +259,6 @@ const StepForm = ({ product, productModelClass, onFormSubmit }) => {
                             {branches && branches.length > 0 ? (
                                 branches.map((branch) => (
                                     <option key={branch.id} value={branch.id}>
-                                        {/* [FIX] Menampilkan Nama Cabang dan Alamat tanpa tanda kurung aneh */}
                                         {branch.name} - {branch.address}
                                     </option>
                                 ))
