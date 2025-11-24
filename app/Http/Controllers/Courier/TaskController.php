@@ -38,50 +38,46 @@ class TaskController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // 1. Validasi input
+        // 1. Validasi input (Tambahkan validasi foto bukti)
         $validated = $request->validate([
             'status' => 'required|string|in:ready_for_pickup,picked_up,on_delivery,delivered,completed,cancelled',
+            'evidence_photo' => 'nullable|image|max:5120', // [BARU] Validasi Foto
+            'note' => 'nullable|string|max:255',
         ]);
 
         $newStatusTugas = $validated['status'];
-
-        // 2. Cari order milik kurir ini
         $task = $user->courierTasks()->findOrFail($id);
-
-        // Simpan status lama untuk cek perubahan
         $oldStatus = $task->status;
 
-        // 3. Update status TUGAS
+        // [BARU] Handle Upload Foto Bukti (Disimpan di OrderTracking)
+        $evidencePath = null;
+        if ($request->hasFile('evidence_photo')) {
+            $evidencePath = $request->file('evidence_photo')->store('courier_evidence', 'public');
+        }
+
+        // 2. Update status TUGAS
         $task->update([
             'status' => $newStatusTugas,
         ]);
 
-        // --- [LOGIKA OTOMATISASI STATUS KURIR] ---
-        $newCourierStatus = 'available'; // Default: Tersedia
-
+        // 3. Update status KURIR (Otomatisasi)
+        $newCourierStatus = 'available';
         if (in_array($newStatusTugas, ['picked_up', 'on_delivery'])) {
-            // Jika kurir sedang mengambil atau mengantar
             $newCourierStatus = 'on_delivery';
         }
+        $user->update(['courier_status' => $newCourierStatus]);
 
-        // 4. Update status KURIR
-        $user->update([
-            'courier_status' => $newCourierStatus
-        ]);
-
-        // --- [BARU] CATAT KE TRACKING SYSTEM ---
-        // Jika status berubah, catat otomatis ke tabel tracking
+        // 4. CATAT KE TRACKING SYSTEM (Dengan Foto)
         if ($oldStatus !== $newStatusTugas) {
             OrderTracking::create([
                 'order_id' => $task->id,
-                'status' => 'Update Status', // Label sistem
-                // Buat deskripsi yang rapi (contoh: 'READY_FOR_PICKUP' -> 'READY FOR PICKUP')
-                'description' => 'Status pesanan berubah menjadi: ' . str_replace('_', ' ', strtoupper($newStatusTugas)),
+                'status' => str_replace('_', ' ', strtoupper($newStatusTugas)),
+                'description' => $request->note ?? 'Status diperbarui oleh kurir',
+                'evidence_photo_path' => $evidencePath, // [BARU] Simpan path foto
             ]);
         }
 
-        return redirect()->route('courier.tasks.show', $task->id)
-            ->with('success', 'Status tugas berhasil diperbarui.');
+        return redirect()->back()->with('success', 'Status diperbarui.');
     }
 
     /**

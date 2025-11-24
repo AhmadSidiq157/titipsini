@@ -123,7 +123,7 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
 
         // Resources (CRUD)
         // Route::resource otomatis membuat route untuk index, create, store, edit, update, destroy
-        Route::resource('services', ServiceController::class); 
+        Route::resource('services', ServiceController::class);
         Route::resource('moving-packages', MovingPackageController::class);
         Route::resource('branches', BranchController::class);
 
@@ -174,15 +174,18 @@ Route::middleware(['auth', 'verified', 'courier'])
     ->prefix('courier')
     ->name('courier.')
     ->group(function () {
-        // Verifikasi Kurir (Pending page)
+        // Verifikasi
         Route::get('/verification/pending', [CourierAuthController::class, 'pending'])->name('verification.pending');
 
-        // Dashboard & Tugas
+        // Dashboard
         Route::get('/dashboard', [CourierDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/tasks/{id}', [CourierTaskController::class, 'show'])->name('tasks.show');
 
-        // Aksi Kurir
-        Route::patch('/tasks/{id}/update-status', [CourierTaskController::class, 'updateStatus'])->name('tasks.updateStatus');
+        // [BARU] Toggle Status Online/Offline
+        Route::post('/toggle-status', [CourierDashboardController::class, 'toggleStatus'])->name('toggle-status');
+
+        // Tugas & Aksi
+        Route::get('/tasks/{id}', [CourierTaskController::class, 'show'])->name('tasks.show');
+        Route::post('/tasks/{id}/update-status', [CourierTaskController::class, 'updateStatus'])->name('tasks.updateStatus');
         Route::post('/tasks/{id}/tracking', [CourierTaskController::class, 'addTrackingNote'])->name('tasks.addTracking');
         Route::post('/location/update', [CourierTaskController::class, 'updateLocation'])->name('updateLocation');
     });

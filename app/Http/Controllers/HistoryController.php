@@ -11,64 +11,74 @@ use Inertia\Response;
 class HistoryController extends Controller
 {
     /**
-     * Menampilkan riwayat pesanan milik user yang sedang login.
+     * Menampilkan daftar riwayat pesanan.
      */
     public function index(): Response
     {
         $user = Auth::user();
 
-        // Ambil semua order milik user ini
+        // Ambil semua order milik user ini dengan relasi yang dibutuhkan
         $orders = Order::where('user_id', $user->id)
             ->with([
-                'orderable', // Detail Paket (Nama, Harga, dll)
-                'payment',   // Status Pembayaran & Bukti
+                'orderable', // Detail Paket (Nama, Harga)
+                'payment',   // Status Pembayaran
 
-                // [BARU] Muat data tracking (Timeline perjalanan)
+                // Untuk menampilkan status tracking terakhir di kartu list
                 'trackings' => function ($query) {
-                    $query->latest(); // Urutkan tracking dari yang terbaru
+                    $query->latest();
                 },
 
-                // [BARU] Muat data Kurir (Hanya jika sudah ditugaskan)
+                // Info Kurir untuk tombol Chat WA di halaman list
                 'courier' => function ($query) {
                     $query->select('id', 'name', 'email', 'phone', 'courier_status');
                 },
 
-                // [BARU] Muat detail kendaraan kurir (Plat nomor, Jenis Mobil)
-                // Ini penting agar klien merasa aman
+                // Info Kendaraan Kurir
                 'courier.courierVerification'
             ])
-            ->latest() // Urutkan pesanan dari yang terbaru dibuat
-            ->paginate(10); // Pagination 10 item per halaman
+            ->latest()
+            ->paginate(10);
 
         return Inertia::render('History/Index', [
             'orders' => $orders,
         ]);
     }
 
-    public function show(Order $order)
+    /**
+     * Menampilkan detail satu pesanan.
+     */
+    public function show(Order $order): Response
     {
-        $user = \Illuminate\Support\Facades\Auth::user();
+        $user = Auth::user();
 
         // KEAMANAN: Pastikan user hanya bisa melihat order miliknya sendiri
         if ($order->user_id !== $user->id) {
             abort(403, 'Anda tidak memiliki akses ke pesanan ini.');
         }
 
-        // Load semua relasi lengkap
+        // Load semua relasi lengkap untuk halaman Detail
         $order->load([
             'orderable',
             'payment',
+
+            // Riwayat Tracking lengkap
             'trackings' => function ($query) {
                 $query->latest();
             },
+
+            // Info Kurir + Lokasi GPS (PENTING untuk Live Map)
             'courier' => function ($query) {
                 $query->select('id', 'name', 'phone', 'courier_status', 'latitude', 'longitude');
             },
-            'courier.courierVerification' // Untuk plat nomor & jenis kendaraan
+
+            // Detail Kendaraan
+            'courier.courierVerification'
         ]);
 
         return Inertia::render('History/Show', [
             'order' => $order,
+            // Kita bisa tambahkan settings global di HandleInertiaRequests, 
+            // tapi data order sudah cukup lengkap di sini.
         ]);
     }
 }

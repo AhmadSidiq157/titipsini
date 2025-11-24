@@ -13,15 +13,37 @@ use Illuminate\Validation\Rule;
 
 class OrderManagementController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        // Ambil parameter dari frontend
+        $search = $request->input('search');
+        $status = $request->input('status');
+
         $orders = Order::with(['user', 'orderable'])
             ->whereHasMorph('orderable', [Service::class])
+            // 1. Logika Pencarian (Search)
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('id', 'like', "%{$search}%") // Cari ID Order
+                        ->orWhereHas('user', function ($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%") // Cari Nama User
+                                ->orWhere('email', 'like', "%{$search}%"); // Cari Email User
+                        });
+                });
+            })
+            // 2. [PERBAIKAN] Logika Filter Status
+            // Kita gunakan 'use ($status)' agar nilai string asli terbawa masuk
+            ->when($status && $status !== 'all', function ($query) use ($status) {
+                $query->where('status', $status);
+            })
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString(); // Agar pagination tidak mereset filter
 
         return Inertia::render('Admin/Orders/Index', [
             'orders' => $orders,
+            // Kirim balik filter ke frontend
+            'filters' => $request->only(['search', 'status']),
         ]);
     }
 
@@ -31,17 +53,16 @@ class OrderManagementController extends Controller
             abort(404);
         }
 
-        // [MODIFIKASI] Load relasi courier dan courierVerification
-        $order->load(['user', 'orderable', 'payment', 'courier.courierVerification']);
+        // [UPDATE PENTING]: Tambahkan 'trackings' di sini
+        $order->load(['user', 'orderable', 'payment', 'courier.courierVerification', 'trackings']);
 
-        // [BARU] Ambil daftar kurir untuk dropdown
         $couriers = User::whereHas('roles', function ($query) {
             $query->where('name', 'kurir');
         })->select('id', 'name', 'courier_status')->get();
 
         return Inertia::render('Admin/Orders/Show', [
             'order' => $order,
-            'couriers' => $couriers, // Kirim ke frontend
+            'couriers' => $couriers,
         ]);
     }
 
@@ -53,16 +74,12 @@ class OrderManagementController extends Controller
 
         $order->payment->update(['status' => 'verified']);
 
-        // [LOGIKA BARU]
-        // Cek apakah user minta dijemput?
-        $details = $order->user_form_details; // array
+        $details = $order->user_form_details;
         $needsPickup = isset($details['delivery_method']) && $details['delivery_method'] === 'pickup';
 
         if ($needsPickup) {
-            // Jika butuh jemput, status jadi 'ready_for_pickup' (Tunggu Kurir)
             $order->update(['status' => 'ready_for_pickup']);
         } else {
-            // Jika antar sendiri, langsung 'processing' (Disimpan)
             $order->update(['status' => 'processing']);
         }
 
@@ -82,14 +99,10 @@ class OrderManagementController extends Controller
 
     public function completeOrder(Order $order)
     {
-        // Selesaikan pesanan (barang diambil kembali oleh klien)
         $order->update(['status' => 'completed']);
         return redirect()->back()->with('success', 'Pesanan selesai.');
     }
 
-    /**
-     * [BARU] Method Assign Courier untuk Penitipan
-     */
     public function assignCourier(Request $request, Order $order)
     {
         $courierIds = User::whereHas('roles', fn($q) => $q->where('name', 'kurir'))->pluck('id')->toArray();
@@ -100,7 +113,6 @@ class OrderManagementController extends Controller
 
         $order->update([
             'courier_id' => $validated['courier_id'],
-            // Tetap 'ready_for_pickup' sampai kurir ambil barangnya
             'status' => 'ready_for_pickup',
         ]);
 

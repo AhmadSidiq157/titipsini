@@ -5,8 +5,8 @@ namespace App\Http\Middleware;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use App\Models\Setting;
+use App\Models\Branch; // [BARU DITAMBAHKAN] Import Model Branch
 use Illuminate\Support\Facades\Cache;
-// use Tightenco\Ziggy\Ziggy; 
 
 class HandleInertiaRequests extends Middleware
 {
@@ -34,21 +34,27 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
 
-        // [MODIFIKASI]
         if ($user) {
-            // Muat relasi verifikasi kurir DAN relasi roles
-            // Ini membuat 'auth.user.roles' selalu tersedia di React
             $user->load('courierVerification', 'roles');
         }
 
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $user, // Kirim user object yang sudah di-load
+                'user' => $user,
             ],
+            // Data Settings (Sudah ada sebelumnya)
             'settings' => Cache::rememberForever('settings', function () {
                 return Setting::all()->pluck('value', 'key');
             }),
+
+            // [BARU DITAMBAHKAN] Data Branches untuk Dropdown Global
+            // Kita cache juga agar tidak query database setiap pindah halaman
+            'branches' => Cache::rememberForever('branches_list', function () {
+                // Ambil ID dan Nama saja untuk menghemat bandwidth
+                return Branch::select('id', 'name')->get();
+            }),
+
             'flash' => [
                 'success' => fn() => $request->session()->get('success'),
             ],

@@ -1,269 +1,381 @@
-import React from "react";
-import CourierLayout from "../../Layouts/CourierLayout";
+import React, { useState } from "react";
+import CourierLayout from "@/Layouts/CourierLayout";
 import { Head, Link, usePage } from "@inertiajs/react";
-import { motion } from "framer-motion"; // [BARU] Animasi
+import { motion, AnimatePresence } from "framer-motion";
 import {
-    User,
-    Calendar,
-    ChevronRight,
-    ClipboardList,
     Package,
+    Navigation,
+    CheckCircle2,
     TrendingUp,
-    Clock,
-    MapPin,
+    Truck,
+    Box,
+    ArrowRight,
+    Wifi, // Ikon Wifi untuk indikator Online
 } from "lucide-react";
 
-// --- Komponen Helper: Badge Status Modern ---
+// --- Helper: Status Badge ---
 const StatusBadge = ({ status }) => {
-    const styles = {
-        pending: "bg-amber-50 text-amber-700 border-amber-200",
-        processing: "bg-blue-50 text-blue-700 border-blue-200",
-        ready_for_pickup: "bg-indigo-50 text-indigo-700 border-indigo-200",
-        picked_up: "bg-purple-50 text-purple-700 border-purple-200",
-        on_delivery:
-            "bg-orange-50 text-orange-700 border-orange-200 animate-pulse", // Efek berdenyut saat mengantar
-        delivered: "bg-emerald-50 text-emerald-700 border-emerald-200",
-        completed: "bg-green-50 text-green-700 border-green-200",
-        cancelled: "bg-red-50 text-red-700 border-red-200",
-        unknown: "bg-gray-50 text-gray-700 border-gray-200",
-    };
+    let style = "bg-gray-100 text-gray-600 border-gray-200";
+    let label = status?.replace(/_/g, " ") || "Unknown";
+    let icon = null;
 
-    const styleClass = styles[status] || styles.unknown;
+    switch (status) {
+        case "ready_for_pickup":
+            style =
+                "bg-blue-50 text-blue-700 border-blue-200 shadow-[0_0_10px_rgba(59,130,246,0.2)] animate-pulse";
+            label = "Jemput";
+            icon = <Navigation size={10} className="mr-1" />;
+            break;
+        case "picked_up":
+        case "on_delivery":
+            style =
+                "bg-amber-50 text-amber-700 border-amber-200 shadow-[0_0_10px_rgba(245,158,11,0.2)]";
+            label = "Mengantar";
+            icon = <Truck size={10} className="mr-1" />;
+            break;
+        case "delivered":
+        case "completed":
+            style = "bg-emerald-50 text-emerald-700 border-emerald-200";
+            label = "Selesai";
+            icon = <CheckCircle2 size={10} className="mr-1" />;
+            break;
+        case "cancelled":
+            style = "bg-red-50 text-red-700 border-red-200";
+            label = "Batal";
+            break;
+    }
 
     return (
         <span
-            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${styleClass}`}
+            className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border flex items-center ${style}`}
         >
-            {status ? status.replace("_", " ") : "Unknown"}
+            {icon} {label}
         </span>
     );
 };
 
-// --- Komponen Helper: Kartu Statistik ---
-const StatCard = ({ title, value, icon: Icon, color }) => (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-            <p className="text-sm text-gray-500 font-medium">{title}</p>
-            <h4 className="text-2xl font-extrabold text-gray-800 mt-1">
-                {value}
-            </h4>
-        </div>
-        <div className={`p-3 rounded-xl ${color}`}>
-            <Icon className="w-6 h-6 text-white" />
-        </div>
-    </div>
-);
+// --- Helper: Service Badge ---
+const ServiceTypeBadge = ({ orderableType, details }) => {
+    const isPenitipan =
+        !!details?.branch_address || orderableType?.includes("Service");
+    return isPenitipan ? (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100/80 text-emerald-700 text-[10px] font-bold border border-emerald-200 uppercase tracking-wide">
+            <Box size={10} /> Penitipan
+        </span>
+    ) : (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-100/80 text-indigo-700 text-[10px] font-bold border border-indigo-200 uppercase tracking-wide">
+            <Truck size={10} /> Pindahan
+        </span>
+    );
+};
 
-export default function Dashboard({ auth, tasks }) {
-    const { flash } = usePage().props;
+// --- Main Component ---
+export default function Dashboard({
+    auth,
+    activeTasks,
+    completedTasks,
+    stats,
+}) {
+    const [tab, setTab] = useState("active");
     const user = auth.user;
+    const { flash } = usePage().props;
 
-    // Hitung statistik sederhana dari data tasks yang ada
-    // (Catatan: Untuk produksi, sebaiknya hitung ini di backend controller)
-    const activeTasksCount = tasks.data.length;
+    // Data yang ditampilkan berdasarkan Tab
+    const displayedTasks = tab === "active" ? activeTasks : completedTasks;
 
-    // Animasi container
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: { staggerChildren: 0.1 },
-        },
-    };
-
-    const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
-        visible: { y: 0, opacity: 1 },
-    };
+    // Greetings
+    const hour = new Date().getHours();
+    const greeting =
+        hour < 12
+            ? "Selamat Pagi"
+            : hour < 18
+            ? "Selamat Siang"
+            : "Selamat Malam";
 
     return (
         <CourierLayout user={user} header="Dashboard">
             <Head title="Dashboard Kurir" />
 
-            <div className="py-8 bg-gray-50/50 min-h-screen">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {/* --- Sapaan & Header --- */}
-                    <div className="mb-8 px-4 sm:px-0">
-                        <h2 className="text-3xl font-extrabold text-gray-900">
-                            Halo,{" "}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-500">
-                                {user.name}
+            <div className="min-h-screen bg-gray-100 pb-24 font-sans">
+                {/* --- HERO SECTION --- */}
+                <div className="relative bg-[#0F172A] pt-12 pb-32 px-6 rounded-b-[3rem] shadow-2xl overflow-visible z-10 transition-all duration-500">
+                    {/* Background Effects */}
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden rounded-b-[3rem] z-0">
+                        <div className="absolute top-[-20%] left-[-10%] w-80 h-80 bg-emerald-500/20 rounded-full blur-[100px]"></div>
+                        <div className="absolute bottom-[20%] right-[-10%] w-60 h-60 bg-blue-600/20 rounded-full blur-[80px]"></div>
+                    </div>
+
+                    <div className="relative z-10 flex justify-between items-start">
+                        <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-inner">
+                                <span className="text-2xl font-black text-white">
+                                    {user.name.charAt(0)}
+                                </span>
+                            </div>
+                            <div>
+                                <p className="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-1">
+                                    {greeting}
+                                </p>
+                                <h1 className="text-2xl font-bold text-white leading-tight truncate w-48 drop-shadow-sm">
+                                    {user.name}
+                                </h1>
+                            </div>
+                        </div>
+
+                        {/* [MODIFIKASI] Status Badge Otomatis (Tanpa Tombol) */}
+                        <div className="flex flex-col items-end">
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-emerald-500/20 border-emerald-500/50 text-emerald-300 backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                                <Wifi size={12} className="animate-pulse" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest">
+                                    Online
+                                </span>
+                            </div>
+                            <span className="text-[9px] text-gray-400 mt-1 font-medium">
+                                Siap Menerima Order
                             </span>
-                            ! 👋
-                        </h2>
-                        <p className="text-gray-500 mt-2">
-                            Siap mengantar kebahagiaan hari ini?
-                        </p>
+                        </div>
                     </div>
 
-                    {/* --- Statistik Ringkas --- */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 px-4 sm:px-0">
-                        <StatCard
-                            title="Tugas Aktif"
-                            value={activeTasksCount}
-                            icon={Package}
-                            color="bg-blue-500"
-                        />
-                        <StatCard
-                            title="Status Anda"
-                            value={
-                                user.courier_status === "available"
-                                    ? "Online"
-                                    : "Sibuk/Offline"
-                            }
-                            icon={Clock}
-                            color={
-                                user.courier_status === "available"
-                                    ? "bg-green-500"
-                                    : "bg-gray-400"
-                            }
-                        />
-                        {/* Placeholder stat */}
-                        <StatCard
-                            title="Performa"
-                            value="100%"
-                            icon={TrendingUp}
-                            color="bg-purple-500"
-                        />
+                    {/* FLOATING STATS CARD */}
+                    <div className="absolute -bottom-12 left-6 right-6 z-20">
+                        <div className="bg-white rounded-3xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] p-1 flex divide-x divide-gray-100 border border-gray-100">
+                            <div className="flex-1 py-5 text-center group cursor-pointer hover:bg-gray-50 rounded-l-3xl transition-colors">
+                                <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 tracking-wider">
+                                    Tugas Aktif
+                                </p>
+                                <p className="text-2xl font-black text-gray-900 group-hover:text-emerald-600 transition-colors">
+                                    {stats.active}
+                                </p>
+                            </div>
+                            <div className="flex-1 py-5 text-center group cursor-pointer hover:bg-gray-50 transition-colors">
+                                <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 tracking-wider">
+                                    Selesai
+                                </p>
+                                <p className="text-2xl font-black text-gray-900 group-hover:text-blue-600 transition-colors">
+                                    {stats.completed}
+                                </p>
+                            </div>
+                            <div className="flex-1 py-5 text-center group cursor-pointer hover:bg-gray-50 rounded-r-3xl transition-colors">
+                                <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 tracking-wider">
+                                    Rating
+                                </p>
+                                <div className="flex items-center justify-center gap-1">
+                                    <p className="text-2xl font-black text-gray-900">
+                                        {stats.rating}
+                                    </p>
+                                    <TrendingUp
+                                        size={14}
+                                        className="text-emerald-500"
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </div>
 
-                    {/* Notifikasi Flash */}
+                <div className="h-16"></div>
+
+                <div className="px-5 mt-4 relative z-0">
+                    {/* Flash Message */}
                     {flash.success && (
-                        <div className="mb-6 mx-4 sm:mx-0 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl shadow-sm flex items-center">
-                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mb-6 bg-emerald-500 text-white px-4 py-3 rounded-xl shadow-lg shadow-emerald-500/20 text-sm font-bold flex items-center justify-center"
+                        >
+                            <CheckCircle2 size={16} className="mr-2" />
                             {flash.success}
-                        </div>
-                    )}
-                    {flash.error && (
-                        <div className="mb-6 mx-4 sm:mx-0 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl shadow-sm">
-                            {flash.error}
-                        </div>
+                        </motion.div>
                     )}
 
-                    {/* --- Daftar Tugas --- */}
-                    <div className="px-4 sm:px-0">
-                        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                            <ClipboardList className="w-5 h-5 mr-2 text-gray-500" />
-                            Daftar Tugas Terbaru
-                        </h3>
+                    {/* --- TABS --- */}
+                    <div className="bg-white/70 backdrop-blur-sm p-1.5 rounded-2xl flex relative mb-6 shadow-sm border border-gray-200/60">
+                        <motion.div
+                            className="absolute top-1.5 bottom-1.5 bg-white rounded-xl shadow-sm border border-gray-100 z-0"
+                            initial={false}
+                            animate={{
+                                width: "calc(50% - 6px)",
+                                x: tab === "active" ? 0 : "100%",
+                            }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 300,
+                                damping: 30,
+                            }}
+                        />
 
-                        {tasks.data.length > 0 ? (
-                            <motion.div
-                                className="space-y-4"
-                                variants={containerVariants}
-                                initial="hidden"
-                                animate="visible"
-                            >
-                                {tasks.data.map((task) => (
+                        <button
+                            onClick={() => setTab("active")}
+                            className={`flex-1 py-3 text-sm font-bold rounded-xl relative z-10 transition-colors duration-200 ${
+                                tab === "active"
+                                    ? "text-gray-900"
+                                    : "text-gray-400 hover:text-gray-600"
+                            }`}
+                        >
+                            Tugas Berjalan
+                        </button>
+                        <button
+                            onClick={() => setTab("history")}
+                            className={`flex-1 py-3 text-sm font-bold rounded-xl relative z-10 transition-colors duration-200 ${
+                                tab === "history"
+                                    ? "text-gray-900"
+                                    : "text-gray-400 hover:text-gray-600"
+                            }`}
+                        >
+                            Riwayat
+                        </button>
+                    </div>
+
+                    {/* --- TASK LIST --- */}
+                    <div className="space-y-5 pb-20">
+                        <AnimatePresence mode="wait">
+                            {displayedTasks.length > 0 ? (
+                                displayedTasks.map((task, i) => (
                                     <motion.div
                                         key={task.id}
-                                        variants={itemVariants}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -20 }}
+                                        transition={{ delay: i * 0.05 }}
                                     >
                                         <Link
                                             href={route(
                                                 "courier.tasks.show",
                                                 task.id
                                             )}
-                                            className="block group"
+                                            className="block bg-white rounded-[1.5rem] p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-gray-100 hover:border-emerald-200 hover:shadow-lg active:scale-[0.98] transition-all relative overflow-hidden group"
                                         >
-                                            <div className="bg-white rounded-2xl p-6 shadow-[0_2px_8px_rgb(0,0,0,0.04)] border border-gray-100 hover:shadow-lg hover:border-green-200 transition-all duration-300 relative overflow-hidden">
-                                                {/* Dekorasi Hover */}
-                                                <div className="absolute top-0 left-0 w-1 h-full bg-gray-200 group-hover:bg-green-500 transition-colors duration-300"></div>
+                                            <div
+                                                className={`absolute left-0 top-0 bottom-0 w-1.5 ${
+                                                    task.user_form_details
+                                                        ?.branch_address ||
+                                                    task.orderable_type?.includes(
+                                                        "Service"
+                                                    )
+                                                        ? "bg-emerald-500"
+                                                        : "bg-indigo-500"
+                                                }`}
+                                            ></div>
 
-                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                                    {/* Info Utama */}
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-3 mb-2">
-                                                            <span className="text-lg font-bold text-gray-900">
-                                                                Order #{task.id}
-                                                            </span>
-                                                            <StatusBadge
-                                                                status={
-                                                                    task.status
-                                                                }
-                                                            />
-                                                        </div>
-
-                                                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 text-sm text-gray-500">
-                                                            <div className="flex items-center">
-                                                                <User className="w-4 h-4 mr-2 text-gray-400" />
-                                                                {task.user
-                                                                    ? task.user
-                                                                          .name
-                                                                    : "Klien Dihapus"}
-                                                            </div>
-                                                            <div className="flex items-center">
-                                                                <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                                                                {new Date(
-                                                                    task.created_at
-                                                                ).toLocaleDateString(
-                                                                    "id-ID",
-                                                                    {
-                                                                        day: "numeric",
-                                                                        month: "long",
-                                                                        year: "numeric",
-                                                                        hour: "2-digit",
-                                                                        minute: "2-digit",
-                                                                    }
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Tampilkan Alamat Singkat jika ada */}
-                                                        {task.user_form_details
-                                                            ?.alamat_penjemputan && (
-                                                            <div className="mt-3 flex items-start text-sm text-gray-600 bg-gray-50 p-2 rounded-lg md:w-fit">
-                                                                <MapPin className="w-4 h-4 mr-2 mt-0.5 text-gray-400 flex-shrink-0" />
-                                                                <span className="line-clamp-1">
-                                                                    {
-                                                                        task
-                                                                            .user_form_details
-                                                                            .alamat_penjemputan
-                                                                    }
-                                                                </span>
-                                                            </div>
+                                            <div className="flex justify-between items-start mb-4 pl-2">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-lg font-black text-gray-800 leading-none">
+                                                            #{task.id}
+                                                        </span>
+                                                        <ServiceTypeBadge
+                                                            orderableType={
+                                                                task.orderable_type
+                                                            }
+                                                            details={
+                                                                task.user_form_details
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">
+                                                        {new Date(
+                                                            task.created_at
+                                                        ).toLocaleDateString(
+                                                            "id-ID",
+                                                            {
+                                                                day: "numeric",
+                                                                month: "long",
+                                                                hour: "2-digit",
+                                                                minute: "2-digit",
+                                                            }
                                                         )}
-                                                    </div>
+                                                    </p>
+                                                </div>
+                                                <StatusBadge
+                                                    status={task.status}
+                                                />
+                                            </div>
 
-                                                    {/* Action Icon */}
-                                                    <div className="flex items-center justify-end">
-                                                        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-green-50 group-hover:text-green-600 transition-colors">
-                                                            <ChevronRight className="w-5 h-5" />
-                                                        </div>
+                                            <div className="bg-gray-50/80 rounded-xl p-4 border border-gray-100 relative ml-2">
+                                                <div className="absolute left-[27px] top-8 bottom-8 w-0.5 border-l-2 border-dashed border-gray-300"></div>
+
+                                                <div className="relative flex items-start gap-3 mb-4">
+                                                    <div className="w-6 h-6 rounded-full bg-white border-2 border-blue-500 flex items-center justify-center shadow-sm z-10 mt-0.5">
+                                                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                                                     </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[10px] text-blue-500 font-bold uppercase mb-0.5">
+                                                            Jemput
+                                                        </p>
+                                                        <p className="text-sm font-semibold text-gray-700 line-clamp-1 leading-snug">
+                                                            {task
+                                                                .user_form_details
+                                                                ?.alamat_penjemputan ||
+                                                                "Lokasi Jemput..."}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="relative flex items-start gap-3">
+                                                    <div className="w-6 h-6 rounded-full bg-white border-2 border-orange-500 flex items-center justify-center shadow-sm z-10 mt-0.5">
+                                                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[10px] text-orange-500 font-bold uppercase mb-0.5">
+                                                            Tujuan
+                                                        </p>
+                                                        <p className="text-sm font-semibold text-gray-700 line-clamp-1 leading-snug">
+                                                            {!!task
+                                                                .user_form_details
+                                                                ?.branch_address ||
+                                                            task.orderable_type?.includes(
+                                                                "Service"
+                                                            )
+                                                                ? task
+                                                                      .user_form_details
+                                                                      ?.branch_address ||
+                                                                  "Gudang Cabang"
+                                                                : task
+                                                                      .user_form_details
+                                                                      ?.alamat_tujuan ||
+                                                                  "Lokasi Tujuan..."}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 flex justify-end">
+                                                <div className="inline-flex items-center text-xs font-bold text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors group-hover:bg-gray-900 group-hover:text-white">
+                                                    Lihat Detail{" "}
+                                                    <ArrowRight
+                                                        size={12}
+                                                        className="ml-1.5"
+                                                    />
                                                 </div>
                                             </div>
                                         </Link>
                                     </motion.div>
-                                ))}
-                            </motion.div>
-                        ) : (
-                            // --- Empty State Modern ---
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="bg-white rounded-2xl p-12 text-center border border-dashed border-gray-300"
-                            >
-                                <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <ClipboardList className="w-10 h-10 text-green-500" />
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-800">
-                                    Tidak Ada Tugas Saat Ini
-                                </h3>
-                                <p className="text-gray-500 mt-2 max-w-md mx-auto">
-                                    Anda sedang santai! Tugas baru yang
-                                    ditugaskan oleh admin akan muncul di sini
-                                    secara otomatis.
-                                </p>
-                            </motion.div>
-                        )}
-
-                        {/* Pagination (Jika ada banyak tugas) */}
-                        {tasks.links && tasks.meta && (
-                            <div className="mt-6">
-                                {/* Anda bisa menambahkan komponen Pagination di sini jika tasks menggunakan resource collection */}
-                            </div>
-                        )}
+                                ))
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="flex flex-col items-center justify-center py-20 text-center"
+                                >
+                                    <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-6 border-4 border-white shadow-inner">
+                                        <Package
+                                            size={48}
+                                            className="text-gray-300 opacity-50"
+                                        />
+                                    </div>
+                                    <h3 className="text-xl font-black text-gray-800 mb-2">
+                                        {tab === "active"
+                                            ? "Semua Beres!"
+                                            : "Belum Ada Riwayat"}
+                                    </h3>
+                                    <p className="text-sm text-gray-400 max-w-xs leading-relaxed px-4">
+                                        {tab === "active"
+                                            ? "Belum ada tugas baru. Tetap semangat menunggu orderan!"
+                                            : "Anda belum menyelesaikan tugas apapun."}
+                                    </p>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
             </div>

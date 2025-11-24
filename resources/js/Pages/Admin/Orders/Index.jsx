@@ -1,6 +1,20 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
-import { Head, Link, usePage } from "@inertiajs/react";
+import { Head, Link, usePage, router } from "@inertiajs/react";
+import {
+    Search,
+    Filter,
+    Eye,
+    Clock,
+    CheckCircle2,
+    XCircle,
+    Truck,
+    Box,
+    AlertCircle,
+    Wallet,
+    ArrowRightLeft,
+    Package,
+} from "lucide-react";
 
 // --- Helper: Format Rupiah ---
 const formatRupiah = (number) => {
@@ -8,64 +22,115 @@ const formatRupiah = (number) => {
         style: "currency",
         currency: "IDR",
         minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
     }).format(number);
 };
 
-// --- Helper: Status Badge ---
-const getStatusBadge = (status) => {
-    switch (status) {
-        case "pending":
-            return "bg-gray-200 text-gray-800";
-        case "awaiting_payment":
-            return "bg-yellow-200 text-yellow-800";
-        case "awaiting_verification":
-            return "bg-blue-200 text-blue-800";
-        case "completed":
-            return "bg-green-200 text-green-800";
-        case "cancelled":
-            return "bg-red-200 text-red-800";
-        default:
-            return "bg-gray-200 text-gray-800";
-    }
+// --- KAMUS STATUS (Agar Konsisten Bahasa Indonesia) ---
+const STATUS_LABELS = {
+    pending: "Menunggu",
+    awaiting_payment: "Menunggu Bayar",
+    awaiting_verification: "Perlu Verifikasi",
+    verified: "Terverifikasi",
+    processing: "Sedang Diproses", // Atau "Dalam Penyimpanan"
+    ready_for_pickup: "Siap Dijemput",
+    picked_up: "Sudah Dijemput",
+    on_delivery: "Dalam Pengiriman",
+    delivered: "Sampai Tujuan",
+    completed: "Selesai",
+    cancelled: "Dibatalkan",
+    rejected: "Ditolak",
 };
 
-// --- [MODIFIKASI] Komponen Pagination (Selalu Tampil & Gaya Kotak Terpisah) ---
-const Pagination = ({ links }) => {
-    // [CATATAN] Baris pengecekan 'links.length <= 3' SUDAH DIHAPUS.
-    // Jadi tombol akan selalu muncul.
+const getStatusLabel = (status) => {
+    return STATUS_LABELS[status] || status.replace(/_/g, " ");
+};
+
+// --- Helper: Status Badge Component ---
+const StatusBadge = ({ status }) => {
+    let style = "";
+    let icon = null;
+    const label = getStatusLabel(status); // Gunakan label bahasa Indonesia
+
+    switch (status) {
+        case "awaiting_payment":
+            style = "bg-amber-100 text-amber-700 border-amber-200";
+            icon = <Wallet className="w-3.5 h-3.5 mr-1.5" />;
+            break;
+        case "awaiting_verification":
+            style =
+                "bg-blue-100 text-blue-700 border-blue-200 shadow-sm animate-pulse";
+            icon = <AlertCircle className="w-3.5 h-3.5 mr-1.5" />;
+            break;
+        case "processing":
+            style = "bg-indigo-100 text-indigo-700 border-indigo-200";
+            icon = <Box className="w-3.5 h-3.5 mr-1.5" />;
+            break;
+        case "ready_for_pickup":
+            style = "bg-orange-100 text-orange-700 border-orange-200";
+            icon = <Truck className="w-3.5 h-3.5 mr-1.5" />;
+            break;
+        case "picked_up":
+        case "on_delivery":
+            style = "bg-purple-100 text-purple-700 border-purple-200";
+            icon = <Truck className="w-3.5 h-3.5 mr-1.5" />;
+            break;
+        case "completed":
+            style = "bg-emerald-100 text-emerald-700 border-emerald-200";
+            icon = <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />;
+            break;
+        case "cancelled":
+        case "rejected":
+            style = "bg-red-100 text-red-700 border-red-200";
+            icon = <XCircle className="w-3.5 h-3.5 mr-1.5" />;
+            break;
+        default:
+            style = "bg-gray-100 text-gray-700 border-gray-200";
+            icon = <Clock className="w-3.5 h-3.5 mr-1.5" />;
+    }
 
     return (
-        <div className="flex flex-wrap items-center gap-2 mt-6">
+        <span
+            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${style} capitalize whitespace-nowrap transition-all duration-300 hover:scale-105`}
+        >
+            {icon}
+            {label}
+        </span>
+    );
+};
+
+// --- Komponen Pagination ---
+const Pagination = ({ links }) => {
+    return (
+        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 mt-6">
             {links.map((link, index) => {
-                // Bersihkan label panah bawaan Laravel agar rapi
                 let label = link.label
-                    .replace("&laquo; Previous", "« Previous")
-                    .replace("Next &raquo;", "Next »");
+                    .replace("&laquo; Previous", "«")
+                    .replace("Next &raquo;", "»");
 
-                // Style dasar: Kotak putih dengan border, text-sm, rounded
                 const baseClasses =
-                    "px-4 py-2 text-sm font-medium border rounded-md transition-colors shadow-sm";
+                    "px-3 py-2 text-sm font-medium border rounded-xl transition-all shadow-sm flex items-center justify-center min-w-[40px]";
 
-                // KONDISI 1: Link Disabled (Previous/Next mati saat di ujung)
                 if (link.url === null) {
                     return (
                         <span
                             key={index}
-                            className={`${baseClasses} bg-white text-gray-300 border-gray-200 cursor-not-allowed`}
+                            className={`${baseClasses} bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed`}
                             dangerouslySetInnerHTML={{ __html: label }}
                         />
                     );
                 }
 
-                // KONDISI 2: Link Aktif & Link Biasa
                 return (
                     <Link
                         key={index}
                         href={link.url}
+                        preserveState
+                        preserveScroll
                         className={`${baseClasses} ${
                             link.active
-                                ? "bg-indigo-50 text-indigo-600 border-indigo-600 z-10" // Style saat Aktif (Halaman yang sedang dibuka)
-                                : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-gray-800" // Style Biasa
+                                ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-transparent shadow-emerald-200 shadow-md"
+                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-emerald-600 hover:border-emerald-200"
                         }`}
                         dangerouslySetInnerHTML={{ __html: label }}
                     />
@@ -75,133 +140,318 @@ const Pagination = ({ links }) => {
     );
 };
 
-export default function Index({ auth, orders }) {
+export default function Index({ auth, orders, filters }) {
     const { flash } = usePage().props;
+
+    const [search, setSearch] = useState(filters.search || "");
+    const [status, setStatus] = useState(filters.status || "all");
+    const isFirstRender = useRef(true);
+
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            router.get(
+                route("admin.orders.index"),
+                { search, status },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                }
+            );
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [search, status]);
+
+    // Filter Options disesuaikan dengan STATUS_LABELS
+    const statusOptions = [
+        { value: "all", label: "Semua Status" },
+        { value: "awaiting_payment", label: "Menunggu Bayar" },
+        { value: "awaiting_verification", label: "Verifikasi" },
+        { value: "processing", label: "Sedang Diproses" },
+        { value: "ready_for_pickup", label: "Siap Dijemput" },
+        { value: "picked_up", label: "Sudah Dijemput" },
+        { value: "completed", label: "Selesai" },
+        { value: "cancelled", label: "Dibatalkan" },
+    ];
 
     return (
         <AdminLayout
             user={auth.user}
             header={
-                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
-                    Manajemen Pesanan
-                </h2>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 className="font-black text-2xl text-gray-800 leading-tight tracking-tight">
+                            Manajemen Pesanan
+                        </h2>
+                        <p className="text-gray-500 text-sm mt-1">
+                            Pantau semua transaksi titipan masuk
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200 text-sm font-bold text-gray-600 flex items-center gap-2">
+                            <Package className="w-4 h-4 text-emerald-500" />
+                            Total:{" "}
+                            <span className="text-emerald-600 text-lg">
+                                {orders.total}
+                            </span>
+                        </div>
+                    </div>
+                </div>
             }
         >
             <Head title="Manajemen Pesanan" />
 
-            <div className="py-12">
+            <div className="py-8">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {/* Flash Messages */}
                     {flash.success && (
-                        <div className="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow-sm">
-                            <p>{flash.success}</p>
-                        </div>
-                    )}
-                    {flash.error && (
-                        <div className="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md shadow-sm">
-                            <p>{flash.error}</p>
+                        <div className="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl flex items-center shadow-sm animate-in slide-in-from-top-2">
+                            <CheckCircle2 className="w-5 h-5 mr-2 bg-emerald-200 rounded-full p-0.5" />{" "}
+                            {flash.success}
                         </div>
                     )}
 
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-2xl font-bold text-gray-800">
-                                    Daftar Pesanan Masuk
-                                </h3>
+                    <div className="bg-white overflow-hidden shadow-xl shadow-gray-200/50 sm:rounded-3xl border border-gray-100">
+                        {/* --- CONTROL BAR --- */}
+                        <div className="p-6 border-b border-gray-100 flex flex-col lg:flex-row justify-between gap-6 bg-gradient-to-b from-white to-gray-50/50">
+                            {/* Search */}
+                            <div className="relative w-full lg:w-96 group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Search className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Cari ID Pesanan, Nama User..."
+                                    className="pl-10 pr-4 py-3 border-gray-200 rounded-2xl text-sm focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 w-full transition-all shadow-sm group-hover:shadow-md"
+                                />
                             </div>
 
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full bg-white">
-                                    <thead className="bg-gray-100">
-                                        <tr>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
-                                                ID
+                            {/* Filter Chips */}
+                            <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
+                                <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                {statusOptions.map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => setStatus(opt.value)}
+                                        className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                                            status === opt.value
+                                                ? "bg-gray-900 text-white border-gray-900 shadow-lg shadow-gray-900/20"
+                                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-emerald-300"
+                                        }`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* --- TABLE CONTENT --- */}
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-100">
+                                <thead className="bg-gray-50/80 backdrop-blur-sm">
+                                    <tr>
+                                        {[
+                                            "ID Pesanan",
+                                            "Pelanggan",
+                                            "Paket Layanan",
+                                            "Total & Waktu",
+                                            "Status",
+                                            "Aksi",
+                                        ].map((head) => (
+                                            <th
+                                                key={head}
+                                                className="py-4 px-6 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider"
+                                            >
+                                                {head}
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
-                                                User
-                                            </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
-                                                Layanan
-                                            </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
-                                                Total
-                                            </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
-                                                Status
-                                            </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
-                                                Aksi
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {orders.data.length > 0 ? (
-                                            orders.data.map((order) => (
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-100">
+                                    {orders.data.length > 0 ? (
+                                        orders.data.map((order) => {
+                                            const isUrgent =
+                                                order.status ===
+                                                "awaiting_verification";
+
+                                            return (
                                                 <tr
                                                     key={order.id}
-                                                    className="hover:bg-gray-50"
+                                                    className={`group transition-colors duration-200 ${
+                                                        isUrgent
+                                                            ? "bg-blue-50/40 hover:bg-blue-50/70"
+                                                            : "hover:bg-gray-50/80"
+                                                    }`}
                                                 >
-                                                    <td className="py-3 px-4 border-b text-gray-700 font-medium">
-                                                        #{order.id}
+                                                    <td className="py-4 px-6 whitespace-nowrap">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-mono text-sm font-bold text-gray-700 group-hover:text-emerald-600 transition-colors">
+                                                                #{order.id}
+                                                            </span>
+                                                        </div>
                                                     </td>
-                                                    <td className="py-3 px-4 border-b text-gray-700">
-                                                        {order.user.name}
+
+                                                    <td className="py-4 px-6">
+                                                        <div className="flex items-center">
+                                                            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-700 font-bold text-sm mr-3 shadow-sm border border-emerald-200">
+                                                                {order.user.name.charAt(
+                                                                    0
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-sm font-bold text-gray-900">
+                                                                    {
+                                                                        order
+                                                                            .user
+                                                                            .name
+                                                                    }
+                                                                </div>
+                                                                <div className="text-xs text-gray-500">
+                                                                    {
+                                                                        order
+                                                                            .user
+                                                                            .email
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </td>
-                                                    <td className="py-3 px-4 border-b text-gray-700">
-                                                        {order.orderable
-                                                            .title ||
-                                                            order.orderable
-                                                                .name}
+
+                                                    <td className="py-4 px-6">
+                                                        <div className="flex items-center gap-2">
+                                                            <div
+                                                                className={`p-1.5 rounded-lg ${
+                                                                    order.orderable_type.includes(
+                                                                        "Moving"
+                                                                    )
+                                                                        ? "bg-blue-100 text-blue-600"
+                                                                        : "bg-emerald-100 text-emerald-600"
+                                                                }`}
+                                                            >
+                                                                {order.orderable_type.includes(
+                                                                    "Moving"
+                                                                ) ? (
+                                                                    <Truck
+                                                                        size={
+                                                                            16
+                                                                        }
+                                                                    />
+                                                                ) : (
+                                                                    <Box
+                                                                        size={
+                                                                            16
+                                                                        }
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                            <span className="text-sm font-medium text-gray-700">
+                                                                {order.orderable
+                                                                    .title ||
+                                                                    order
+                                                                        .orderable
+                                                                        .name}
+                                                            </span>
+                                                        </div>
                                                     </td>
-                                                    <td className="py-3 px-4 border-b text-gray-700">
-                                                        {formatRupiah(
-                                                            order.final_amount
-                                                        )}
+
+                                                    <td className="py-4 px-6">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-extrabold text-gray-900">
+                                                                {formatRupiah(
+                                                                    order.final_amount
+                                                                )}
+                                                            </span>
+                                                            <span className="text-[10px] text-gray-400 mt-0.5">
+                                                                {new Date(
+                                                                    order.created_at
+                                                                ).toLocaleDateString(
+                                                                    "id-ID",
+                                                                    {
+                                                                        day: "numeric",
+                                                                        month: "short",
+                                                                        hour: "2-digit",
+                                                                        minute: "2-digit",
+                                                                    }
+                                                                )}
+                                                            </span>
+                                                        </div>
                                                     </td>
-                                                    <td className="py-3 px-4 border-b text-gray-700">
-                                                        <span
-                                                            className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+
+                                                    <td className="py-4 px-6">
+                                                        <StatusBadge
+                                                            status={
                                                                 order.status
-                                                            )}`}
-                                                        >
-                                                            {order.status.replace(
-                                                                "_",
-                                                                " "
-                                                            )}
-                                                        </span>
+                                                            }
+                                                        />
                                                     </td>
-                                                    <td className="py-3 px-4 border-b text-gray-700">
+
+                                                    <td className="py-4 px-6 text-right text-sm font-medium">
                                                         <Link
                                                             href={route(
                                                                 "admin.orders.show",
                                                                 order.id
                                                             )}
-                                                            className="text-indigo-600 hover:underline font-semibold focus:outline-none"
+                                                            className={`inline-flex items-center px-4 py-2 border text-sm leading-4 font-bold rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all transform hover:-translate-y-0.5 ${
+                                                                isUrgent
+                                                                    ? "border-transparent text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-200"
+                                                                    : "border-gray-200 text-gray-700 bg-white hover:bg-gray-50 hover:border-emerald-300 hover:text-emerald-600"
+                                                            }`}
                                                         >
-                                                            Lihat Detail
+                                                            {isUrgent
+                                                                ? "Verifikasi"
+                                                                : "Detail"}
+                                                            <Eye className="ml-2 -mr-0.5 h-4 w-4" />
                                                         </Link>
                                                     </td>
                                                 </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td
-                                                    colSpan="6"
-                                                    className="py-8 text-center text-gray-500"
-                                                >
-                                                    Belum ada pesanan.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td
+                                                colSpan="6"
+                                                className="py-20 text-center"
+                                            >
+                                                <div className="flex flex-col items-center justify-center text-gray-400 animate-in fade-in zoom-in duration-500">
+                                                    <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-4 border border-dashed border-gray-200">
+                                                        <Search className="w-10 h-10 text-gray-300" />
+                                                    </div>
+                                                    <p className="text-xl font-bold text-gray-600">
+                                                        Tidak ada pesanan
+                                                        ditemukan.
+                                                    </p>
+                                                    <p className="text-sm mt-1">
+                                                        Coba ubah filter atau
+                                                        kata kunci pencarian
+                                                        Anda.
+                                                    </p>
+                                                    <button
+                                                        onClick={() => {
+                                                            setSearch("");
+                                                            setStatus("all");
+                                                        }}
+                                                        className="mt-6 text-emerald-600 font-bold hover:underline flex items-center"
+                                                    >
+                                                        <ArrowRightLeft className="w-4 h-4 mr-2" />{" "}
+                                                        Reset Filter
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
 
-                            {/* [MODIFIKASI] Tombol Paginasi akan selalu muncul di sini */}
-                            <div className="mt-4">
-                                <Pagination links={orders.links} />
-                            </div>
+                        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                            <Pagination links={orders.links} />
                         </div>
                     </div>
                 </div>

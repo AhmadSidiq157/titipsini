@@ -11,7 +11,6 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
 {
@@ -43,9 +42,6 @@ class OrderController extends Controller
             $productModelClass = MovingPackage::class;
         }
 
-        // Opsional: Cek apakah produk aktif/valid
-        // if ($product->price <= 0) { ... }
-
         return response()->json([
             'product' => $product,
             'productType' => $type,
@@ -54,7 +50,7 @@ class OrderController extends Controller
     }
 
     /**
-     * STORE: Menyimpan Order Baru
+     * STORE: Menyimpan Order Baru & Kalkulasi Harga Server-Side
      */
     public function store(Request $request)
     {
@@ -65,19 +61,18 @@ class OrderController extends Controller
         $rules = [
             'product_id' => 'required|integer',
             'product_model' => 'required|string',
-            'final_amount' => 'required|numeric|min:0',
+            // Kita hapus validasi 'final_amount' input, karena kita akan hitung sendiri
             'form_details' => 'required|array',
         ];
 
-        // Validasi Cabang (Opsional untuk Pindahan, Wajib untuk Penitipan)
+        // Validasi Cabang (Wajib untuk Penitipan/Service)
         if ($modelClass === Service::class) {
             $rules['form_details.branch_id'] = 'required|exists:branches,id';
         } else {
-            // Untuk pindahan, branch_id mungkin tidak wajib di awal
-            $rules['form_details.branch_id'] = 'nullable'; 
+            $rules['form_details.branch_id'] = 'nullable';
         }
 
-        // 3. Tambahkan Aturan Spesifik Berdasarkan Tipe Produk
+        // 3. Tambahkan Aturan Spesifik
         if ($modelClass === Service::class) {
             // --- Aturan Layanan Penitipan ---
             $rules = array_merge($rules, [
@@ -89,16 +84,14 @@ class OrderController extends Controller
                 'form_details.notes' => 'nullable|string|max:1000',
             ]);
 
-            // [PENTING] Validasi Kondisional: Jika Request Jemput (Pickup), Wajib Alamat & Telepon
+            // Jika Request Jemput (Pickup), Wajib Alamat & Telepon
             if ($request->input('form_details.delivery_method') === 'pickup') {
                 $rules['form_details.alamat_penjemputan'] = 'required|string|max:500';
                 $rules['form_details.telepon'] = 'required|string|max:20';
             } else {
-                // Jika antar sendiri, field ini nullable
                 $rules['form_details.alamat_penjemputan'] = 'nullable|string';
                 $rules['form_details.telepon'] = 'nullable|string';
             }
-
         } elseif ($modelClass === MovingPackage::class) {
             // --- Aturan Paket Pindahan ---
             $rules = array_merge($rules, [
@@ -114,87 +107,60 @@ class OrderController extends Controller
         $validatedData = $request->validate($rules);
         $formDetails = $validatedData['form_details'];
 
-        // 5. Handle Upload Foto Barang (Khusus Penitipan)
+        // 5. Handle Upload Foto Barang (Jika ada)
         if ($request->hasFile('form_details.item_photo')) {
             $path = $request->file('form_details.item_photo')->store('order_items', 'public');
-            $formDetails['item_photo_path'] = $path; // Simpan path file
-            unset($formDetails['item_photo']); // Hapus objek file mentah agar tidak error saat masuk JSON
+            $formDetails['item_photo_path'] = $path;
+            unset($formDetails['item_photo']); // Hapus objek file mentah
         }
 
-        // 6. Ambil Data Produk & Cabang
+        // 6. Ambil Data Produk Asli dari Database
         $product = $modelClass::find($validatedData['product_id']);
-        
-        // Ambil data cabang jika ada (untuk disimpan snapshot namanya)
+
+        // Snapshot Data Cabang (Agar aman jika data cabang berubah di masa depan)
         if (!empty($formDetails['branch_id'])) {
-             $branch = Branch::find($formDetails['branch_id']);
-             $formDetails['branch_name'] = $branch ? $branch->name : 'Unknown';
-             $formDetails['branch_address'] = $branch ? $branch->address : '';
+            $branch = Branch::find($formDetails['branch_id']);
+            $formDetails['branch_name'] = $branch ? $branch->name : 'Unknown';
+            $formDetails['branch_address'] = $branch ? $branch->address : '';
         }
 
         if (!$product) {
             throw ValidationException::withMessages(['product_id' => 'Produk tidak ditemukan.']);
         }
 
-        // 7. Kalkulasi Ulang Harga di Backend (Security Best Practice)
-        // Agar user tidak bisa memanipulasi harga lewat Inspect Element
-        $finalAmount = $validatedData['final_amount']; // Default pakai kiriman frontend (fallback)
-        
+        // 7. SECURITY: Kalkulasi Ulang Harga di Backend
+        $finalAmount = 0;
+
         if ($modelClass === Service::class) {
             $basePrice = $product->price;
-            $duration = $formDetails['duration_value'];
-            
-            // Multiplier Waktu (Samakan logika dengan frontend)
-            $timeMultiplier = match($formDetails['duration_unit']) {
+            $duration = (int) $formDetails['duration_value'];
+
+            // Logic Multiplier (HARUS SAMA PERSIS dengan Frontend)
+            $timeMultiplier = match ($formDetails['duration_unit']) {
                 'hour' => 0.1,
                 'day' => 1,
-                'week' => 6,   // Diskon
-                'month' => 25, // Diskon
+                'week' => 6,   // Diskon: Bayar 6 hari dapat 1 minggu
+                'month' => 25, // Diskon: Bayar 25 hari dapat 1 bulan
                 default => 1,
             };
 
-            // Multiplier Ukuran (Jika ada fitur ukuran, tambahkan logika di sini)
-            // $sizeMultiplier = ...
-
-            $calculatedTotal = round($basePrice * $duration * $timeMultiplier);
-            
-            // Timpa final amount dengan hasil hitungan server yang aman
-            $finalAmount = $calculatedTotal;
+            $finalAmount = round($basePrice * $duration * $timeMultiplier);
         } elseif ($modelClass === MovingPackage::class) {
-            // Untuk pindahan, harga biasanya tetap sesuai paket database
+            // Untuk pindahan, harga fix sesuai paket
             $finalAmount = $product->price;
         }
 
         // 8. Buat Order
         $order = $product->orders()->create([
             'user_id' => Auth::id(),
-            'final_amount' => $finalAmount,
-            'user_form_details' => $formDetails, // Data JSON lengkap (termasuk alamat jemput & no hp)
+            'final_amount' => $finalAmount, // Menggunakan harga hitungan server
+            'user_form_details' => $formDetails,
             'status' => 'awaiting_payment',
         ]);
 
-        $order->load('orderable');
-        
         return response()->json([
             'message' => 'Order berhasil dibuat',
             'order' => $order
-        ]);
-    }
-
-    /**
-     * Menampilkan halaman upload pembayaran.
-     */
-    public function payment(Order $order)
-    {
-        if ($order->user_id !== Auth::id()) {
-            abort(403);
-        }
-        if ($order->status !== 'awaiting_payment') {
-            return redirect()->route('order.success', $order);
-        }
-        
-        $order->load('orderable');
-        return Inertia::render('Order/Payment', [
-            'order' => $order,
         ]);
     }
 
@@ -208,39 +174,31 @@ class OrderController extends Controller
         }
 
         $request->validate([
-            'payment_proof' => 'required|image|mimes:jpg,jpeg,png|max:5120',
+            // Support Image + PDF
+            'payment_proof' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'notes' => 'nullable|string|max:1000',
         ]);
 
         $path = $request->file('payment_proof')->store('payment_proofs', 'public');
 
+        // Simpan ke tabel manual_payments (Relasi Morph/HasOne)
+        // Pastikan Model Order punya method payment()
         $order->payment()->create([
             'user_id' => Auth::id(),
             'payment_proof_path' => $path,
             'notes' => $request->input('notes'),
             'status' => 'pending_verification',
+            'amount' => $order->final_amount, // Rekam jumlah yang dibayar
         ]);
 
+        // Update status order utama
         $order->update(['status' => 'awaiting_verification']);
 
         return response()->json(['orderStatus' => $order->status]);
     }
 
     /**
-     * Menampilkan halaman sukses.
-     */
-    public function success(Order $order)
-    {
-        if ($order->user_id !== Auth::id()) {
-            abort(403);
-        }
-        return Inertia::render('Order/Success', [
-            'orderStatus' => $order->status,
-        ]);
-    }
-
-    /**
-     * Polling status order.
+     * Polling status order (Untuk Step 3 Success Page).
      */
     public function getStatus(Order $order)
     {

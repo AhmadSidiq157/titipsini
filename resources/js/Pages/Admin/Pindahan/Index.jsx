@@ -1,239 +1,442 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
-import { Head, Link, usePage } from "@inertiajs/react";
+import { Head, Link, usePage, router } from "@inertiajs/react";
 import ManageOrderModal from "./Partials/ManageOrderModal";
-import { Eye, Truck, Check, X, Clock, Package, DollarSign } from "lucide-react";
+import {
+    Eye,
+    Truck,
+    CheckCircle2,
+    XCircle,
+    Clock,
+    Package,
+    Wallet,
+    Search,
+    Filter,
+    ArrowRightLeft,
+    MapPin,
+} from "lucide-react";
 
-// Helper function untuk format mata uang
+// --- Helper: Format Rupiah ---
 const formatRupiah = (number) => {
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
         currency: "IDR",
         minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
     }).format(number || 0);
 };
 
-// Komponen helper untuk badge status
+// --- KAMUS STATUS (Mapping Inggris -> Indonesia) ---
+const STATUS_LABELS = {
+    awaiting_payment: "Menunggu Bayar",
+    awaiting_verification: "Verifikasi Bayar",
+    processing: "Perlu Kurir", // Status setelah lunas, sebelum kurir assign
+    ready_for_pickup: "Kurir Menjemput",
+    picked_up: "Barang Diangkut",
+    on_delivery: "Dalam Perjalanan",
+    delivered: "Sampai Tujuan",
+    completed: "Selesai",
+    cancelled: "Dibatalkan",
+    rejected: "Ditolak",
+};
+
+const getStatusLabel = (status) => {
+    return STATUS_LABELS[status] || status.replace(/_/g, " ");
+};
+
+// --- Helper: Status Badge Component ---
 const StatusBadge = ({ status }) => {
-    let bgColor = "bg-gray-100 text-gray-800";
-    let Icon = Clock;
+    let style = "";
+    let icon = null;
+    const label = getStatusLabel(status);
 
     switch (status) {
         case "awaiting_payment":
-            bgColor = "bg-yellow-100 text-yellow-800";
-            Icon = DollarSign;
+            style = "bg-amber-100 text-amber-700 border-amber-200";
+            icon = <Wallet className="w-3.5 h-3.5 mr-1.5" />;
             break;
         case "awaiting_verification":
-            bgColor = "bg-blue-100 text-blue-800";
-            Icon = Clock;
+            style = "bg-blue-100 text-blue-700 border-blue-200 animate-pulse";
+            icon = <Clock className="w-3.5 h-3.5 mr-1.5" />;
             break;
-        case "processing": // Pembayaran lunas, siap ditugaskan
-            bgColor = "bg-cyan-100 text-cyan-800";
-            Icon = Package;
+        case "processing":
+            style = "bg-pink-100 text-pink-700 border-pink-200 font-bold";
+            icon = <Package className="w-3.5 h-3.5 mr-1.5" />;
             break;
-        case "ready_for_pickup": // Kurir ditugaskan
-            bgColor = "bg-indigo-100 text-indigo-800";
-            Icon = Truck;
+        case "ready_for_pickup":
+            style = "bg-indigo-100 text-indigo-700 border-indigo-200";
+            icon = <Truck className="w-3.5 h-3.5 mr-1.5" />;
             break;
         case "picked_up":
         case "on_delivery":
-            bgColor = "bg-purple-100 text-purple-800";
-            Icon = Truck;
+            style = "bg-purple-100 text-purple-700 border-purple-200";
+            icon = <MapPin className="w-3.5 h-3.5 mr-1.5" />;
             break;
         case "completed":
-            bgColor = "bg-green-100 text-green-800";
-            Icon = Check;
+            style = "bg-emerald-100 text-emerald-700 border-emerald-200";
+            icon = <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />;
             break;
         case "cancelled":
         case "rejected":
-            bgColor = "bg-red-100 text-red-800";
-            Icon = X;
+            style = "bg-red-100 text-red-700 border-red-200";
+            icon = <XCircle className="w-3.5 h-3.5 mr-1.5" />;
             break;
+        default:
+            style = "bg-gray-100 text-gray-700 border-gray-200";
+            icon = <Clock className="w-3.5 h-3.5 mr-1.5" />;
     }
 
+    // [PERUBAHAN PENTING] whitespace-nowrap mencegah teks turun baris
     return (
         <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${bgColor}`}
+            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${style} whitespace-nowrap transition-transform hover:scale-105`}
         >
-            <Icon className="w-3 h-3" />
-            {/* Mengganti underscore dengan spasi dan membuat huruf besar */}
-            {status.replace("_", " ").charAt(0).toUpperCase() +
-                status.replace("_", " ").slice(1)}
+            {icon}
+            {label}
         </span>
     );
 };
 
-// Komponen helper untuk pagination (sama seperti di halaman lain)
-const Pagination = ({ links }) => (
-    <div className="mt-6 flex justify-between items-center">
-        <div className="flex flex-wrap">
-            {links.map((link, key) =>
-                link.url === null ? (
-                    <div
-                        key={key}
-                        className="mr-1 mb-1 px-4 py-2 text-sm leading-4 text-gray-400 border rounded"
-                        dangerouslySetInnerHTML={{ __html: link.label }}
-                    />
-                ) : (
-                    <Link
-                        key={key}
-                        className={`mr-1 mb-1 px-4 py-2 text-sm leading-4 border rounded hover:bg-white focus:border-indigo-500 focus:text-indigo-500 ${
-                            link.active ? "bg-white" : ""
-                        }`}
-                        href={link.url}
-                        dangerouslySetInnerHTML={{ __html: link.label }}
-                    />
-                )
-            )}
-        </div>
-    </div>
-);
+// --- Komponen Pagination ---
+const Pagination = ({ links }) => {
+    if (!links || links.length <= 1) return null;
+    return (
+        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 mt-6">
+            {links.map((link, index) => {
+                let label = link.label
+                    .replace("&laquo; Previous", "«")
+                    .replace("Next &raquo;", "»");
+                const baseClasses =
+                    "px-3 py-2 text-sm font-medium border rounded-xl transition-all shadow-sm flex items-center justify-center min-w-[40px]";
 
-export default function Index({ auth, orders, couriers, flash }) {
-    // State untuk mengontrol modal
+                if (link.url === null) {
+                    return (
+                        <span
+                            key={index}
+                            className={`${baseClasses} bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed`}
+                            dangerouslySetInnerHTML={{ __html: label }}
+                        />
+                    );
+                }
+                return (
+                    <Link
+                        key={index}
+                        href={link.url}
+                        preserveState
+                        preserveScroll
+                        className={`${baseClasses} ${
+                            link.active
+                                ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-transparent shadow-emerald-200 shadow-md"
+                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-emerald-600 hover:border-emerald-200"
+                        }`}
+                        dangerouslySetInnerHTML={{ __html: label }}
+                    />
+                );
+            })}
+        </div>
+    );
+};
+
+export default function Index({ auth, orders, couriers, flash, filters }) {
     const [selectedOrder, setSelectedOrder] = useState(null);
+
+    // State Pencarian & Filter
+    const [search, setSearch] = useState(filters?.search || "");
+    const [status, setStatus] = useState(filters?.status || "all");
+    const isFirstRender = useRef(true);
+
+    // --- Efek Debounce untuk Search/Filter ---
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        const timer = setTimeout(() => {
+            router.get(
+                route("admin.pindahan.index"),
+                { search, status },
+                { preserveState: true, preserveScroll: true, replace: true }
+            );
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [search, status]);
+
+    // Opsi Filter Status
+    const filterOptions = [
+        { value: "all", label: "Semua" },
+        { value: "awaiting_payment", label: "Belum Bayar" },
+        { value: "awaiting_verification", label: "Verifikasi" },
+        { value: "processing", label: "Perlu Kurir" },
+        { value: "ready_for_pickup", label: "Dijemput" },
+        { value: "on_delivery", label: "Di Jalan" },
+        { value: "completed", label: "Selesai" },
+    ];
 
     return (
         <AdminLayout
             user={auth.user}
             header={
-                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
-                    Manajemen Pesanan Pindahan
-                </h2>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 className="font-black text-2xl text-gray-800 leading-tight tracking-tight">
+                            Pesanan Pindahan
+                        </h2>
+                        <p className="text-gray-500 text-sm mt-1">
+                            Monitoring armada & status pengiriman
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200 text-sm font-bold text-gray-600 flex items-center gap-2 whitespace-nowrap">
+                            <Truck className="w-4 h-4 text-emerald-500" />
+                            Total Order:{" "}
+                            <span className="text-emerald-600 text-lg">
+                                {orders.total}
+                            </span>
+                        </div>
+                    </div>
+                </div>
             }
         >
             <Head title="Manajemen Pesanan Pindahan" />
 
-            {/* Render Modal di sini. 
-              Modal ini akan kosong sampai 'selectedOrder' diisi.
-            */}
             <ManageOrderModal
                 show={!!selectedOrder}
                 onClose={() => setSelectedOrder(null)}
-                order={selectedOrder} // Kirim data order yang dipilih ke modal
-                couriers={couriers} // Kirim daftar semua kurir ke modal
+                order={selectedOrder}
+                couriers={couriers}
             />
 
-            <div className="py-12">
+            <div className="py-8">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {/* Notifikasi Sukses */}
                     {flash.success && (
-                        <div className="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow-sm">
-                            <p>{flash.success}</p>
-                        </div>
-                    )}
-                    {/* Notifikasi Error */}
-                    {flash.error && (
-                        <div className="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md shadow-sm">
-                            <p>{flash.error}</p>
+                        <div className="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl flex items-center shadow-sm animate-in slide-in-from-top-2">
+                            <CheckCircle2 className="w-5 h-5 mr-2 bg-emerald-200 rounded-full p-0.5" />{" "}
+                            {flash.success}
                         </div>
                     )}
 
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            <h3 className="text-2xl font-bold mb-6">
-                                Daftar Pesanan Pindahan
-                            </h3>
+                    <div className="bg-white overflow-hidden shadow-xl shadow-gray-200/50 sm:rounded-3xl border border-gray-100">
+                        {/* --- CONTROL BAR (Search & Filter) --- */}
+                        <div className="p-6 border-b border-gray-100 flex flex-col lg:flex-row justify-between gap-6 bg-gradient-to-b from-white to-gray-50/50">
+                            {/* Search */}
+                            <div className="relative w-full lg:w-96 group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Search className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Cari ID, Nama User..."
+                                    className="pl-10 pr-4 py-3 border-gray-200 rounded-2xl text-sm focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 w-full transition-all shadow-sm group-hover:shadow-md"
+                                />
+                            </div>
 
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full bg-white">
-                                    <thead className="bg-gray-100">
-                                        <tr>
-                                            <th className="py-3 px-4 border-b text-left">
-                                                ID
+                            {/* Filter Chips */}
+                            <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
+                                <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                {filterOptions.map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => setStatus(opt.value)}
+                                        className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                                            status === opt.value
+                                                ? "bg-gray-900 text-white border-gray-900 shadow-lg shadow-gray-900/20"
+                                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-emerald-300"
+                                        }`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* --- TABLE CONTENT --- */}
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-100">
+                                <thead className="bg-gray-50/80 backdrop-blur-sm">
+                                    <tr>
+                                        {/* [PERUBAHAN PENTING]: whitespace-nowrap pada header */}
+                                        {[
+                                            "ID",
+                                            "Klien",
+                                            "Paket Pindahan",
+                                            "Total Biaya",
+                                            "Status",
+                                            "Kurir",
+                                            "Aksi",
+                                        ].map((head) => (
+                                            <th
+                                                key={head}
+                                                className="py-4 px-6 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                                            >
+                                                {head}
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left">
-                                                Klien
-                                            </th>
-                                            <th className="py-3 px-4 border-b text-left">
-                                                Paket
-                                            </th>
-                                            <th className="py-3 px-4 border-b text-left">
-                                                Total
-                                            </th>
-                                            <th className="py-3 px-4 border-b text-left">
-                                                Status
-                                            </th>
-                                            <th className="py-3 px-4 border-b text-left">
-                                                Kurir
-                                            </th>
-                                            <th className="py-3 px-4 border-b text-left">
-                                                Aksi
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {orders.data.length > 0 ? (
-                                            orders.data.map((order) => (
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-100">
+                                    {orders.data.length > 0 ? (
+                                        orders.data.map((order) => {
+                                            const isUrgent = [
+                                                "awaiting_verification",
+                                                "processing",
+                                            ].includes(order.status);
+
+                                            return (
                                                 <tr
                                                     key={order.id}
-                                                    className="hover:bg-gray-50"
+                                                    className={`group transition-colors duration-200 ${
+                                                        isUrgent
+                                                            ? "bg-blue-50/40 hover:bg-blue-50/70"
+                                                            : "hover:bg-gray-50/80"
+                                                    }`}
                                                 >
-                                                    <td className="py-3 px-4 border-b font-medium">
-                                                        #{order.id}
+                                                    {/* ID: whitespace-nowrap */}
+                                                    <td className="py-4 px-6 whitespace-nowrap">
+                                                        <span className="font-mono text-sm font-bold text-gray-700 group-hover:text-emerald-600 transition-colors">
+                                                            #{order.id}
+                                                        </span>
+                                                        <div className="text-[10px] text-gray-400 mt-1">
+                                                            {new Date(
+                                                                order.created_at
+                                                            ).toLocaleDateString(
+                                                                "id-ID"
+                                                            )}
+                                                        </div>
                                                     </td>
-                                                    <td className="py-3 px-4 border-b">
-                                                        {order.user.name}
+
+                                                    {/* Klien: whitespace-nowrap */}
+                                                    <td className="py-4 px-6 whitespace-nowrap">
+                                                        <div className="flex items-center">
+                                                            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-indigo-700 font-bold text-sm mr-3 shadow-sm border border-indigo-200 flex-shrink-0">
+                                                                {order.user.name.charAt(
+                                                                    0
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-sm font-bold text-gray-900">
+                                                                    {
+                                                                        order
+                                                                            .user
+                                                                            .name
+                                                                    }
+                                                                </div>
+                                                                <div className="text-xs text-gray-500">
+                                                                    {
+                                                                        order
+                                                                            .user
+                                                                            .email
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </td>
-                                                    <td className="py-3 px-4 border-b text-sm text-gray-700">
-                                                        {order.orderable.name}
+
+                                                    {/* Paket: whitespace-nowrap */}
+                                                    <td className="py-4 px-6 whitespace-nowrap">
+                                                        <span className="text-sm font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded-md whitespace-nowrap">
+                                                            {order.orderable
+                                                                ?.name ||
+                                                                "Paket Custom"}
+                                                        </span>
                                                     </td>
-                                                    <td className="py-3 px-4 border-b font-semibold">
-                                                        {formatRupiah(
-                                                            order.final_amount
-                                                        )}
+
+                                                    {/* Total: whitespace-nowrap */}
+                                                    <td className="py-4 px-6 whitespace-nowrap">
+                                                        <span className="text-sm font-extrabold text-gray-900">
+                                                            {formatRupiah(
+                                                                order.final_amount
+                                                            )}
+                                                        </span>
                                                     </td>
-                                                    <td className="py-3 px-4 border-b">
+
+                                                    {/* Status: whitespace-nowrap */}
+                                                    <td className="py-4 px-6 whitespace-nowrap">
                                                         <StatusBadge
                                                             status={
                                                                 order.status
                                                             }
                                                         />
                                                     </td>
-                                                    <td className="py-3 px-4 border-b text-sm">
+
+                                                    {/* Kurir: whitespace-nowrap */}
+                                                    <td className="py-4 px-6 whitespace-nowrap">
                                                         {order.courier ? (
-                                                            <span className="font-medium text-indigo-700">
-                                                                {
-                                                                    order
-                                                                        .courier
-                                                                        .name
-                                                                }
-                                                            </span>
+                                                            <div className="flex items-center gap-2">
+                                                                <Truck className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                                                                <span className="text-sm font-bold text-gray-800 whitespace-nowrap">
+                                                                    {
+                                                                        order
+                                                                            .courier
+                                                                            .name
+                                                                    }
+                                                                </span>
+                                                            </div>
                                                         ) : (
-                                                            <span className="text-gray-500">
-                                                                Belum ada
+                                                            <span className="text-xs text-gray-400 italic whitespace-nowrap">
+                                                                Belum ditugaskan
                                                             </span>
                                                         )}
                                                     </td>
-                                                    <td className="py-3 px-4 border-b">
+
+                                                    {/* Aksi: whitespace-nowrap */}
+                                                    <td className="py-4 px-6 text-right text-sm font-medium whitespace-nowrap">
                                                         <button
                                                             onClick={() =>
                                                                 setSelectedOrder(
                                                                     order
                                                                 )
-                                                            } // <-- Set order yang dipilih
-                                                            className="text-indigo-600 hover:underline font-semibold inline-flex items-center"
+                                                            }
+                                                            className={`inline-flex items-center px-4 py-2 border text-sm leading-4 font-bold rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all transform hover:-translate-y-0.5 ${
+                                                                isUrgent
+                                                                    ? "border-transparent text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-200"
+                                                                    : "border-gray-200 text-gray-700 bg-white hover:bg-gray-50 hover:border-emerald-300 hover:text-emerald-600"
+                                                            }`}
                                                         >
-                                                            <Eye className="w-4 h-4 mr-1" />
-                                                            Kelola
+                                                            <Eye className="ml-2 -mr-0.5 h-4 w-4" />
+                                                            {isUrgent
+                                                                ? "Tindak"
+                                                                : "Detail"}
                                                         </button>
                                                     </td>
                                                 </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td
-                                                    colSpan="7"
-                                                    className="py-6 px-4 border-b text-center text-gray-500"
-                                                >
-                                                    Belum ada pesanan pindahan.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td
+                                                colSpan="7"
+                                                className="py-20 text-center"
+                                            >
+                                                <div className="flex flex-col items-center justify-center text-gray-400 animate-in fade-in zoom-in duration-500">
+                                                    <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-4 border border-dashed border-gray-200">
+                                                        <Search className="w-10 h-10 text-gray-300" />
+                                                    </div>
+                                                    <p className="text-xl font-bold text-gray-600">
+                                                        Tidak ada pesanan
+                                                        ditemukan.
+                                                    </p>
+                                                    <button
+                                                        onClick={() => {
+                                                            setSearch("");
+                                                            setStatus("all");
+                                                        }}
+                                                        className="mt-6 text-emerald-600 font-bold hover:underline flex items-center text-sm"
+                                                    >
+                                                        <ArrowRightLeft className="w-4 h-4 mr-2" />{" "}
+                                                        Reset Filter
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
 
+                        {/* Pagination */}
+                        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
                             <Pagination links={orders.links} />
                         </div>
                     </div>
