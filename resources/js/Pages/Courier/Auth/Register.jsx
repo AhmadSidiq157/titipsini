@@ -13,17 +13,19 @@ import {
     Tag,
     Camera,
     Car,
-} from "lucide-react"; // Import Car
+    Phone, // [BARU] Import icon Phone
+} from "lucide-react";
 
 export default function Register() {
     const { data, setData, post, processing, errors, progress, reset } =
         useForm({
             name: "",
             email: "",
+            phone: "", // [BARU] State untuk No Telepon
             password: "",
             password_confirmation: "",
 
-            vehicle_type: "", // [BARU] Tipe Kendaraan
+            vehicle_type: "",
             vehicle_brand: "",
             vehicle_model: "",
             plat_nomor: "",
@@ -32,14 +34,14 @@ export default function Register() {
 
             foto_ktp: null,
             foto_sim: null,
-            foto_stnk: null, // [BARU] Foto STNK
+            foto_stnk: null,
             foto_kendaraan: null,
         });
 
     const [preview, setPreview] = useState({
         foto_ktp: null,
         foto_sim: null,
-        foto_stnk: null, // [BARU]
+        foto_stnk: null,
         foto_kendaraan: null,
     });
 
@@ -65,11 +67,10 @@ export default function Register() {
         post(route("register.courier"), { forceFormData: true });
     };
 
-    // [MODIFIKASI] Daftar file upload termasuk STNK
     const uploadFields = [
         ["foto_ktp", "Foto KTP"],
         ["foto_sim", "Foto SIM"],
-        ["foto_stnk", "Foto STNK"], // [BARU]
+        ["foto_stnk", "Foto STNK"],
         ["foto_kendaraan", "Foto Kendaraan (Nampak Plat Nomor)"],
     ];
 
@@ -129,6 +130,7 @@ export default function Register() {
                                     className="mt-2"
                                 />
                             </div>
+
                             <div>
                                 <InputLabel
                                     htmlFor="email"
@@ -154,6 +156,37 @@ export default function Register() {
                                 </div>
                                 <InputError
                                     message={errors.email}
+                                    className="mt-2"
+                                />
+                            </div>
+
+                            {/* [BARU] Kolom No Telepon */}
+                            <div>
+                                <InputLabel
+                                    htmlFor="phone"
+                                    value="No. Telepon / WhatsApp"
+                                    className="font-semibold text-gray-700"
+                                />
+                                <div className="relative mt-1">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                        <Phone className="h-5 w-5 text-gray-400" />
+                                    </span>
+                                    <TextInput
+                                        id="phone"
+                                        type="text"
+                                        name="phone"
+                                        value={data.phone}
+                                        className="mt-1 block w-full pl-10 pr-3 py-2.5 rounded-md"
+                                        autoComplete="tel"
+                                        placeholder="Contoh: 081234567890"
+                                        onChange={(e) =>
+                                            setData("phone", e.target.value)
+                                        }
+                                        required
+                                    />
+                                </div>
+                                <InputError
+                                    message={errors.phone}
                                     className="mt-2"
                                 />
                             </div>
@@ -226,7 +259,6 @@ export default function Register() {
                             Data Kendaraan & Dokumen
                         </h3>
 
-                        {/* [BARU] Dropdown Tipe Kendaraan */}
                         <div>
                             <InputLabel
                                 htmlFor="vehicle_type"

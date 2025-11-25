@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, usePage, router } from "@inertiajs/react";
 import LiveMap from "@/Components/LiveMap";
 import {
@@ -8,28 +7,21 @@ import {
     Calendar,
     Check,
     Clock,
-    FileText,
     MapPin,
-    Package,
     Phone,
     Truck,
     User,
-    ShieldCheck,
     Map as MapIcon,
     MessageCircle,
     HelpCircle,
-    Printer,
     Copy,
-    ChevronRight,
     CheckCircle2,
     Flag,
     ImageIcon,
-    Search,
     X,
-    Maximize2,
-    PackageCheck, // [FIX] Sudah ditambahkan ke import
+    PackageCheck,
+    ShieldCheck,
 } from "lucide-react";
-import PrimaryButton from "@/Components/PrimaryButton";
 import Modal from "@/Components/Modal";
 
 const formatRupiah = (number) => {
@@ -119,7 +111,6 @@ const ImageModal = ({ show, onClose, src, title }) => (
 const LiveTrackingBox = ({ order }) => {
     if (!order.courier) return null;
 
-    // Koordinat kurir (jika null, pakai default Jakarta atau koordinat order)
     const courierLat = order.courier.latitude
         ? parseFloat(order.courier.latitude)
         : null;
@@ -131,12 +122,11 @@ const LiveTrackingBox = ({ order }) => {
         order.status
     );
 
-    // Auto-refresh data order untuk update posisi kurir
     useEffect(() => {
         if (!isLive) return;
         const interval = setInterval(() => {
             router.reload({ only: ["order"], preserveScroll: true });
-        }, 10000); // Refresh tiap 10 detik
+        }, 10000);
         return () => clearInterval(interval);
     }, [isLive]);
 
@@ -187,7 +177,6 @@ const CourierInfoCard = ({ courier }) => {
     if (!courier) return null;
     const verif = courier.courier_verification || {};
 
-    // Format Nomor WA
     const courierPhone = courier.phone ? courier.phone.replace(/\D/g, "") : "";
     const courierWaTarget = courierPhone.startsWith("0")
         ? "62" + courierPhone.slice(1)
@@ -220,7 +209,6 @@ const CourierInfoCard = ({ courier }) => {
                 </div>
             </div>
 
-            {/* Tombol Kontak */}
             <div className="mt-6 grid grid-cols-2 gap-3">
                 <a
                     href={courierWaLink}
@@ -322,7 +310,7 @@ const TimelineHistory = ({ trackings }) => {
     );
 };
 
-// --- 4. STEPPER (Timeline Status) ---
+// --- 4. STEPPER ---
 const OrderStepper = ({ status, needsPickup }) => {
     const steps = [
         { key: "awaiting_payment", label: "Bayar", icon: Clock },
@@ -395,19 +383,16 @@ const OrderStepper = ({ status, needsPickup }) => {
     );
 };
 
-// --- MAIN COMPONENT ---
 export default function Show({ auth, order }) {
     const { settings } = usePage().props;
     const details = order.user_form_details || {};
     const orderable = order.orderable || {};
 
-    // Logic Layanan
     const isPenitipan =
         order.orderable_type?.includes("Service") || !!details.branch_address;
     const needsPickup = details.delivery_method === "pickup";
     const ServiceIcon = isPenitipan ? Box : Truck;
 
-    // Admin Contact
     const adminPhone = settings?.contact_phone
         ? settings.contact_phone.replace(/\D/g, "")
         : "";
@@ -421,271 +406,268 @@ export default function Show({ auth, order }) {
         : "#";
 
     return (
-        <AuthenticatedLayout
-            user={auth.user}
-            header={
-                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
-                    Detail Pesanan
-                </h2>
-            }
-        >
+        <div className="min-h-screen bg-gray-50/50 pb-20">
             <Head title={`Order #${order.id}`} />
 
-            <div className="min-h-screen bg-gray-50/50 pb-20">
-                {/* HEADER */}
-                <div className="bg-white border-b border-gray-200 sticky top-0 z-30 px-4 md:px-8 py-4 shadow-sm">
-                    <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div className="flex items-center w-full md:w-auto">
-                            <Link
-                                href={route("history.index")}
-                                className="p-2 mr-3 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
-                            >
-                                <ArrowLeft size={20} />
-                            </Link>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-xl font-black text-gray-800 tracking-tight">
-                                        Order #{order.id}
-                                    </h2>
-                                    <CopyButton
-                                        text={`#${order.id}`}
-                                        label="Salin ID"
-                                    />
-                                </div>
-                                <p className="text-xs text-gray-500 font-medium">
-                                    {new Date(order.created_at).toLocaleString(
-                                        "id-ID",
-                                        {
-                                            dateStyle: "full",
-                                            timeStyle: "short",
-                                        }
-                                    )}
-                                </p>
-                            </div>
+            {/* --- HEADER CUSTOM (Sticky Top) --- */}
+            <div className="bg-white border-b border-gray-200 sticky top-0 z-30 px-4 md:px-8 py-4 shadow-sm">
+                <div className="max-w-6xl mx-auto flex items-center gap-4">
+                    <Link
+                        href={route("history.index")}
+                        className="p-2 -ml-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-green-600 transition-colors"
+                        title="Kembali"
+                    >
+                        <ArrowLeft size={24} />
+                    </Link>
+                    <h1 className="text-xl font-bold text-gray-900">
+                        Detail Pesanan
+                    </h1>
+                </div>
+            </div>
+
+            {/* --- KONTEN UTAMA --- */}
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                {/* Info Singkat Order (ID & Tanggal) */}
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-2xl font-black text-gray-800 tracking-tight">
+                                Order #{order.id}
+                            </h2>
+                            <CopyButton
+                                text={`#${order.id}`}
+                                label="Salin ID"
+                            />
                         </div>
-                        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-                            <span
-                                className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm ${
-                                    order.status === "completed"
-                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                        : "bg-blue-50 text-blue-700 border-blue-200"
-                                }`}
-                            >
-                                {getStatusLabel(order.status)}
-                            </span>
-                        </div>
+                        <p className="text-sm text-gray-500 mt-1">
+                            {new Date(order.created_at).toLocaleString(
+                                "id-ID",
+                                {
+                                    dateStyle: "full",
+                                    timeStyle: "short",
+                                }
+                            )}
+                        </p>
+                    </div>
+                    <div>
+                        <span
+                            className={`px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wider border shadow-sm inline-block ${
+                                order.status === "completed"
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                    : "bg-blue-50 text-blue-700 border-blue-200"
+                            }`}
+                        >
+                            {getStatusLabel(order.status)}
+                        </span>
                     </div>
                 </div>
 
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                    {/* STEPPER */}
-                    <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 mb-8">
-                        <OrderStepper
-                            status={order.status}
-                            needsPickup={needsPickup}
-                        />
-                    </div>
+                {/* STEPPER */}
+                <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 mb-8">
+                    <OrderStepper
+                        status={order.status}
+                        needsPickup={needsPickup}
+                    />
+                </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* --- KOLOM KIRI (Live Map & Info Utama) --- */}
-                        <div className="lg:col-span-2 space-y-8">
-                            {/* Live Tracking */}
-                            <LiveTrackingBox order={order} />
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* --- KOLOM KIRI --- */}
+                    <div className="lg:col-span-2 space-y-8">
+                        {/* Live Tracking */}
+                        <LiveTrackingBox order={order} />
 
-                            {/* Detail Card */}
-                            <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-                                <div className="flex justify-between items-start mb-8 pb-6 border-b border-gray-100">
-                                    <div className="flex items-center gap-4">
-                                        <div
-                                            className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md ${
-                                                isPenitipan
-                                                    ? "bg-emerald-500"
-                                                    : "bg-blue-600"
-                                            }`}
-                                        >
-                                            <ServiceIcon size={24} />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
-                                                Layanan
+                        {/* Detail Card */}
+                        <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+                            {/* Header Detail */}
+                            <div className="flex justify-between items-start mb-8 pb-6 border-b border-gray-100">
+                                <div className="flex items-center gap-4">
+                                    <div
+                                        className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md ${
+                                            isPenitipan
+                                                ? "bg-emerald-500"
+                                                : "bg-blue-600"
+                                        }`}
+                                    >
+                                        <ServiceIcon size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
+                                            Layanan
+                                        </p>
+                                        <h2 className="text-xl font-bold text-gray-900">
+                                            {orderable.name || orderable.title}
+                                        </h2>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
+                                        Total Biaya
+                                    </p>
+                                    <p className="text-xl font-extrabold text-emerald-600">
+                                        {formatRupiah(order.final_amount)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Isi Detail Alamat & Info */}
+                            <div className="space-y-6">
+                                {/* Alamat */}
+                                <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200 relative overflow-hidden">
+                                    <div className="absolute left-[29px] top-10 bottom-10 w-0.5 border-l-2 border-dashed border-gray-300 z-0"></div>
+
+                                    {/* Jemput */}
+                                    <div className="relative z-10 mb-6 flex items-start gap-4">
+                                        <div className="w-6 h-6 rounded-full bg-white border-4 border-blue-500 shadow-sm flex-shrink-0 mt-0.5"></div>
+                                        <div className="flex-1">
+                                            <p className="text-xs text-blue-500 font-bold uppercase mb-1">
+                                                Lokasi Jemput
                                             </p>
-                                            <h2 className="text-xl font-bold text-gray-900">
-                                                {orderable.name ||
-                                                    orderable.title}
-                                            </h2>
+                                            <p className="text-sm font-medium text-gray-800 leading-snug">
+                                                {details.alamat_penjemputan ||
+                                                    "Tidak tersedia"}
+                                            </p>
+                                            <a
+                                                href={getMapsLink(
+                                                    details.alamat_penjemputan
+                                                )}
+                                                target="_blank"
+                                                className="inline-flex items-center mt-2 text-xs font-bold text-blue-600 hover:underline"
+                                            >
+                                                <MapPin
+                                                    size={12}
+                                                    className="mr-1"
+                                                />{" "}
+                                                Buka Maps
+                                            </a>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
-                                            Total Biaya
-                                        </p>
-                                        <p className="text-xl font-extrabold text-emerald-600">
-                                            {formatRupiah(order.final_amount)}
-                                        </p>
+
+                                    {/* Tujuan */}
+                                    <div className="relative z-10 flex items-start gap-4">
+                                        <div className="w-6 h-6 rounded-full bg-white border-4 border-green-500 shadow-sm flex-shrink-0 mt-0.5"></div>
+                                        <div className="flex-1">
+                                            <p className="text-xs text-green-500 font-bold uppercase mb-1">
+                                                Tujuan
+                                            </p>
+                                            <p className="text-sm font-medium text-gray-800 leading-snug">
+                                                {isPenitipan
+                                                    ? details.branch_address
+                                                        ? `${details.branch_name} - ${details.branch_address}`
+                                                        : "Gudang Cabang"
+                                                    : details.alamat_tujuan}
+                                            </p>
+                                            <a
+                                                href={getMapsLink(
+                                                    isPenitipan
+                                                        ? details.branch_address
+                                                        : details.alamat_tujuan
+                                                )}
+                                                target="_blank"
+                                                className="inline-flex items-center mt-2 text-xs font-bold text-green-600 hover:underline"
+                                            >
+                                                <MapPin
+                                                    size={12}
+                                                    className="mr-1"
+                                                />{" "}
+                                                Buka Maps
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-6">
-                                    {/* Alamat */}
-                                    <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200 relative overflow-hidden">
-                                        {/* Garis Connector */}
-                                        <div className="absolute left-[29px] top-10 bottom-10 w-0.5 border-l-2 border-dashed border-gray-300 z-0"></div>
-
-                                        <div className="relative z-10 mb-6 flex items-start gap-4">
-                                            <div className="w-6 h-6 rounded-full bg-white border-4 border-blue-500 shadow-sm flex-shrink-0 mt-0.5"></div>
-                                            <div className="flex-1">
-                                                <p className="text-xs text-blue-500 font-bold uppercase mb-1">
-                                                    Lokasi Jemput
-                                                </p>
-                                                <p className="text-sm font-medium text-gray-800 leading-snug">
-                                                    {details.alamat_penjemputan ||
-                                                        "Tidak tersedia"}
-                                                </p>
-                                                <a
-                                                    href={getMapsLink(
-                                                        details.alamat_penjemputan
-                                                    )}
-                                                    target="_blank"
-                                                    className="inline-flex items-center mt-2 text-xs font-bold text-blue-600 hover:underline"
-                                                >
-                                                    <MapPin
-                                                        size={12}
-                                                        className="mr-1"
-                                                    />{" "}
-                                                    Buka Maps
-                                                </a>
-                                            </div>
-                                        </div>
-
-                                        <div className="relative z-10 flex items-start gap-4">
-                                            <div className="w-6 h-6 rounded-full bg-white border-4 border-green-500 shadow-sm flex-shrink-0 mt-0.5"></div>
-                                            <div className="flex-1">
-                                                <p className="text-xs text-green-500 font-bold uppercase mb-1">
-                                                    Tujuan
-                                                </p>
-                                                <p className="text-sm font-medium text-gray-800 leading-snug">
-                                                    {isPenitipan
-                                                        ? details.branch_address
-                                                            ? `${details.branch_name} - ${details.branch_address}`
-                                                            : "Gudang Cabang"
-                                                        : details.alamat_tujuan}
-                                                </p>
-                                                <a
-                                                    href={getMapsLink(
-                                                        isPenitipan
-                                                            ? details.branch_address
-                                                            : details.alamat_tujuan
-                                                    )}
-                                                    target="_blank"
-                                                    className="inline-flex items-center mt-2 text-xs font-bold text-green-600 hover:underline"
-                                                >
-                                                    <MapPin
-                                                        size={12}
-                                                        className="mr-1"
-                                                    />{" "}
-                                                    Buka Maps
-                                                </a>
-                                            </div>
-                                        </div>
+                                {/* Info Tambahan Grid */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                        <p className="text-xs text-gray-400 font-bold uppercase mb-1">
+                                            Tanggal Jadwal
+                                        </p>
+                                        <p className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                            <Calendar size={14} />
+                                            {details.tanggal_pindahan
+                                                ? new Date(
+                                                      details.tanggal_pindahan
+                                                  ).toLocaleDateString("id-ID")
+                                                : details.start_date || "-"}
+                                        </p>
                                     </div>
-
-                                    {/* Info Tambahan */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                            <p className="text-xs text-gray-400 font-bold uppercase mb-1">
-                                                Tanggal Jadwal
-                                            </p>
-                                            <p className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                                                <Calendar size={14} />
-                                                {details.tanggal_pindahan
-                                                    ? new Date(
-                                                          details.tanggal_pindahan
-                                                      ).toLocaleDateString(
-                                                          "id-ID"
-                                                      )
-                                                    : details.start_date || "-"}
-                                            </p>
-                                        </div>
-                                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                            <p className="text-xs text-gray-400 font-bold uppercase mb-1">
-                                                Metode
-                                            </p>
-                                            <p className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                                                <Truck size={14} />
-                                                {details.delivery_method ===
-                                                "pickup"
-                                                    ? "Dijemput Kurir"
-                                                    : "Antar Sendiri"}
-                                            </p>
-                                        </div>
+                                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                        <p className="text-xs text-gray-400 font-bold uppercase mb-1">
+                                            Metode
+                                        </p>
+                                        <p className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                            <Truck size={14} />
+                                            {details.delivery_method ===
+                                            "pickup"
+                                                ? "Dijemput Kurir"
+                                                : "Antar Sendiri"}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        {/* --- KOLOM KANAN (Sidebar) --- */}
-                        <div className="lg:col-span-1 space-y-6">
-                            {/* Status Card */}
-                            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 text-center">
-                                <div
-                                    className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-                                        order.status === "completed"
-                                            ? "bg-green-100 text-green-600"
-                                            : order.status ===
-                                              "awaiting_payment"
-                                            ? "bg-yellow-100 text-yellow-600"
-                                            : "bg-blue-100 text-blue-600"
-                                    }`}
-                                >
-                                    {order.status === "completed" ? (
-                                        <CheckCircle2 size={32} />
-                                    ) : order.status === "awaiting_payment" ? (
-                                        <Clock size={32} />
-                                    ) : (
-                                        <Truck size={32} />
-                                    )}
-                                </div>
-                                <h3 className="text-lg font-bold text-gray-900 mb-1">
-                                    {getStatusLabel(order.status)}
-                                </h3>
-                                <p className="text-xs text-gray-500 px-4">
-                                    Status pesanan Anda saat ini.
-                                </p>
-
-                                {order.status === "awaiting_payment" && (
-                                    <Link
-                                        href={route("order.payment", order.id)}
-                                        className="block w-full mt-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 shadow-lg shadow-green-200"
-                                    >
-                                        Bayar Sekarang
-                                    </Link>
+                    {/* --- KOLOM KANAN --- */}
+                    <div className="lg:col-span-1 space-y-6">
+                        {/* Status Card */}
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 text-center">
+                            <div
+                                className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                                    order.status === "completed"
+                                        ? "bg-green-100 text-green-600"
+                                        : order.status === "awaiting_payment"
+                                        ? "bg-yellow-100 text-yellow-600"
+                                        : "bg-blue-100 text-blue-600"
+                                }`}
+                            >
+                                {order.status === "completed" ? (
+                                    <CheckCircle2 size={32} />
+                                ) : order.status === "awaiting_payment" ? (
+                                    <Clock size={32} />
+                                ) : (
+                                    <Truck size={32} />
                                 )}
                             </div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-1">
+                                {getStatusLabel(order.status)}
+                            </h3>
+                            <p className="text-xs text-gray-500 px-4">
+                                Status pesanan Anda saat ini.
+                            </p>
 
-                            {/* Info Kurir & Tracking */}
-                            <CourierInfoCard courier={order.courier} />
-                            <TimelineHistory trackings={order.trackings} />
-
-                            {/* Admin Help */}
-                            <div className="bg-blue-50 rounded-3xl p-6 border border-blue-100 text-center">
-                                <p className="text-blue-800 font-bold mb-2 flex items-center justify-center gap-2">
-                                    <HelpCircle size={18} /> Bantuan CS
-                                </p>
-                                <p className="text-xs text-blue-600 mb-4">
-                                    Ada masalah dengan pesanan? Hubungi kami.
-                                </p>
-                                <a
-                                    href={adminWaLink}
-                                    target="_blank"
-                                    className="block w-full py-2.5 bg-white text-blue-600 font-bold rounded-xl shadow-sm hover:bg-blue-100 transition"
+                            {order.status === "awaiting_payment" && (
+                                <Link
+                                    href={route("order.payment", order.id)}
+                                    className="block w-full mt-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 shadow-lg shadow-green-200"
                                 >
-                                    Hubungi Admin
-                                </a>
-                            </div>
+                                    Bayar Sekarang
+                                </Link>
+                            )}
+                        </div>
+
+                        {/* Info Kurir & Tracking */}
+                        <CourierInfoCard courier={order.courier} />
+                        <TimelineHistory trackings={order.trackings} />
+
+                        {/* Admin Help */}
+                        <div className="bg-blue-50 rounded-3xl p-6 border border-blue-100 text-center">
+                            <p className="text-blue-800 font-bold mb-2 flex items-center justify-center gap-2">
+                                <HelpCircle size={18} /> Bantuan CS
+                            </p>
+                            <p className="text-xs text-blue-600 mb-4">
+                                Ada masalah dengan pesanan? Hubungi kami.
+                            </p>
+                            <a
+                                href={adminWaLink}
+                                target="_blank"
+                                className="block w-full py-2.5 bg-white text-blue-600 font-bold rounded-xl shadow-sm hover:bg-blue-100 transition"
+                            >
+                                Hubungi Admin
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </div>
     );
 }

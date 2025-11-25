@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout"; // Gunakan AuthenticatedLayout agar ada navbar user
-import { Head, Link, router, usePage } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import {
     Check,
     X,
@@ -15,6 +14,7 @@ import {
     Phone,
     Search,
     Box,
+    ArrowLeft, // [1] Import ArrowLeft
 } from "lucide-react";
 
 // --- Helper: Format Rupiah ---
@@ -81,11 +81,9 @@ const StatusBadge = ({ status }) => {
 // --- Komponen Kartu Order Modern ---
 const OrderCard = ({ order }) => {
     const details = order.user_form_details || {};
-    // Deteksi Layanan
     const isPenitipan =
         order.orderable_type?.includes("Service") || !!details.branch_address;
 
-    // Link WA Kurir
     const getCourierWa = (phone) => {
         if (!phone) return "#";
         let number = phone.replace(/\D/g, "");
@@ -97,10 +95,8 @@ const OrderCard = ({ order }) => {
 
     return (
         <div className="bg-white rounded-3xl p-6 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-gray-100 hover:border-emerald-200 transition-all group relative overflow-hidden">
-            {/* Dekorasi Background */}
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-gray-50 to-transparent rounded-bl-full -mr-4 -mt-4 group-hover:from-emerald-50 transition-colors"></div>
 
-            {/* Header Card */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 relative z-10 gap-4">
                 <div className="flex items-center gap-4">
                     <div
@@ -146,7 +142,6 @@ const OrderCard = ({ order }) => {
                 </div>
             </div>
 
-            {/* Info Kurir (Tampil jika kurir sudah ditugaskan) */}
             {order.courier && (
                 <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-1 rounded-2xl border border-blue-100">
                     <div className="bg-white/60 backdrop-blur-sm p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -181,7 +176,6 @@ const OrderCard = ({ order }) => {
                             </div>
                         </div>
 
-                        {/* Tombol Kontak Dinamis */}
                         <div className="flex gap-2 w-full sm:w-auto">
                             <a
                                 href={getCourierWa(order.courier.phone)}
@@ -203,7 +197,6 @@ const OrderCard = ({ order }) => {
                 </div>
             )}
 
-            {/* Footer Actions */}
             <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                 <div className="flex items-center text-xs text-gray-400">
                     <MapPin size={14} className="mr-1.5" />
@@ -242,7 +235,6 @@ const OrderCard = ({ order }) => {
     );
 };
 
-// --- Komponen Pagination ---
 const Pagination = ({ links }) => (
     <div className="mt-10 flex justify-center gap-2">
         {links.map((link, key) =>
@@ -269,7 +261,6 @@ const Pagination = ({ links }) => (
 );
 
 export default function Index({ auth, orders }) {
-    // Auto-refresh halaman setiap 10 detik agar status terupdate
     useEffect(() => {
         const interval = setInterval(() => {
             router.reload({ only: ["orders"], preserveScroll: true });
@@ -278,35 +269,37 @@ export default function Index({ auth, orders }) {
     }, []);
 
     return (
-        <AuthenticatedLayout
-            user={auth.user}
-            header={
-                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
-                    Riwayat Pesanan
-                </h2>
-            }
-        >
+        <div className="min-h-screen bg-gray-50/50">
             <Head title="Riwayat Pesanan" />
 
-            <div className="py-12 bg-gray-50/50 min-h-screen">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Page Header */}
-                    <div className="mb-10 flex flex-col md:flex-row justify-between items-end gap-4">
-                        <div>
-                            <h1 className="text-3xl font-black text-gray-900 tracking-tight">
-                                Aktivitas Saya
-                            </h1>
-                            <p className="text-gray-500 mt-2">
-                                Pantau status pengiriman dan riwayat transaksi
-                                Anda.
-                            </p>
+            {/* --- CUSTOM HEADER (Hanya Tombol Kembali) --- */}
+            <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
+                    <Link
+                        href="/" // Kembali ke halaman utama
+                        className="flex items-center gap-3 text-gray-600 hover:text-green-600 transition-colors group"
+                    >
+                        <div className="p-2 rounded-full bg-gray-50 group-hover:bg-green-50 transition-colors">
+                            <ArrowLeft size={20} />
                         </div>
-                        <Link
-                            href="/layanan"
-                            className="inline-flex items-center px-5 py-3 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 hover:border-emerald-300 transition-all shadow-sm"
-                        >
-                            + Pesan Baru
-                        </Link>
+                        <span className="font-bold text-lg text-gray-800 group-hover:text-green-700">
+                            Kembali
+                        </span>
+                    </Link>
+                </div>
+            </div>
+            {/* --- END CUSTOM HEADER --- */}
+
+            <div className="py-8 md:py-12">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                    {/* Page Title Content */}
+                    <div className="mb-8">
+                        <h1 className="text-3xl font-black text-gray-900 tracking-tight">
+                            Aktivitas Saya
+                        </h1>
+                        <p className="text-gray-500 mt-2">
+                            Pantau semua pesanan Anda di sini.
+                        </p>
                     </div>
 
                     {/* Order List */}
@@ -318,7 +311,7 @@ export default function Index({ auth, orders }) {
                             <Pagination links={orders.links} />
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-gray-300 text-center">
+                        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-gray-300 text-center shadow-sm">
                             <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
                                 <Search size={32} className="text-gray-300" />
                             </div>
@@ -330,7 +323,7 @@ export default function Index({ auth, orders }) {
                                 layanan penitipan atau pindahan kami!
                             </p>
                             <Link
-                                href="/" // Atau route ke halaman layanan utama
+                                href="/layanan"
                                 className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all"
                             >
                                 Mulai Pesan Sekarang
@@ -339,6 +332,6 @@ export default function Index({ auth, orders }) {
                     )}
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </div>
     );
 }
