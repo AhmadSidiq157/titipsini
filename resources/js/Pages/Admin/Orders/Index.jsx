@@ -1,3 +1,5 @@
+// resources/js/Pages/Admin/Orders/Index.jsx
+
 import React, { useState, useEffect, useRef } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import { Head, Link, usePage, router } from "@inertiajs/react";
@@ -14,43 +16,17 @@ import {
     Wallet,
     ArrowRightLeft,
     Package,
+    ChevronDown,
 } from "lucide-react";
 
-// --- Helper: Format Rupiah ---
-const formatRupiah = (number) => {
-    return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(number);
-};
+// Import dari file komponen tunggal
+import { formatRupiah, getStatusLabel } from "./OrderComponents";
 
-// --- KAMUS STATUS (Agar Konsisten Bahasa Indonesia) ---
-const STATUS_LABELS = {
-    pending: "Menunggu",
-    awaiting_payment: "Menunggu Bayar",
-    awaiting_verification: "Perlu Verifikasi",
-    verified: "Terverifikasi",
-    processing: "Sedang Diproses", // Atau "Dalam Penyimpanan"
-    ready_for_pickup: "Siap Dijemput",
-    picked_up: "Sudah Dijemput",
-    on_delivery: "Dalam Pengiriman",
-    delivered: "Sampai Tujuan",
-    completed: "Selesai",
-    cancelled: "Dibatalkan",
-    rejected: "Ditolak",
-};
-
-const getStatusLabel = (status) => {
-    return STATUS_LABELS[status] || status.replace(/_/g, " ");
-};
-
-// --- Helper: Status Badge Component ---
+// --- Sub-Component: Status Badge ---
 const StatusBadge = ({ status }) => {
     let style = "";
     let icon = null;
-    const label = getStatusLabel(status); // Gunakan label bahasa Indonesia
+    const label = getStatusLabel(status);
 
     switch (status) {
         case "awaiting_payment":
@@ -93,13 +69,12 @@ const StatusBadge = ({ status }) => {
         <span
             className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${style} capitalize whitespace-nowrap transition-all duration-300 hover:scale-105`}
         >
-            {icon}
-            {label}
+            {icon} {label}
         </span>
     );
 };
 
-// --- Komponen Pagination ---
+// --- Sub-Component: Pagination ---
 const Pagination = ({ links }) => {
     return (
         <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 mt-6">
@@ -107,7 +82,6 @@ const Pagination = ({ links }) => {
                 let label = link.label
                     .replace("&laquo; Previous", "«")
                     .replace("Next &raquo;", "»");
-
                 const baseClasses =
                     "px-3 py-2 text-sm font-medium border rounded-xl transition-all shadow-sm flex items-center justify-center min-w-[40px]";
 
@@ -120,7 +94,6 @@ const Pagination = ({ links }) => {
                         />
                     );
                 }
-
                 return (
                     <Link
                         key={index}
@@ -142,7 +115,6 @@ const Pagination = ({ links }) => {
 
 export default function Index({ auth, orders, filters }) {
     const { flash } = usePage().props;
-
     const [search, setSearch] = useState(filters.search || "");
     const [status, setStatus] = useState(filters.status || "all");
     const isFirstRender = useRef(true);
@@ -152,30 +124,24 @@ export default function Index({ auth, orders, filters }) {
             isFirstRender.current = false;
             return;
         }
-
         const timer = setTimeout(() => {
             router.get(
                 route("admin.orders.index"),
                 { search, status },
-                {
-                    preserveState: true,
-                    preserveScroll: true,
-                    replace: true,
-                }
+                { preserveState: true, preserveScroll: true, replace: true }
             );
         }, 300);
-
         return () => clearTimeout(timer);
     }, [search, status]);
 
-    // Filter Options disesuaikan dengan STATUS_LABELS
+    // FILTER YANG SUDAH DISESUAIKAN (Ringkas & Penting Saja)
     const statusOptions = [
         { value: "all", label: "Semua Status" },
-        { value: "awaiting_payment", label: "Menunggu Bayar" },
-        { value: "awaiting_verification", label: "Verifikasi" },
-        { value: "processing", label: "Sedang Diproses" },
-        { value: "ready_for_pickup", label: "Siap Dijemput" },
-        { value: "picked_up", label: "Sudah Dijemput" },
+        { value: "awaiting_verification", label: "Perlu Verifikasi" }, // Prioritas 1
+        { value: "ready_for_pickup", label: "Siap Dijemput" }, // Prioritas 2
+        { value: "processing", label: "Sedang Disimpan" }, // Status Utama Gudang
+        { value: "on_delivery", label: "Dalam Pengiriman" }, // Status Logistik
+        { value: "awaiting_payment", label: "Menunggu Bayar" }, // Status User
         { value: "completed", label: "Selesai" },
         { value: "cancelled", label: "Dibatalkan" },
     ];
@@ -195,7 +161,7 @@ export default function Index({ auth, orders, filters }) {
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200 text-sm font-bold text-gray-600 flex items-center gap-2">
-                            <Package className="w-4 h-4 text-emerald-500" />
+                            <Package className="w-4 h-4 text-emerald-500" />{" "}
                             Total:{" "}
                             <span className="text-emerald-600 text-lg">
                                 {orders.total}
@@ -217,38 +183,64 @@ export default function Index({ auth, orders, filters }) {
                     )}
 
                     <div className="bg-white overflow-hidden shadow-xl shadow-gray-200/50 sm:rounded-3xl border border-gray-100">
-                        {/* --- CONTROL BAR --- */}
-                        <div className="p-6 border-b border-gray-100 flex flex-col lg:flex-row justify-between gap-6 bg-gradient-to-b from-white to-gray-50/50">
-                            {/* Search */}
-                            <div className="relative w-full lg:w-96 group">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Search className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                        {/* --- CONTROL BAR MODERN & MINIMALIS --- */}
+                        <div className="p-6 border-b border-gray-100 bg-gradient-to-b from-white to-gray-50/50">
+                            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                                {/* 1. Search Bar */}
+                                <div className="relative w-full md:flex-1 group">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <Search className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={search}
+                                        onChange={(e) =>
+                                            setSearch(e.target.value)
+                                        }
+                                        placeholder="Cari ID Pesanan, Nama User..."
+                                        className="pl-11 pr-4 py-3.5 border-gray-200 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 w-full transition-all shadow-sm group-hover:shadow-md bg-white"
+                                    />
                                 </div>
-                                <input
-                                    type="text"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Cari ID Pesanan, Nama User..."
-                                    className="pl-10 pr-4 py-3 border-gray-200 rounded-2xl text-sm focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 w-full transition-all shadow-sm group-hover:shadow-md"
-                                />
-                            </div>
 
-                            {/* Filter Chips */}
-                            <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
-                                <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                {statusOptions.map((opt) => (
-                                    <button
-                                        key={opt.value}
-                                        onClick={() => setStatus(opt.value)}
-                                        className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
-                                            status === opt.value
-                                                ? "bg-gray-900 text-white border-gray-900 shadow-lg shadow-gray-900/20"
-                                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-emerald-300"
-                                        }`}
+                                {/* 2. Filter Dropdown (Opsi Pilihan) */}
+                                <div className="relative w-full md:w-64 group">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <Filter className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                                    </div>
+                                    <select
+                                        value={status}
+                                        onChange={(e) =>
+                                            setStatus(e.target.value)
+                                        }
+                                        className="pl-11 pr-10 py-3.5 w-full border-gray-200 rounded-2xl text-sm font-bold text-gray-700 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 appearance-none bg-white shadow-sm cursor-pointer hover:border-emerald-300 transition-all"
                                     >
-                                        {opt.label}
+                                        {statusOptions.map((opt) => (
+                                            <option
+                                                key={opt.value}
+                                                value={opt.value}
+                                            >
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
+                                        <ChevronDown className="h-4 w-4" />
+                                    </div>
+                                </div>
+
+                                {/* Reset Button (Muncul jika ada filter aktif) */}
+                                {(search || status !== "all") && (
+                                    <button
+                                        onClick={() => {
+                                            setSearch("");
+                                            setStatus("all");
+                                        }}
+                                        className="p-3.5 rounded-2xl bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors border border-gray-200 shadow-sm"
+                                        title="Reset Filter"
+                                    >
+                                        <ArrowRightLeft className="w-5 h-5" />
                                     </button>
-                                ))}
+                                )}
                             </div>
                         </div>
 
@@ -280,7 +272,6 @@ export default function Index({ auth, orders, filters }) {
                                             const isUrgent =
                                                 order.status ===
                                                 "awaiting_verification";
-
                                             return (
                                                 <tr
                                                     key={order.id}
@@ -291,13 +282,10 @@ export default function Index({ auth, orders, filters }) {
                                                     }`}
                                                 >
                                                     <td className="py-4 px-6 whitespace-nowrap">
-                                                        <div className="flex flex-col">
-                                                            <span className="font-mono text-sm font-bold text-gray-700 group-hover:text-emerald-600 transition-colors">
-                                                                #{order.id}
-                                                            </span>
-                                                        </div>
+                                                        <span className="font-mono text-sm font-bold text-gray-700 group-hover:text-emerald-600 transition-colors">
+                                                            #{order.id}
+                                                        </span>
                                                     </td>
-
                                                     <td className="py-4 px-6">
                                                         <div className="flex items-center">
                                                             <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-700 font-bold text-sm mr-3 shadow-sm border border-emerald-200">
@@ -323,7 +311,6 @@ export default function Index({ auth, orders, filters }) {
                                                             </div>
                                                         </div>
                                                     </td>
-
                                                     <td className="py-4 px-6">
                                                         <div className="flex items-center gap-2">
                                                             <div
@@ -360,7 +347,6 @@ export default function Index({ auth, orders, filters }) {
                                                             </span>
                                                         </div>
                                                     </td>
-
                                                     <td className="py-4 px-6">
                                                         <div className="flex flex-col">
                                                             <span className="text-sm font-extrabold text-gray-900">
@@ -383,7 +369,6 @@ export default function Index({ auth, orders, filters }) {
                                                             </span>
                                                         </div>
                                                     </td>
-
                                                     <td className="py-4 px-6">
                                                         <StatusBadge
                                                             status={
@@ -391,7 +376,6 @@ export default function Index({ auth, orders, filters }) {
                                                             }
                                                         />
                                                     </td>
-
                                                     <td className="py-4 px-6 text-right text-sm font-medium">
                                                         <Link
                                                             href={route(
@@ -406,7 +390,7 @@ export default function Index({ auth, orders, filters }) {
                                                         >
                                                             {isUrgent
                                                                 ? "Verifikasi"
-                                                                : "Detail"}
+                                                                : "Detail"}{" "}
                                                             <Eye className="ml-2 -mr-0.5 h-4 w-4" />
                                                         </Link>
                                                     </td>

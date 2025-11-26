@@ -10,7 +10,7 @@ import {
     Truck,
     Box,
     ArrowRight,
-    Wifi, // Ikon Wifi untuk indikator Online
+    Wifi,
 } from "lucide-react";
 
 // --- Helper: Status Badge ---
