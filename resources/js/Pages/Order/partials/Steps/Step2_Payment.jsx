@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import InputLabel from "@/Components/InputLabel";
 import InputError from "@/Components/InputError";
 import PrimaryButton from "@/Components/PrimaryButton";
@@ -37,6 +37,11 @@ export default function StepPayment({ order, onPaymentSubmit }) {
         name: "Titipsini Indonesia",
     };
 
+    // Debugging: Cek apakah data order masuk
+    useEffect(() => {
+        console.log("Step 2 Loaded. Order Data:", order);
+    }, [order]);
+
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -56,26 +61,63 @@ export default function StepPayment({ order, onPaymentSubmit }) {
 
     const submit = (e) => {
         e.preventDefault();
+
+        // Validasi Pre-Flight: Pastikan Order ID ada
+        if (!order || !order.id) {
+            alert(
+                "Terjadi kesalahan: Data Order ID tidak ditemukan. Silakan refresh halaman."
+            );
+            return;
+        }
+
         setProcessing(true);
         setErrors({});
 
         const formData = new FormData();
-        formData.append("payment_proof", data.payment_proof || "");
-        formData.append("notes", data.notes);
-        formData.append("_method", "POST");
+
+        // [PERBAIKAN UTAMA]
+        // Hanya append jika file benar-benar ada (bukan string kosong)
+        if (data.payment_proof) {
+            formData.append("payment_proof", data.payment_proof);
+        }
+
+        formData.append("notes", data.notes || "");
+
+        // Opsional: Jika backend Anda menggunakan method POST murni untuk upload,
+        // baris '_method' di bawah ini TIDAK DIPERLUKAN.
+        // Namun jika route Anda adalah PUT/PATCH, aktifkan baris ini:
+        // formData.append("_method", "PUT");
 
         axios
             .post(route("order.submitPayment", order.id), formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             })
-            .then((response) => onPaymentSubmit(response.data.orderStatus))
+            .then((response) => {
+                // Panggil callback ke parent
+                onPaymentSubmit(response.data.orderStatus);
+            })
             .catch((error) => {
-                if (error.response?.status === 422)
+                console.error("Payment Submit Error:", error);
+
+                if (error.response?.status === 422) {
                     setErrors(error.response.data.errors);
-                else alert("Gagal submit pembayaran.");
+                } else {
+                    alert(
+                        "Gagal submit pembayaran. Silakan coba lagi atau cek koneksi."
+                    );
+                }
             })
             .finally(() => setProcessing(false));
     };
+
+    // Pastikan order ada sebelum render komponen utama untuk menghindari crash
+    if (!order) {
+        return (
+            <div className="p-8 text-center text-gray-500">
+                Memuat data pesanan...
+            </div>
+        );
+    }
 
     return (
         <form onSubmit={submit} className="p-6 md:p-8 space-y-6">
