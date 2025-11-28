@@ -1,14 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
-// [1] Import useForm
-import { Head, Link, useForm } from "@inertiajs/react";
+import { Head, useForm } from "@inertiajs/react";
+// [1] Import Toast Library
+import { Toaster, toast } from "react-hot-toast";
 
-// Import modal-modal yang diperlukan
 import AddServiceModal from "./Partials/AddServiceModal";
 import EditServiceModal from "./Partials/EditServiceModal";
-// [2] Import ConfirmDeleteModal SUDAH DIHAPUS
 
-// Helper format Rupiah (sudah benar)
+// Helper format Rupiah
 const formatRupiah = (number) => {
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
@@ -17,7 +16,7 @@ const formatRupiah = (number) => {
     }).format(number);
 };
 
-// [3] KODE MODAL KONFIRMASI (YANG TADI FILE BARU) DIPINDAH KE SINI
+// KODE MODAL KONFIRMASI (LOCAL COMPONENT)
 const ConfirmDeleteModal = ({
     show = false,
     onClose,
@@ -26,52 +25,42 @@ const ConfirmDeleteModal = ({
     message = "Apakah Anda yakin ingin menghapus data ini?",
     processing = false,
 }) => {
-    // Jangan tampilkan apapun jika 'show' adalah false
-    if (!show) {
-        return null;
-    }
+    if (!show) return null;
 
     return (
-        // Latar belakang overlay
         <div
-            className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-50"
-            onClick={onClose} // Menutup modal jika klik di luar
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            onClick={onClose}
         >
-            {/* Panel Modal */}
             <div
-                className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4"
-                onClick={(e) => e.stopPropagation()} // Mencegah modal tertutup saat klik di dalam
+                className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 transform transition-all scale-100"
+                onClick={(e) => e.stopPropagation()}
             >
-                {/* Header Modal */}
-                <div className="flex justify-between items-center pb-3 border-b">
-                    <h3 className="text-xl font-bold text-gray-800">{title}</h3>
+                <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+                    <h3 className="text-lg font-bold text-gray-800">{title}</h3>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600"
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
                         disabled={processing}
                     >
                         &times;
                     </button>
                 </div>
-
-                {/* Body Modal */}
-                <div className="py-4">
-                    <p className="text-sm text-gray-600">{message}</p>
+                <div className="py-6 text-center">
+                    <p className="text-gray-600">{message}</p>
                 </div>
-
-                {/* Footer Modal (Tombol Aksi) */}
-                <div className="flex justify-end space-x-3 pt-3 border-t">
+                <div className="flex justify-center gap-3 pt-2">
                     <button
                         onClick={onClose}
                         disabled={processing}
-                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md font-semibold text-sm hover:bg-gray-300 disabled:opacity-50"
+                        className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors"
                     >
                         Batal
                     </button>
                     <button
                         onClick={onConfirm}
                         disabled={processing}
-                        className="px-4 py-2 bg-red-600 text-white rounded-md font-semibold text-sm hover:bg-red-700 disabled:opacity-50"
+                        className="px-5 py-2.5 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 shadow-lg shadow-red-200 transition-all disabled:opacity-50"
                     >
                         {processing ? "Menghapus..." : "Ya, Hapus"}
                     </button>
@@ -80,29 +69,45 @@ const ConfirmDeleteModal = ({
         </div>
     );
 };
-// [AKHIR DARI KODE MODAL]
 
-// [4] Komponen Induk (Index)
 export default function Index({ auth, services, flash }) {
-    // State untuk modal (sudah benar)
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [editingService, setEditingService] = useState(null);
-
-    // State baru untuk modal konfirmasi hapus
     const [serviceToDelete, setServiceToDelete] = useState(null);
 
-    // Gunakan useForm untuk method 'delete'
     const { delete: deleteService, processing: isDeleting } = useForm();
 
-    // Fungsi yang akan dipanggil saat tombol "Ya, Hapus" di modal diklik
+    // [2] Effect untuk memunculkan Toast saat ada flash message sukses
+    useEffect(() => {
+        if (flash.success) {
+            toast.success(flash.success, {
+                duration: 4000,
+                position: "top-center",
+                style: {
+                    borderRadius: "12px",
+                    background: "#333",
+                    color: "#fff",
+                },
+            });
+        }
+        if (flash.error) {
+            toast.error(flash.error, {
+                position: "top-center",
+            });
+        }
+    }, [flash]);
+
     const handleDeleteSubmit = () => {
-        if (!serviceToDelete) return; // Keamanan
+        if (!serviceToDelete) return;
 
         deleteService(route("admin.services.destroy", serviceToDelete.id), {
             preserveScroll: true,
-            // Tutup modal setelah sukses
             onSuccess: () => {
                 setServiceToDelete(null);
+                // Toast akan otomatis muncul karena flash.success di-update oleh server
+            },
+            onError: () => {
+                toast.error("Gagal menghapus layanan.");
             },
         });
     };
@@ -118,7 +123,9 @@ export default function Index({ auth, services, flash }) {
         >
             <Head title="Manajemen Layanan" />
 
-            {/* Modal Tambah & Edit (sudah benar) */}
+            {/* [3] Komponen Toaster Wajib Ada */}
+            <Toaster />
+
             <AddServiceModal
                 show={isAddModalOpen}
                 onClose={() => setAddModalOpen(false)}
@@ -129,9 +136,8 @@ export default function Index({ auth, services, flash }) {
                 service={editingService}
             />
 
-            {/* [5] Render Modal Konfirmasi Hapus (Sekarang memanggil const di file ini) */}
             <ConfirmDeleteModal
-                show={!!serviceToDelete} // Tampilkan jika serviceToDelete tidak null
+                show={!!serviceToDelete}
                 onClose={() => setServiceToDelete(null)}
                 onConfirm={handleDeleteSubmit}
                 processing={isDeleting}
@@ -141,91 +147,91 @@ export default function Index({ auth, services, flash }) {
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {flash.success && (
-                        <div className="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow-sm">
-                            <p className="font-bold">Sukses!</p>
-                            <p>{flash.success}</p>
-                        </div>
-                    )}
+                    {/* [4] Alert Box Lama DIHAPUS, digantikan oleh Toast */}
 
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-2xl font-bold text-gray-800">
-                                    Daftar Layanan
-                                </h3>
+                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-3xl border border-gray-100">
+                        <div className="p-8 text-gray-900">
+                            <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+                                <div>
+                                    <h3 className="text-2xl font-black text-gray-800">
+                                        Daftar Layanan
+                                    </h3>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Kelola paket dan harga layanan titip
+                                    </p>
+                                </div>
                                 <button
                                     onClick={() => setAddModalOpen(true)}
-                                    className="px-4 py-2 bg-green-500 text-white font-semibold rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all"
+                                    className="px-5 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 transition-all shadow-lg shadow-emerald-200 transform hover:-translate-y-0.5"
                                 >
-                                    Tambah Layanan Baru
+                                    + Tambah Layanan
                                 </button>
                             </div>
 
-                            <div className="overflow-x-auto">
+                            <div className="overflow-x-auto rounded-xl border border-gray-100">
                                 <table className="min-w-full bg-white">
-                                    {/* ... thead (sudah benar) ... */}
-                                    <thead className="bg-gray-100">
+                                    <thead className="bg-gray-50/50">
                                         <tr>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                            <th className="py-4 px-6 border-b border-gray-100 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider">
                                                 #
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                            <th className="py-4 px-6 border-b border-gray-100 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider">
                                                 Judul
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                            <th className="py-4 px-6 border-b border-gray-100 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider">
                                                 Harga
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                            <th className="py-4 px-6 border-b border-gray-100 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider">
                                                 Fitur
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                            <th className="py-4 px-6 border-b border-gray-100 text-right text-xs font-extrabold text-gray-400 uppercase tracking-wider">
                                                 Aksi
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody className="divide-y divide-gray-100">
                                         {services.map((service, index) => (
                                             <tr
                                                 key={service.id}
-                                                className="hover:bg-gray-50"
+                                                className="hover:bg-gray-50/80 transition-colors"
                                             >
-                                                {/* ... td (kolom lain sudah benar) ... */}
-                                                <td className="py-3 px-4 border-b text-gray-700">
+                                                <td className="py-4 px-6 text-gray-500 font-mono text-sm">
                                                     {index + 1}
                                                 </td>
-                                                <td className="py-3 px-4 border-b text-gray-700 font-medium">
+                                                <td className="py-4 px-6 text-gray-800 font-bold text-sm">
                                                     {service.title}
                                                 </td>
-                                                <td className="py-3 px-4 border-b text-gray-700 font-semibold text-green-700">
+                                                <td className="py-4 px-6 text-emerald-600 font-bold text-sm">
                                                     {formatRupiah(
                                                         service.price
                                                     )}
                                                 </td>
-                                                <td className="py-3 px-4 border-b text-gray-700">
-                                                    <ul className="list-disc list-inside space-y-1">
+                                                <td className="py-4 px-6 text-gray-600 text-sm">
+                                                    <ul className="space-y-1">
                                                         {service.features.map(
                                                             (feature, i) => (
-                                                                <li key={i}>
+                                                                <li
+                                                                    key={i}
+                                                                    className="flex items-center gap-2"
+                                                                >
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                                                                     {feature}
                                                                 </li>
                                                             )
                                                         )}
                                                     </ul>
                                                 </td>
-                                                <td className="py-3 px-4 border-b text-gray-700">
+                                                <td className="py-4 px-6 text-right space-x-2">
                                                     <button
                                                         onClick={() =>
                                                             setEditingService(
                                                                 service
                                                             )
                                                         }
-                                                        className="text-indigo-600 hover:underline font-semibold mr-4 focus:outline-none"
+                                                        className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors"
                                                     >
                                                         Edit
                                                     </button>
-
-                                                    {/* [6] Tombol Hapus (sudah benar) */}
                                                     <button
                                                         onClick={() =>
                                                             setServiceToDelete(
@@ -233,7 +239,7 @@ export default function Index({ auth, services, flash }) {
                                                             )
                                                         }
                                                         disabled={isDeleting}
-                                                        className="text-red-600 hover:underline font-semibold focus:outline-none disabled:opacity-50"
+                                                        className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors disabled:opacity-50"
                                                     >
                                                         Hapus
                                                     </button>

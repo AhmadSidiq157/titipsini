@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import { Head, Link, usePage, router } from "@inertiajs/react";
 import ManageOrderModal from "./Partials/ManageOrderModal";
+// [1] Import Toast
+import { Toaster, toast } from "react-hot-toast";
 import {
     Eye,
     Truck,
@@ -14,6 +16,7 @@ import {
     Filter,
     ArrowRightLeft,
     MapPin,
+    ChevronDown, // Import ChevronDown untuk dropdown
 } from "lucide-react";
 
 // --- Helper: Format Rupiah ---
@@ -26,11 +29,11 @@ const formatRupiah = (number) => {
     }).format(number || 0);
 };
 
-// --- KAMUS STATUS (Mapping Inggris -> Indonesia) ---
+// --- KAMUS STATUS ---
 const STATUS_LABELS = {
     awaiting_payment: "Menunggu Bayar",
     awaiting_verification: "Verifikasi Bayar",
-    processing: "Perlu Kurir", // Status setelah lunas, sebelum kurir assign
+    processing: "Perlu Kurir",
     ready_for_pickup: "Kurir Menjemput",
     picked_up: "Barang Diangkut",
     on_delivery: "Dalam Perjalanan",
@@ -86,7 +89,6 @@ const StatusBadge = ({ status }) => {
             icon = <Clock className="w-3.5 h-3.5 mr-1.5" />;
     }
 
-    // [PERUBAHAN PENTING] whitespace-nowrap mencegah teks turun baris
     return (
         <span
             className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${style} whitespace-nowrap transition-transform hover:scale-105`}
@@ -137,15 +139,40 @@ const Pagination = ({ links }) => {
     );
 };
 
-export default function Index({ auth, orders, couriers, flash, filters }) {
+export default function Index({ auth, orders, couriers, filters }) {
+    const { flash } = usePage().props;
     const [selectedOrder, setSelectedOrder] = useState(null);
 
-    // State Pencarian & Filter
     const [search, setSearch] = useState(filters?.search || "");
     const [status, setStatus] = useState(filters?.status || "all");
     const isFirstRender = useRef(true);
 
-    // --- Efek Debounce untuk Search/Filter ---
+    // [2] Effect untuk Toast Notifikasi
+    useEffect(() => {
+        if (flash.success) {
+            toast.success(flash.success, {
+                duration: 3000,
+                position: "top-center",
+                style: {
+                    background: "#10B981",
+                    color: "#fff",
+                    borderRadius: "12px",
+                },
+                iconTheme: {
+                    primary: "#fff",
+                    secondary: "#10B981",
+                },
+            });
+        }
+        if (flash.error) {
+            toast.error(flash.error, {
+                duration: 3000,
+                position: "top-center",
+            });
+        }
+    }, [flash]);
+
+    // Efek Debounce Search
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
@@ -161,15 +188,16 @@ export default function Index({ auth, orders, couriers, flash, filters }) {
         return () => clearTimeout(timer);
     }, [search, status]);
 
-    // Opsi Filter Status
+    // Opsi Filter
     const filterOptions = [
-        { value: "all", label: "Semua" },
+        { value: "all", label: "Semua Status" },
         { value: "awaiting_payment", label: "Belum Bayar" },
-        { value: "awaiting_verification", label: "Verifikasi" },
+        { value: "awaiting_verification", label: "Verifikasi Bayar" },
         { value: "processing", label: "Perlu Kurir" },
-        { value: "ready_for_pickup", label: "Dijemput" },
-        { value: "on_delivery", label: "Di Jalan" },
+        { value: "ready_for_pickup", label: "Kurir Menjemput" },
+        { value: "on_delivery", label: "Dalam Perjalanan" },
         { value: "completed", label: "Selesai" },
+        { value: "cancelled", label: "Dibatalkan" },
     ];
 
     return (
@@ -199,6 +227,9 @@ export default function Index({ auth, orders, couriers, flash, filters }) {
         >
             <Head title="Manajemen Pesanan Pindahan" />
 
+            {/* [3] Render Toaster */}
+            <Toaster />
+
             <ManageOrderModal
                 show={!!selectedOrder}
                 onClose={() => setSelectedOrder(null)}
@@ -208,46 +239,67 @@ export default function Index({ auth, orders, couriers, flash, filters }) {
 
             <div className="py-8">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {flash.success && (
-                        <div className="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl flex items-center shadow-sm animate-in slide-in-from-top-2">
-                            <CheckCircle2 className="w-5 h-5 mr-2 bg-emerald-200 rounded-full p-0.5" />{" "}
-                            {flash.success}
-                        </div>
-                    )}
+                    {/* Flash Message Banner Dihapus, diganti Toast */}
 
                     <div className="bg-white overflow-hidden shadow-xl shadow-gray-200/50 sm:rounded-3xl border border-gray-100">
-                        {/* --- CONTROL BAR (Search & Filter) --- */}
-                        <div className="p-6 border-b border-gray-100 flex flex-col lg:flex-row justify-between gap-6 bg-gradient-to-b from-white to-gray-50/50">
-                            {/* Search */}
-                            <div className="relative w-full lg:w-96 group">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Search className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                        {/* --- [MODIFIKASI] Control Bar (Dropdown Style) --- */}
+                        <div className="p-6 border-b border-gray-100 bg-gradient-to-b from-white to-gray-50/50">
+                            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                                {/* Search Bar */}
+                                <div className="relative w-full md:flex-1 group">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <Search className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={search}
+                                        onChange={(e) =>
+                                            setSearch(e.target.value)
+                                        }
+                                        placeholder="Cari ID Pesanan, Nama Klien..."
+                                        className="pl-11 pr-4 py-3.5 border-gray-200 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 w-full transition-all shadow-sm group-hover:shadow-md bg-white"
+                                    />
                                 </div>
-                                <input
-                                    type="text"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Cari ID, Nama User..."
-                                    className="pl-10 pr-4 py-3 border-gray-200 rounded-2xl text-sm focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 w-full transition-all shadow-sm group-hover:shadow-md"
-                                />
-                            </div>
 
-                            {/* Filter Chips */}
-                            <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
-                                <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                {filterOptions.map((opt) => (
-                                    <button
-                                        key={opt.value}
-                                        onClick={() => setStatus(opt.value)}
-                                        className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
-                                            status === opt.value
-                                                ? "bg-gray-900 text-white border-gray-900 shadow-lg shadow-gray-900/20"
-                                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-emerald-300"
-                                        }`}
+                                {/* Dropdown Filter */}
+                                <div className="relative w-full md:w-64 group">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <Filter className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                                    </div>
+                                    <select
+                                        value={status}
+                                        onChange={(e) =>
+                                            setStatus(e.target.value)
+                                        }
+                                        className="pl-11 pr-10 py-3.5 w-full border-gray-200 rounded-2xl text-sm font-bold text-gray-700 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 appearance-none bg-white shadow-sm cursor-pointer hover:border-emerald-300 transition-all"
                                     >
-                                        {opt.label}
+                                        {filterOptions.map((opt) => (
+                                            <option
+                                                key={opt.value}
+                                                value={opt.value}
+                                            >
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
+                                        <ChevronDown className="h-4 w-4" />
+                                    </div>
+                                </div>
+
+                                {/* Reset Button */}
+                                {(search || status !== "all") && (
+                                    <button
+                                        onClick={() => {
+                                            setSearch("");
+                                            setStatus("all");
+                                        }}
+                                        className="p-3.5 rounded-2xl bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors border border-gray-200 shadow-sm"
+                                        title="Reset Filter"
+                                    >
+                                        <ArrowRightLeft className="w-5 h-5" />
                                     </button>
-                                ))}
+                                )}
                             </div>
                         </div>
 
@@ -256,7 +308,6 @@ export default function Index({ auth, orders, couriers, flash, filters }) {
                             <table className="min-w-full divide-y divide-gray-100">
                                 <thead className="bg-gray-50/80 backdrop-blur-sm">
                                     <tr>
-                                        {/* [PERUBAHAN PENTING]: whitespace-nowrap pada header */}
                                         {[
                                             "ID",
                                             "Klien",
@@ -292,7 +343,6 @@ export default function Index({ auth, orders, couriers, flash, filters }) {
                                                             : "hover:bg-gray-50/80"
                                                     }`}
                                                 >
-                                                    {/* ID: whitespace-nowrap */}
                                                     <td className="py-4 px-6 whitespace-nowrap">
                                                         <span className="font-mono text-sm font-bold text-gray-700 group-hover:text-emerald-600 transition-colors">
                                                             #{order.id}
@@ -306,7 +356,6 @@ export default function Index({ auth, orders, couriers, flash, filters }) {
                                                         </div>
                                                     </td>
 
-                                                    {/* Klien: whitespace-nowrap */}
                                                     <td className="py-4 px-6 whitespace-nowrap">
                                                         <div className="flex items-center">
                                                             <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-indigo-700 font-bold text-sm mr-3 shadow-sm border border-indigo-200 flex-shrink-0">
@@ -333,7 +382,6 @@ export default function Index({ auth, orders, couriers, flash, filters }) {
                                                         </div>
                                                     </td>
 
-                                                    {/* Paket: whitespace-nowrap */}
                                                     <td className="py-4 px-6 whitespace-nowrap">
                                                         <span className="text-sm font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded-md whitespace-nowrap">
                                                             {order.orderable
@@ -342,7 +390,6 @@ export default function Index({ auth, orders, couriers, flash, filters }) {
                                                         </span>
                                                     </td>
 
-                                                    {/* Total: whitespace-nowrap */}
                                                     <td className="py-4 px-6 whitespace-nowrap">
                                                         <span className="text-sm font-extrabold text-gray-900">
                                                             {formatRupiah(
@@ -351,7 +398,6 @@ export default function Index({ auth, orders, couriers, flash, filters }) {
                                                         </span>
                                                     </td>
 
-                                                    {/* Status: whitespace-nowrap */}
                                                     <td className="py-4 px-6 whitespace-nowrap">
                                                         <StatusBadge
                                                             status={
@@ -360,7 +406,6 @@ export default function Index({ auth, orders, couriers, flash, filters }) {
                                                         />
                                                     </td>
 
-                                                    {/* Kurir: whitespace-nowrap */}
                                                     <td className="py-4 px-6 whitespace-nowrap">
                                                         {order.courier ? (
                                                             <div className="flex items-center gap-2">
@@ -380,7 +425,6 @@ export default function Index({ auth, orders, couriers, flash, filters }) {
                                                         )}
                                                     </td>
 
-                                                    {/* Aksi: whitespace-nowrap */}
                                                     <td className="py-4 px-6 text-right text-sm font-medium whitespace-nowrap">
                                                         <button
                                                             onClick={() =>

@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import { Head, Link, usePage, router } from "@inertiajs/react";
+// [1] Import Toast Library
+import { Toaster, toast } from "react-hot-toast";
 import {
     Search,
     Filter,
@@ -19,7 +21,7 @@ import {
     ChevronDown,
 } from "lucide-react";
 
-// Import dari file komponen tunggal
+// Import dari file komponen tunggal (Pastikan file ini ada)
 import { formatRupiah, getStatusLabel } from "./OrderComponents";
 
 // --- Sub-Component: Status Badge ---
@@ -119,6 +121,31 @@ export default function Index({ auth, orders, filters }) {
     const [status, setStatus] = useState(filters.status || "all");
     const isFirstRender = useRef(true);
 
+    // [2] Effect untuk Toast Notifikasi
+    useEffect(() => {
+        if (flash.success) {
+            toast.success(flash.success, {
+                duration: 3000,
+                position: "top-center",
+                style: {
+                    background: "#10B981", // Emerald-500
+                    color: "#fff",
+                    borderRadius: "12px",
+                },
+                iconTheme: {
+                    primary: "#fff",
+                    secondary: "#10B981",
+                },
+            });
+        }
+        if (flash.error) {
+            toast.error(flash.error, {
+                duration: 3000,
+                position: "top-center",
+            });
+        }
+    }, [flash]);
+
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
@@ -134,14 +161,14 @@ export default function Index({ auth, orders, filters }) {
         return () => clearTimeout(timer);
     }, [search, status]);
 
-    // FILTER YANG SUDAH DISESUAIKAN (Ringkas & Penting Saja)
+    // Opsi Filter
     const statusOptions = [
         { value: "all", label: "Semua Status" },
-        { value: "awaiting_verification", label: "Perlu Verifikasi" }, // Prioritas 1
-        { value: "ready_for_pickup", label: "Siap Dijemput" }, // Prioritas 2
-        { value: "processing", label: "Sedang Disimpan" }, // Status Utama Gudang
-        { value: "on_delivery", label: "Dalam Pengiriman" }, // Status Logistik
-        { value: "awaiting_payment", label: "Menunggu Bayar" }, // Status User
+        { value: "awaiting_verification", label: "Perlu Verifikasi" },
+        { value: "ready_for_pickup", label: "Siap Dijemput" },
+        { value: "processing", label: "Sedang Disimpan" },
+        { value: "on_delivery", label: "Dalam Pengiriman" },
+        { value: "awaiting_payment", label: "Menunggu Bayar" },
         { value: "completed", label: "Selesai" },
         { value: "cancelled", label: "Dibatalkan" },
     ];
@@ -173,14 +200,12 @@ export default function Index({ auth, orders, filters }) {
         >
             <Head title="Manajemen Pesanan" />
 
+            {/* [3] Render Toaster */}
+            <Toaster />
+
             <div className="py-8">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {flash.success && (
-                        <div className="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl flex items-center shadow-sm animate-in slide-in-from-top-2">
-                            <CheckCircle2 className="w-5 h-5 mr-2 bg-emerald-200 rounded-full p-0.5" />{" "}
-                            {flash.success}
-                        </div>
-                    )}
+                    {/* Flash Message Banner Dihapus (Diganti Toast) */}
 
                     <div className="bg-white overflow-hidden shadow-xl shadow-gray-200/50 sm:rounded-3xl border border-gray-100">
                         {/* --- CONTROL BAR MODERN & MINIMALIS --- */}

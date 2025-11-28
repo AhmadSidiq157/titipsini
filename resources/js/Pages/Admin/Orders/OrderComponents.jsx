@@ -1,7 +1,7 @@
 // resources/js/Pages/Admin/Orders/OrderComponents.jsx
 
 import React, { useState, useEffect } from "react";
-import { useForm, Link } from "@inertiajs/react";
+import { useForm, Link, router } from "@inertiajs/react"; // Import router
 import Modal from "@/Components/Modal";
 import PrimaryButton from "@/Components/PrimaryButton";
 import DangerButton from "@/Components/DangerButton";
@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 
 // ==========================================
-// 1. UTILITY FUNCTIONS (RUMUS-RUMUS)
+// 1. UTILITY FUNCTIONS
 // ==========================================
 
 export const formatRupiah = (number) => {
@@ -70,7 +70,7 @@ export const getMapsLink = (address) => {
 };
 
 // ==========================================
-// 2. HELPER COMPONENTS (TOMBOL KECIL/MODAL)
+// 2. HELPER COMPONENTS
 // ==========================================
 
 export const CopyButton = ({ text, label = "Salin" }) => {
@@ -118,7 +118,7 @@ export const ImageModal = ({ show, onClose, src, title }) => (
 );
 
 // ==========================================
-// 3. MAIN UI COMPONENTS (KOTAK-KOTAK DETAIL)
+// 3. MAIN UI COMPONENTS
 // ==========================================
 
 export const OrderStepper = ({ status, needsPickup }) => {
@@ -402,10 +402,14 @@ export const OrderDetailsBox = ({ order }) => {
 
 export const PaymentVerificationBox = ({ order }) => {
     const [showRejectModal, setShowRejectModal] = useState(false);
+    const [showApproveModal, setShowApproveModal] = useState(false); // [BARU] Modal Approve
     const [showImagePreview, setShowImagePreview] = useState(false);
+
+    // Form untuk Penolakan
     const { data, setData, post, processing, reset } = useForm({
         rejection_reason: "",
     });
+
     const submitReject = (e) => {
         e.preventDefault();
         post(route("admin.orders.reject", order.id), {
@@ -416,6 +420,18 @@ export const PaymentVerificationBox = ({ order }) => {
             },
         });
     };
+
+    const confirmApprove = () => {
+        router.post(
+            route("admin.orders.approve", order.id),
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => setShowApproveModal(false),
+            }
+        );
+    };
+
     const proofPath = order.payment?.payment_proof_path
         ? `/storage/${order.payment.payment_proof_path}`
         : null;
@@ -484,22 +500,16 @@ export const PaymentVerificationBox = ({ order }) => {
                             )}
                         </div>
                         <div className="flex gap-3 pt-2">
-                            <Link
-                                href={route("admin.orders.approve", order.id)}
-                                method="post"
-                                as="button"
-                                className="flex-1 flex justify-center items-center px-4 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700"
-                                onBefore={() =>
-                                    confirm(
-                                        "Pastikan dana sudah masuk mutasi rekening. Setujui?"
-                                    )
-                                }
+                            {/* [MODIFIKASI] Tombol Terima sekarang membuka Modal */}
+                            <button
+                                onClick={() => setShowApproveModal(true)}
+                                className="flex-1 flex justify-center items-center px-4 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200"
                             >
                                 <Check className="w-5 h-5 mr-2" /> Terima
-                            </Link>
+                            </button>
                             <button
                                 onClick={() => setShowRejectModal(true)}
-                                className="flex-1 flex justify-center items-center px-4 py-3 bg-white border border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50"
+                                className="flex-1 flex justify-center items-center px-4 py-3 bg-white border border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition-all"
                             >
                                 <X className="w-5 h-5 mr-2" /> Tolak
                             </button>
@@ -517,6 +527,36 @@ export const PaymentVerificationBox = ({ order }) => {
                         Menunggu user mengupload bukti...
                     </div>
                 )}
+
+                {/* [MODIFIKASI] Modal Konfirmasi Terima */}
+                <Modal
+                    show={showApproveModal}
+                    onClose={() => setShowApproveModal(false)}
+                >
+                    <div className="p-6">
+                        <h2 className="text-lg font-bold text-gray-900">
+                            Konfirmasi Pembayaran
+                        </h2>
+                        <p className="mt-2 text-sm text-gray-600">
+                            Pastikan dana sudah benar-benar masuk ke mutasi
+                            rekening perusahaan. Apakah Anda yakin ingin
+                            menyetujui pembayaran ini?
+                        </p>
+                        <div className="mt-6 flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowApproveModal(false)}
+                                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                            >
+                                Batal
+                            </button>
+                            <PrimaryButton onClick={confirmApprove}>
+                                Ya, Setujui
+                            </PrimaryButton>
+                        </div>
+                    </div>
+                </Modal>
+
+                {/* Modal Tolak */}
                 <Modal
                     show={showRejectModal}
                     onClose={() => setShowRejectModal(false)}
@@ -538,7 +578,7 @@ export const PaymentVerificationBox = ({ order }) => {
                                     setData("rejection_reason", e.target.value)
                                 }
                                 className="w-full border-gray-300 rounded-xl mt-1 min-h-[100px]"
-                                placeholder="Alasan..."
+                                placeholder="Jelaskan alasan penolakan (misal: bukti buram, nominal tidak sesuai)..."
                                 required
                             ></textarea>
                         </div>
@@ -546,7 +586,7 @@ export const PaymentVerificationBox = ({ order }) => {
                             <button
                                 type="button"
                                 onClick={() => setShowRejectModal(false)}
-                                className="px-4 py-2 bg-white border border-gray-300 rounded-lg"
+                                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
                             >
                                 Batal
                             </button>
@@ -623,7 +663,7 @@ export const CourierAssignmentBox = ({ order, couriers }) => {
                             onChange={(e) =>
                                 setData("courier_id", e.target.value)
                             }
-                            className="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl text-sm block p-3 pr-8"
+                            className="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl text-sm block p-3 pr-8 focus:ring-blue-500 focus:border-blue-500"
                             disabled={couriers.length === 0}
                         >
                             <option value="">-- Pilih Kurir Tersedia --</option>
@@ -663,14 +703,15 @@ export const CourierAssignmentBox = ({ order, couriers }) => {
 
 export const StorageStatusBox = ({ order }) => {
     const { post, processing } = useForm();
+    // [MODIFIKASI] State untuk modal konfirmasi selesai
+    const [showCompleteModal, setShowCompleteModal] = useState(false);
+
     const handleComplete = () => {
-        if (
-            confirm(
-                "Pastikan barang sudah benar-benar dikembalikan ke customer. Lanjutkan?"
-            )
-        )
-            post(route("admin.orders.complete", order.id));
+        post(route("admin.orders.complete", order.id), {
+            onSuccess: () => setShowCompleteModal(false),
+        });
     };
+
     if (order.status === "completed")
         return (
             <div className="bg-emerald-50 rounded-2xl p-6 border border-emerald-200 text-center shadow-sm">
@@ -685,40 +726,83 @@ export const StorageStatusBox = ({ order }) => {
                 </p>
             </div>
         );
+
     if (order.status === "processing" || order.status === "delivered")
         return (
-            <div className="bg-white rounded-2xl p-1 border border-indigo-100 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500"></div>
-                <div className="p-5 pl-7">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                        <Box className="w-5 h-5 mr-2 text-indigo-500" /> Status
-                        Penyimpanan
-                    </h3>
-                    <div className="bg-indigo-50 p-4 rounded-xl mb-6 flex items-start gap-4 border border-indigo-100">
-                        <div className="bg-white p-2 rounded-lg shadow-sm text-indigo-600">
-                            <Clock className="w-6 h-6" />
+            <>
+                <div className="bg-white rounded-2xl p-1 border border-indigo-100 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500"></div>
+                    <div className="p-5 pl-7">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                            <Box className="w-5 h-5 mr-2 text-indigo-500" />{" "}
+                            Status Penyimpanan
+                        </h3>
+                        <div className="bg-indigo-50 p-4 rounded-xl mb-6 flex items-start gap-4 border border-indigo-100">
+                            <div className="bg-white p-2 rounded-lg shadow-sm text-indigo-600">
+                                <Clock className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="font-bold text-indigo-900 text-lg">
+                                    {order.status === "delivered"
+                                        ? "Barang Sampai (Gudang)"
+                                        : "Sedang Disimpan"}
+                                </p>
+                                <p className="text-xs text-indigo-600 mt-1">
+                                    Durasi sewa sedang berjalan.
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="font-bold text-indigo-900 text-lg">
-                                {order.status === "delivered"
-                                    ? "Barang Sampai (Gudang)"
-                                    : "Sedang Disimpan"}
-                            </p>
-                            <p className="text-xs text-indigo-600 mt-1">
-                                Durasi sewa sedang berjalan.
-                            </p>
+                        {/* [MODIFIKASI] Tombol memicu modal */}
+                        <PrimaryButton
+                            onClick={() => setShowCompleteModal(true)}
+                            disabled={processing}
+                            className="w-full justify-center py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-sm shadow-lg"
+                        >
+                            <PackageCheck className="w-4 h-4 mr-2" /> Selesaikan
+                            (Barang Diambil)
+                        </PrimaryButton>
+                    </div>
+                </div>
+
+                {/* [MODIFIKASI] Modal Konfirmasi Selesai */}
+                <Modal
+                    show={showCompleteModal}
+                    onClose={() => setShowCompleteModal(false)}
+                >
+                    <div className="p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-indigo-100 rounded-full text-indigo-600">
+                                <PackageCheck size={24} />
+                            </div>
+                            <h2 className="text-lg font-bold text-gray-900">
+                                Selesaikan Pesanan?
+                            </h2>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-6">
+                            Pastikan barang sudah benar-benar dikembalikan ke
+                            customer. Tindakan ini akan menutup transaksi dan
+                            status akan berubah menjadi <b>Completed</b>.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowCompleteModal(false)}
+                                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                            >
+                                Batal
+                            </button>
+                            <PrimaryButton
+                                onClick={handleComplete}
+                                disabled={processing}
+                                className="bg-indigo-600 hover:bg-indigo-700"
+                            >
+                                {processing
+                                    ? "Memproses..."
+                                    : "Ya, Selesaikan Order"}
+                            </PrimaryButton>
                         </div>
                     </div>
-                    <PrimaryButton
-                        onClick={handleComplete}
-                        disabled={processing}
-                        className="w-full justify-center py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-sm shadow-lg"
-                    >
-                        <PackageCheck className="w-4 h-4 mr-2" /> Selesaikan
-                        (Barang Diambil)
-                    </PrimaryButton>
-                </div>
-            </div>
+                </Modal>
+            </>
         );
     return null;
 };

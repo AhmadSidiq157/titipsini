@@ -1,7 +1,13 @@
-import React, { useState } from "react";
+// resources/js/Pages/Admin/MovingPackages/Index.jsx
+
+import React, { useState, useEffect } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
-// [1] Import useForm
-import { Head, Link, useForm } from "@inertiajs/react";
+import { Head, useForm } from "@inertiajs/react";
+// [1] Import Toast & Icons
+import { Toaster, toast } from "react-hot-toast";
+import { AlertTriangle, Trash2, Edit, Plus } from "lucide-react";
+
+import Modal from "@/Components/Modal"; // Gunakan komponen Modal bawaan
 import AddPackageModal from "./Partials/AddPackageModal";
 import EditPackageModal from "./Partials/EditPackageModal";
 
@@ -14,92 +20,97 @@ const formatRupiah = (number) => {
     }).format(number);
 };
 
-// [2] KODE MODAL KONFIRMASI (DARI FILE SEBELUMNYA) DIPINDAH KE SINI
+// [2] KOMPONEN MODAL KONFIRMASI MODERN
 const ConfirmDeleteModal = ({
     show = false,
     onClose,
     onConfirm,
-    title = "Konfirmasi Hapus",
-    message = "Apakah Anda yakin ingin menghapus data ini?",
+    title = "Hapus Paket?",
+    message = "Tindakan ini tidak dapat dibatalkan. Data paket akan hilang permanen.",
     processing = false,
 }) => {
-    // Jangan tampilkan apapun jika 'show' adalah false
-    if (!show) {
-        return null;
-    }
-
     return (
-        // Latar belakang overlay
-        <div
-            className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-50"
-            onClick={onClose} // Menutup modal jika klik di luar
-        >
-            {/* Panel Modal */}
-            <div
-                className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4"
-                onClick={(e) => e.stopPropagation()} // Mencegah modal tertutup saat klik di dalam
-            >
-                {/* Header Modal */}
-                <div className="flex justify-between items-center pb-3 border-b">
-                    <h3 className="text-xl font-bold text-gray-800">{title}</h3>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600"
-                        disabled={processing}
-                    >
-                        &times;
-                    </button>
+        <Modal show={show} onClose={onClose} maxWidth="md">
+            <div className="p-6">
+                <div className="flex items-center gap-4 mb-5">
+                    <div className="p-3 bg-red-100 rounded-full text-red-600">
+                        <AlertTriangle size={28} />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900">{title}</h2>
                 </div>
 
-                {/* Body Modal */}
-                <div className="py-4">
-                    <p className="text-sm text-gray-600">{message}</p>
-                </div>
+                <p className="text-gray-600 text-sm leading-relaxed mb-8">
+                    {message}
+                </p>
 
-                {/* Footer Modal (Tombol Aksi) */}
-                <div className="flex justify-end space-x-3 pt-3 border-t">
+                <div className="flex justify-end gap-3">
                     <button
                         onClick={onClose}
                         disabled={processing}
-                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md font-semibold text-sm hover:bg-gray-300 disabled:opacity-50"
+                        className="px-5 py-2.5 bg-white border border-gray-300 rounded-xl text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors"
                     >
                         Batal
                     </button>
                     <button
                         onClick={onConfirm}
                         disabled={processing}
-                        className="px-4 py-2 bg-red-600 text-white rounded-md font-semibold text-sm hover:bg-red-700 disabled:opacity-50"
+                        className="px-5 py-2.5 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 shadow-lg shadow-red-200 transition-all disabled:opacity-70 flex items-center"
                     >
-                        {processing ? "Menghapus..." : "Ya, Hapus"}
+                        {processing ? "Menghapus..." : "Ya, Hapus Paket"}
                     </button>
                 </div>
             </div>
-        </div>
+        </Modal>
     );
 };
-// [AKHIR DARI KODE MODAL]
 
 // [3] Komponen Induk (Index)
 export default function Index({ auth, packages, flash }) {
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [editingPackage, setEditingPackage] = useState(null);
-
-    // [4] State baru untuk modal konfirmasi hapus
     const [packageToDelete, setPackageToDelete] = useState(null);
 
-    // [5] Gunakan useForm untuk method 'delete'
     const { delete: deletePackage, processing: isDeleting } = useForm();
 
-    // [6] Fungsi yang akan dipanggil saat tombol "Ya, Hapus" di modal diklik
+    // [4] Effect untuk Toast Notifikasi
+    useEffect(() => {
+        if (flash.success) {
+            toast.success(flash.success, {
+                duration: 4000,
+                position: "top-center",
+                style: {
+                    background: "#10B981",
+                    color: "#fff",
+                    borderRadius: "12px",
+                    fontWeight: "bold",
+                },
+                iconTheme: {
+                    primary: "#fff",
+                    secondary: "#10B981",
+                },
+            });
+        }
+        if (flash.error) {
+            toast.error(flash.error, {
+                duration: 4000,
+                position: "top-center",
+            });
+        }
+    }, [flash]);
+
+    // [5] Handle Delete
     const handleDeleteSubmit = () => {
-        if (!packageToDelete) return; // Keamanan
+        if (!packageToDelete) return;
 
         deletePackage(
             route("admin.moving-packages.destroy", packageToDelete.id),
             {
                 preserveScroll: true,
-                // Tutup modal setelah sukses
                 onSuccess: () => {
+                    setPackageToDelete(null);
+                },
+                onError: () => {
+                    toast.error("Gagal menghapus paket.");
                     setPackageToDelete(null);
                 },
             }
@@ -117,6 +128,8 @@ export default function Index({ auth, packages, flash }) {
         >
             <Head title="Manajemen Paket Pindahan" />
 
+            <Toaster />
+
             <AddPackageModal
                 show={isAddModalOpen}
                 onClose={() => setAddModalOpen(false)}
@@ -127,109 +140,114 @@ export default function Index({ auth, packages, flash }) {
                 aPackage={editingPackage}
             />
 
-            {/* [7] Render Modal Konfirmasi Hapus */}
+            {/* Render Modal Konfirmasi Baru */}
             <ConfirmDeleteModal
                 show={!!packageToDelete}
                 onClose={() => setPackageToDelete(null)}
                 onConfirm={handleDeleteSubmit}
                 processing={isDeleting}
-                title="Hapus Paket Pindahan"
                 message={`Apakah Anda yakin ingin menghapus paket "${packageToDelete?.name}"?`}
             />
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {flash.success && (
-                        <div className="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow-sm">
-                            <p className="font-bold">Sukses!</p>
-                            <p>{flash.success}</p>
-                        </div>
-                    )}
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-2xl font-bold">
-                                    Daftar Paket Pindahan
-                                </h3>
+                    <div className="bg-white overflow-hidden shadow-xl shadow-gray-200/50 sm:rounded-3xl border border-gray-100">
+                        <div className="p-8 text-gray-900">
+                            {/* Header Section */}
+                            <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+                                <div>
+                                    <h3 className="text-2xl font-black text-gray-800">
+                                        Daftar Paket
+                                    </h3>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Atur harga dan fitur layanan pindahan
+                                    </p>
+                                </div>
                                 <button
                                     onClick={() => setAddModalOpen(true)}
-                                    className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+                                    className="inline-flex items-center px-5 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 transform hover:-translate-y-0.5"
                                 >
-                                    Tambah Paket Baru
+                                    <Plus className="w-5 h-5 mr-2" />
+                                    Tambah Paket
                                 </button>
                             </div>
 
-                            <div className="overflow-x-auto">
+                            {/* Table */}
+                            <div className="overflow-x-auto rounded-2xl border border-gray-100">
                                 <table className="min-w-full bg-white">
-                                    <thead className="bg-gray-100">
+                                    <thead className="bg-gray-50/50">
                                         <tr>
-                                            <th className="py-3 px-4 border-b text-left">
+                                            <th className="py-4 px-6 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider border-b border-gray-100">
                                                 Nama Paket
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left">
+                                            <th className="py-4 px-6 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider border-b border-gray-100">
                                                 Harga
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left">
+                                            <th className="py-4 px-6 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider border-b border-gray-100">
                                                 Deskripsi
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left">
+                                            <th className="py-4 px-6 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider border-b border-gray-100">
                                                 Populer
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left">
+                                            <th className="py-4 px-6 text-right text-xs font-extrabold text-gray-400 uppercase tracking-wider border-b border-gray-100">
                                                 Aksi
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody className="divide-y divide-gray-100">
                                         {packages.map((pkg) => (
                                             <tr
                                                 key={pkg.id}
-                                                className="hover:bg-gray-50"
+                                                className="hover:bg-gray-50/80 transition-colors group"
                                             >
-                                                <td className="py-3 px-4 border-b font-medium">
+                                                <td className="py-4 px-6 font-bold text-gray-800">
                                                     {pkg.name}
                                                 </td>
-                                                <td className="py-3 px-4 border-b font-semibold text-green-600">
+                                                <td className="py-4 px-6 font-bold text-emerald-600">
                                                     {formatRupiah(pkg.price)}
                                                 </td>
-                                                <td className="py-3 px-4 border-b text-sm text-gray-600">
+                                                <td className="py-4 px-6 text-sm text-gray-500 max-w-xs truncate">
                                                     {pkg.description}
                                                 </td>
-                                                <td className="py-3 px-4 border-b">
+                                                <td className="py-4 px-6">
                                                     {pkg.popular ? (
-                                                        <span className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
-                                                            Ya
+                                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                                            Populer
                                                         </span>
                                                     ) : (
-                                                        <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full">
-                                                            Tidak
+                                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                                                            Standar
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td className="py-3 px-4 border-b">
-                                                    <button
-                                                        onClick={() =>
-                                                            setEditingPackage(
-                                                                pkg
-                                                            )
-                                                        }
-                                                        className="text-indigo-600 hover:underline font-semibold mr-4"
-                                                    >
-                                                        Edit
-                                                    </button>
-
-                                                    {/* [8] MODIFIKASI: Ubah <Link> Hapus menjadi <button> */}
-                                                    <button
-                                                        onClick={() =>
-                                                            setPackageToDelete(
-                                                                pkg
-                                                            )
-                                                        }
-                                                        disabled={isDeleting}
-                                                        className="text-red-600 hover:underline font-semibold focus:outline-none disabled:opacity-50"
-                                                    >
-                                                        Hapus
-                                                    </button>
+                                                <td className="py-4 px-6 text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                            onClick={() =>
+                                                                setEditingPackage(
+                                                                    pkg
+                                                                )
+                                                            }
+                                                            className="p-2 rounded-lg text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+                                                            title="Edit"
+                                                        >
+                                                            <Edit size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() =>
+                                                                setPackageToDelete(
+                                                                    pkg
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                isDeleting
+                                                            }
+                                                            className="p-2 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
+                                                            title="Hapus"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}

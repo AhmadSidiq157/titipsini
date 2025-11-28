@@ -3,20 +3,28 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request; // <-- DITAMBAHKAN
+use Illuminate\Http\Request;
 use App\Models\User;
-use App\Models\UserVerification; // <-- Pastikan ini di-import
+use App\Models\Role;
+use App\Models\UserVerification;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Redirect; // <-- DITAMBAHKAN
+use Illuminate\Support\Facades\Redirect;
 
 class UserManagementController extends Controller
 {
+    // ==========================================
+    // BAGIAN 1: MANAJEMEN USER & ROLE
+    // ==========================================
+
     /**
-     * Menampilkan daftar user
+     * Menampilkan daftar semua user beserta rolenya.
+     * Route: admin.users.index
      */
     public function index()
     {
-        $users = User::with('roles')->latest()->get();
+        $users = User::with('roles')
+            ->latest()
+            ->get();
 
         return Inertia::render('Admin/Users/Index', [
             'users' => $users
@@ -24,68 +32,111 @@ class UserManagementController extends Controller
     }
 
     /**
-     * Menampilkan halaman daftar verifikasi user untuk admin.
+     * Menjadikan user sebagai Admin.
+     * Route: admin.users.makeAdmin
+     */
+    public function makeAdmin($userId)
+    {
+        $user = User::find($userId);
+
+        if (!$user) {
+            return redirect()->back()->with('error', 'User tidak ditemukan!');
+        }
+
+        $adminRole = Role::where('name', 'admin')->first();
+
+        if (!$adminRole) {
+            return redirect()->back()->with('error', "Role 'admin' belum dibuat di database.");
+        }
+
+        // Tambahkan role admin tanpa menghapus role lain (misal: kurir)
+        $user->roles()->syncWithoutDetaching([$adminRole->id]);
+
+        return redirect()->back()->with('success', "Sukses! {$user->name} sekarang memiliki akses Admin.");
+    }
+
+    /**
+     * Mencabut akses Admin dari user.
+     * Route: admin.users.removeAdmin
+     */
+    public function removeAdmin($userId)
+    {
+        $user = User::find($userId);
+        $adminRole = Role::where('name', 'admin')->first();
+
+        if ($user && $adminRole) {
+            $user->roles()->detach($adminRole->id);
+        }
+
+        return redirect()->back()->with('success', "Hak akses Admin untuk {$user->name} berhasil dicabut.");
+    }
+
+
+    // ==========================================
+    // BAGIAN 2: VERIFIKASI KTP (USER)
+    // ==========================================
+
+    /**
+     * Menampilkan daftar pengajuan verifikasi KTP.
+     * Route: admin.verification.index
      */
     public function verificationIndex()
     {
         $verifications = UserVerification::with('user')
-                            ->orderBy('updated_at', 'desc')
-                            ->paginate(10);
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
 
-        // --- INI PERBAIKANNYA ---
-        // Kita ubah dari 'Admin/Verifications/Index' (plural)
-        // menjadi 'Admin/Verification/Index' (singular) agar cocok
-        // dengan nama folder kamu.
         return Inertia::render('Admin/Verification/Index', [
             'verifications' => $verifications,
         ]);
     }
 
     /**
-     * Menampilkan detail satu verifikasi untuk ditinjau Admin.
+     * Menampilkan detail pengajuan verifikasi.
+     * Route: admin.verification.show
      */
     public function verificationShow(UserVerification $userVerification)
     {
         $userVerification->load('user');
-        
-        // Sesuaikan ini juga agar konsisten
+
         return Inertia::render('Admin/Verification/Show', [
             'verification' => $userVerification
         ]);
     }
 
-    // --- METHOD APPROVE & REJECT YANG HILANG SAYA TAMBAHKAN DI SINI ---
-
     /**
-     * Menyetujui verifikasi user.
+     * Menyetujui verifikasi KTP user.
+     * Route: admin.verification.approve
      */
-    public function verificationApprove(Request $request, UserVerification $userVerification)
+    public function verificationApprove(UserVerification $userVerification)
     {
-        // Ubah status verifikasi
-        $userVerification->status = 'approved';
-        $userVerification->save();
+        $userVerification->update([
+            'status' => 'approved',
+            'rejection_notes' => null
+        ]);
 
-        // Update juga status di tabel user
         $userVerification->user()->update(['is_verified' => true]);
 
-        return Redirect::route('admin.verification.index')->with('success', 'Verifikasi berhasil disetujui.');
+        return redirect()->back()->with('success', 'Verifikasi berhasil disetujui.');
     }
 
     /**
-     * Menolak verifikasi user.
+     * Menolak verifikasi KTP user.
+     * Route: admin.verification.reject
      */
     public function verificationReject(Request $request, UserVerification $userVerification)
     {
-        $userVerification->status = 'rejected';
-        $userVerification->save();
+        $request->validate([
+            'rejection_notes' => 'required|string|max:1000',
+        ]);
 
-        // Pastikan status user tetap false (atau tidak diubah)
+        $userVerification->update([
+            'status' => 'rejected',
+            'rejection_notes' => $request->rejection_notes,
+        ]);
+
         $userVerification->user()->update(['is_verified' => false]);
 
-        return Redirect::route('admin.verification.index')->with('success', 'Verifikasi berhasil ditolak.');
+        return redirect()->back()->with('success', 'Verifikasi berhasil ditolak.');
     }
-    
-    // ... (method kamu yang lain) ...
-
 }
-

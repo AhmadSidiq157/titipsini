@@ -1,67 +1,120 @@
-import React from "react";
+import React, { useEffect } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import { Head, Link, usePage } from "@inertiajs/react";
+// [1] Import Toast & Icons
+import { Toaster, toast } from "react-hot-toast";
+import {
+    CheckCircle2,
+    XCircle,
+    Clock,
+    Truck,
+    Search,
+    AlertCircle,
+} from "lucide-react";
 
-// Komponen helper untuk badge status
+// --- Komponen Status Badge Modern ---
 const StatusBadge = ({ status }) => {
-    let bgColor = "bg-gray-200";
-    let textColor = "text-gray-800";
-    let label = status || "unknown";
+    let style = "";
+    let icon = null;
+    const label = status || "unknown";
 
     switch (label) {
         case "pending":
-            bgColor = "bg-yellow-100";
-            textColor = "text-yellow-800";
+            style = "bg-yellow-100 text-yellow-800 border-yellow-200";
+            icon = <Clock className="w-3.5 h-3.5 mr-1.5" />;
             break;
         case "approved":
-            bgColor = "bg-green-100";
-            textColor = "text-green-800";
+            style = "bg-emerald-100 text-emerald-800 border-emerald-200";
+            icon = <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />;
             break;
         case "rejected":
-            bgColor = "bg-red-100";
-            textColor = "text-red-800";
+            style = "bg-red-100 text-red-800 border-red-200";
+            icon = <XCircle className="w-3.5 h-3.5 mr-1.5" />;
             break;
         default:
+            style = "bg-gray-100 text-gray-800 border-gray-200";
+            icon = <AlertCircle className="w-3.5 h-3.5 mr-1.5" />;
             break;
     }
 
     return (
         <span
-            className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${bgColor} ${textColor}`}
+            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${style} capitalize whitespace-nowrap shadow-sm`}
         >
-            {label.replace("_", " ").toUpperCase()}
+            {icon}
+            {label.replace("_", " ")}
         </span>
     );
 };
 
-// [BARU] Komponen Pagination
-const Pagination = ({ links }) => (
-    <div className="mt-6 flex justify-between items-center">
-        <div className="flex flex-wrap">
-            {links.map((link, key) =>
-                link.url === null ? (
-                    <div
-                        key={key}
-                        className="mr-1 mb-1 px-4 py-2 text-sm leading-4 text-gray-400 border rounded"
-                        dangerouslySetInnerHTML={{ __html: link.label }}
-                    />
-                ) : (
+// --- [MODIFIKASI] Pagination Tema Hijau ---
+const Pagination = ({ links }) => {
+    if (!links || links.length <= 1) return null;
+    return (
+        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 mt-8">
+            {links.map((link, index) => {
+                let label = link.label
+                    .replace("&laquo; Previous", "«")
+                    .replace("Next &raquo;", "»");
+                const baseClasses =
+                    "px-3 py-2 text-sm font-medium border rounded-xl transition-all shadow-sm flex items-center justify-center min-w-[40px]";
+
+                if (link.url === null) {
+                    return (
+                        <span
+                            key={index}
+                            className={`${baseClasses} bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed`}
+                            dangerouslySetInnerHTML={{ __html: label }}
+                        />
+                    );
+                }
+                return (
                     <Link
-                        key={key}
-                        className={`mr-1 mb-1 px-4 py-2 text-sm leading-4 border rounded hover:bg-white focus:border-indigo-500 focus:text-indigo-500 ${
-                            link.active ? "bg-white" : ""
-                        }`}
+                        key={index}
                         href={link.url}
-                        dangerouslySetInnerHTML={{ __html: link.label }}
+                        preserveState
+                        preserveScroll
+                        className={`${baseClasses} ${
+                            link.active
+                                ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-transparent shadow-emerald-200 shadow-md"
+                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-emerald-600 hover:border-emerald-200"
+                        }`}
+                        dangerouslySetInnerHTML={{ __html: label }}
                     />
-                )
-            )}
+                );
+            })}
         </div>
-    </div>
-);
+    );
+};
 
 export default function Index({ auth, verifications }) {
     const { flash } = usePage().props;
+
+    // Effect untuk Toast Notifikasi
+    useEffect(() => {
+        if (flash.success) {
+            toast.success(flash.success, {
+                duration: 4000,
+                position: "top-center",
+                style: {
+                    background: "#10B981",
+                    color: "#fff",
+                    borderRadius: "12px",
+                    fontWeight: "bold",
+                },
+                iconTheme: {
+                    primary: "#fff",
+                    secondary: "#10B981",
+                },
+            });
+        }
+        if (flash.error) {
+            toast.error(flash.error, {
+                duration: 4000,
+                position: "top-center",
+            });
+        }
+    }, [flash]);
 
     return (
         <AdminLayout
@@ -74,75 +127,95 @@ export default function Index({ auth, verifications }) {
         >
             <Head title="Verifikasi Kurir" />
 
+            {/* Render Toaster */}
+            <Toaster />
+
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {flash.success && (
-                        <div className="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow-sm">
-                            <p>{flash.success}</p>
-                        </div>
-                    )}
+                    <div className="bg-white overflow-hidden shadow-xl shadow-gray-200/50 sm:rounded-3xl border border-gray-100">
+                        <div className="p-8">
+                            <div className="flex justify-between items-center mb-6">
+                                <div>
+                                    <h3 className="text-2xl font-black text-gray-800">
+                                        Daftar Pengajuan Verifikasi
+                                    </h3>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Tinjau data kendaraan dan dokumen mitra
+                                        kurir.
+                                    </p>
+                                </div>
+                            </div>
 
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            <h3 className="text-2xl font-bold text-gray-800 mb-6">
-                                Daftar Pengajuan Verifikasi Kurir
-                            </h3>
-
-                            <div className="overflow-x-auto">
+                            <div className="overflow-x-auto rounded-2xl border border-gray-100">
                                 <table className="min-w-full bg-white">
-                                    <thead className="bg-gray-100">
+                                    <thead className="bg-gray-50/50">
                                         <tr>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                            <th className="py-4 px-6 border-b border-gray-100 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider">
                                                 Nama Kurir
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                            <th className="py-4 px-6 border-b border-gray-100 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider">
                                                 Kendaraan
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                            <th className="py-4 px-6 border-b border-gray-100 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider">
                                                 Plat Nomor
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                            <th className="py-4 px-6 border-b border-gray-100 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider">
                                                 Status
                                             </th>
-                                            <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600 uppercase">
+                                            <th className="py-4 px-6 border-b border-gray-100 text-right text-xs font-extrabold text-gray-400 uppercase tracking-wider">
                                                 Aksi
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-200">
+                                    <tbody className="divide-y divide-gray-100">
                                         {verifications.data.map((v) => (
                                             <tr
                                                 key={v.id}
-                                                className="hover:bg-gray-50"
+                                                className="hover:bg-gray-50/80 transition-colors"
                                             >
-                                                <td className="py-4 px-4">
-                                                    <div className="font-medium text-gray-900">
+                                                <td className="py-4 px-6">
+                                                    <div className="font-bold text-gray-900 text-sm">
                                                         {v.user.name}
                                                     </div>
-                                                    <div className="text-sm text-gray-500">
+                                                    <div className="text-xs text-gray-500 mt-0.5">
                                                         {v.user.email}
                                                     </div>
                                                 </td>
-                                                <td className="py-4 px-4 text-sm text-gray-700">
-                                                    {v.vehicle_brand}{" "}
-                                                    {v.vehicle_model}
+                                                <td className="py-4 px-6 text-sm text-gray-700">
+                                                    <div className="flex items-center gap-2">
+                                                        <Truck
+                                                            size={16}
+                                                            className="text-gray-400"
+                                                        />
+                                                        <span>
+                                                            {v.vehicle_brand}{" "}
+                                                            {v.vehicle_model}
+                                                        </span>
+                                                    </div>
                                                 </td>
-                                                <td className="py-4 px-4 text-sm text-gray-700">
-                                                    {v.plat_nomor}
+                                                <td className="py-4 px-6 text-sm font-mono text-gray-700">
+                                                    <span className="bg-gray-100 px-2 py-1 rounded text-xs font-bold">
+                                                        {v.plat_nomor}
+                                                    </span>
                                                 </td>
-                                                <td className="py-4 px-4">
+                                                <td className="py-4 px-6">
                                                     <StatusBadge
                                                         status={v.status}
                                                     />
                                                 </td>
-                                                <td className="py-4 px-4">
+                                                <td className="py-4 px-6 text-right">
+                                                    {/* [MODIFIKASI] Tombol Tinjau warna Hijau */}
                                                     <Link
                                                         href={route(
                                                             "admin.courier_verifications.show",
                                                             v.id
                                                         )}
-                                                        className="text-indigo-600 hover:underline font-semibold"
+                                                        className="inline-flex items-center px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-colors"
                                                     >
+                                                        <Search
+                                                            size={14}
+                                                            className="mr-1.5"
+                                                        />
                                                         Tinjau
                                                     </Link>
                                                 </td>
@@ -152,7 +225,7 @@ export default function Index({ auth, verifications }) {
                                             <tr>
                                                 <td
                                                     colSpan="5"
-                                                    className="py-8 text-center text-gray-500"
+                                                    className="py-12 text-center text-gray-400 italic"
                                                 >
                                                     Tidak ada data verifikasi
                                                     baru.
@@ -163,7 +236,7 @@ export default function Index({ auth, verifications }) {
                                 </table>
                             </div>
 
-                            {/* [BARU] Tampilkan Pagination */}
+                            {/* Pagination Modern (Hijau) */}
                             <Pagination links={verifications.links} />
                         </div>
                     </div>
