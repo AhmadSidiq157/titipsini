@@ -7,6 +7,7 @@ import InputLabel from "@/Components/InputLabel";
 import InputError from "@/Components/InputError";
 import LiveMap from "@/Components/LiveMap";
 import axios from "axios";
+import { toast } from "react-hot-toast";
 import {
     Check,
     X,
@@ -267,7 +268,7 @@ const OrderDetailsBox = ({ order }) => {
     );
 };
 
-// --- 3. [BARU] KOTAK RIWAYAT TRACKING & BUKTI ---
+// --- 3. KOTAK RIWAYAT TRACKING & BUKTI ---
 const TrackingHistoryBox = ({ order }) => {
     const trackings = order.trackings || [];
     const [selectedImage, setSelectedImage] = useState(null);
@@ -351,7 +352,9 @@ const TrackingHistoryBox = ({ order }) => {
 // --- 4. KOTAK VERIFIKASI PEMBAYARAN ---
 const PaymentVerificationBox = ({ order }) => {
     const [showRejectModal, setShowRejectModal] = useState(false);
+    const [showApproveModal, setShowApproveModal] = useState(false);
     const [showImage, setShowImage] = useState(false);
+
     const { data, setData, post, processing, errors, reset } = useForm({
         rejection_reason: "",
     });
@@ -365,6 +368,17 @@ const PaymentVerificationBox = ({ order }) => {
                 setShowRejectModal(false);
                 reset();
             },
+        });
+    };
+
+    // Handler Approve
+    const { post: postApprove, processing: isApproving } = useForm();
+
+    const confirmApprove = () => {
+        postApprove(route("admin.pindahan.approve", order.id), {
+            only: ["orders", "flash"],
+            preserveScroll: true,
+            onSuccess: () => setShowApproveModal(false),
         });
     };
 
@@ -398,19 +412,13 @@ const PaymentVerificationBox = ({ order }) => {
                             </div>
                         </div>
                         <div className="flex gap-2">
-                            <Link
-                                href={route("admin.pindahan.approve", order.id)}
-                                method="post"
-                                as="button"
+                            <button
+                                onClick={() => setShowApproveModal(true)}
                                 className="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 transform hover:-translate-y-0.5"
-                                onBefore={() =>
-                                    confirm("Setujui pembayaran ini?")
-                                }
-                                preserveScroll
-                                only={["orders", "flash"]}
                             >
                                 <Check className="w-4 h-4 mr-2" /> Terima
-                            </Link>
+                            </button>
+
                             <button
                                 onClick={() => setShowRejectModal(true)}
                                 className="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-white border border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition-colors"
@@ -431,6 +439,47 @@ const PaymentVerificationBox = ({ order }) => {
                         <p className="text-sm">Menunggu upload bukti...</p>
                     </div>
                 )}
+
+                {/* Modal Konfirmasi Terima */}
+                <Modal
+                    show={showApproveModal}
+                    onClose={() => setShowApproveModal(false)}
+                    maxWidth="md"
+                >
+                    <div className="p-6">
+                        <div className="flex items-center gap-3 mb-4 text-emerald-600">
+                            <div className="p-2 bg-emerald-100 rounded-full">
+                                <ShieldCheck size={24} />
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-900">
+                                Konfirmasi Pembayaran
+                            </h2>
+                        </div>
+                        <p className="text-sm text-gray-600 leading-relaxed mb-6">
+                            Pastikan dana sebesar{" "}
+                            <b>{formatRupiah(order.final_amount)}</b> sudah
+                            masuk ke mutasi rekening. Tindakan ini tidak dapat
+                            dibatalkan.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowApproveModal(false)}
+                                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                            >
+                                Batal
+                            </button>
+                            <PrimaryButton
+                                onClick={confirmApprove}
+                                disabled={isApproving}
+                                className="bg-emerald-600 hover:bg-emerald-700 focus:bg-emerald-700 active:bg-emerald-800 shadow-lg shadow-emerald-200"
+                            >
+                                {isApproving ? "Memproses..." : "Ya, Setujui"}
+                            </PrimaryButton>
+                        </div>
+                    </div>
+                </Modal>
+
+                {/* Modal Tolak */}
                 <Modal
                     show={showRejectModal}
                     onClose={() => setShowRejectModal(false)}
@@ -628,8 +677,6 @@ export default function ManageOrderModal({ show, onClose, order, couriers }) {
                         <div className="lg:col-span-7 space-y-8">
                             {showMap && <TrackingMonitorBox order={order} />}
                             <OrderDetailsBox order={order} />
-                            {/* TAMBAHKAN COMPONENT HISTORY DI SINI */}
-                            <TrackingHistoryBox order={order} />
                         </div>
 
                         <div className="lg:col-span-5 space-y-8">
@@ -660,6 +707,9 @@ export default function ManageOrderModal({ show, onClose, order, couriers }) {
                                     </p>
                                 </div>
                             )}
+
+                            {/* [MODIFIKASI] History Box dipindah ke sini (Kanan) */}
+                            <TrackingHistoryBox order={order} />
                         </div>
                     </div>
                 </div>

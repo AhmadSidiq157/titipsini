@@ -13,7 +13,6 @@ import {
     BookOpen,
     ArrowRight,
     LogIn,
-    // --- [BARU] Tambahkan ikon untuk stat baru ---
     Hourglass,
     ShieldCheck,
 } from "lucide-react";

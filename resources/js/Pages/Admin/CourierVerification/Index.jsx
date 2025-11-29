@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import { Head, Link, usePage } from "@inertiajs/react";
-// [1] Import Toast & Icons
 import { Toaster, toast } from "react-hot-toast";
 import {
     CheckCircle2,
@@ -204,7 +203,6 @@ export default function Index({ auth, verifications }) {
                                                     />
                                                 </td>
                                                 <td className="py-4 px-6 text-right">
-                                                    {/* [MODIFIKASI] Tombol Tinjau warna Hijau */}
                                                     <Link
                                                         href={route(
                                                             "admin.courier_verifications.show",
@@ -236,7 +234,6 @@ export default function Index({ auth, verifications }) {
                                 </table>
                             </div>
 
-                            {/* Pagination Modern (Hijau) */}
                             <Pagination links={verifications.links} />
                         </div>
                     </div>
