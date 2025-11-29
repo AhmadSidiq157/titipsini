@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import { Head, Link, usePage, router } from "@inertiajs/react";
-import ManageOrderModal from "./Partials/ManageOrderModal";
-// [1] Import Toast
-import { Toaster, toast } from "react-hot-toast";
+// [HAPUS] import ManageOrderModal karena file sudah dihapus
 import {
     Eye,
     Truck,
@@ -16,7 +14,6 @@ import {
     Filter,
     ArrowRightLeft,
     MapPin,
-    ChevronDown, // Import ChevronDown untuk dropdown
 } from "lucide-react";
 
 // --- Helper: Format Rupiah ---
@@ -47,7 +44,7 @@ const getStatusLabel = (status) => {
     return STATUS_LABELS[status] || status.replace(/_/g, " ");
 };
 
-// --- Helper: Status Badge Component ---
+// --- Helper: Status Badge ---
 const StatusBadge = ({ status }) => {
     let style = "";
     let icon = null;
@@ -99,7 +96,7 @@ const StatusBadge = ({ status }) => {
     );
 };
 
-// --- Komponen Pagination ---
+// --- Pagination ---
 const Pagination = ({ links }) => {
     if (!links || links.length <= 1) return null;
     return (
@@ -139,40 +136,14 @@ const Pagination = ({ links }) => {
     );
 };
 
-export default function Index({ auth, orders, couriers, filters }) {
-    const { flash } = usePage().props;
-    const [selectedOrder, setSelectedOrder] = useState(null);
+export default function Index({ auth, orders, couriers, flash, filters }) {
+    // [HAPUS] State modal tidak lagi diperlukan
+    // const [selectedOrder, setSelectedOrder] = useState(null);
 
     const [search, setSearch] = useState(filters?.search || "");
     const [status, setStatus] = useState(filters?.status || "all");
     const isFirstRender = useRef(true);
 
-    // [2] Effect untuk Toast Notifikasi
-    useEffect(() => {
-        if (flash.success) {
-            toast.success(flash.success, {
-                duration: 3000,
-                position: "top-center",
-                style: {
-                    background: "#10B981",
-                    color: "#fff",
-                    borderRadius: "12px",
-                },
-                iconTheme: {
-                    primary: "#fff",
-                    secondary: "#10B981",
-                },
-            });
-        }
-        if (flash.error) {
-            toast.error(flash.error, {
-                duration: 3000,
-                position: "top-center",
-            });
-        }
-    }, [flash]);
-
-    // Efek Debounce Search
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
@@ -188,16 +159,14 @@ export default function Index({ auth, orders, couriers, filters }) {
         return () => clearTimeout(timer);
     }, [search, status]);
 
-    // Opsi Filter
     const filterOptions = [
-        { value: "all", label: "Semua Status" },
+        { value: "all", label: "Semua" },
         { value: "awaiting_payment", label: "Belum Bayar" },
-        { value: "awaiting_verification", label: "Verifikasi Bayar" },
+        { value: "awaiting_verification", label: "Verifikasi" },
         { value: "processing", label: "Perlu Kurir" },
-        { value: "ready_for_pickup", label: "Kurir Menjemput" },
-        { value: "on_delivery", label: "Dalam Perjalanan" },
+        { value: "ready_for_pickup", label: "Dijemput" },
+        { value: "on_delivery", label: "Di Jalan" },
         { value: "completed", label: "Selesai" },
-        { value: "cancelled", label: "Dibatalkan" },
     ];
 
     return (
@@ -227,83 +196,52 @@ export default function Index({ auth, orders, couriers, filters }) {
         >
             <Head title="Manajemen Pesanan Pindahan" />
 
-            {/* [3] Render Toaster */}
-            <Toaster />
-
-            <ManageOrderModal
-                show={!!selectedOrder}
-                onClose={() => setSelectedOrder(null)}
-                order={selectedOrder}
-                couriers={couriers}
-            />
+            {/* [HAPUS] Komponen ManageOrderModal tidak lagi dirender di sini */}
 
             <div className="py-8">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {/* Flash Message Banner Dihapus, diganti Toast */}
+                    {flash.success && (
+                        <div className="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl flex items-center shadow-sm animate-in slide-in-from-top-2">
+                            <CheckCircle2 className="w-5 h-5 mr-2 bg-emerald-200 rounded-full p-0.5" />{" "}
+                            {flash.success}
+                        </div>
+                    )}
 
                     <div className="bg-white overflow-hidden shadow-xl shadow-gray-200/50 sm:rounded-3xl border border-gray-100">
-                        {/* --- [MODIFIKASI] Control Bar (Dropdown Style) --- */}
-                        <div className="p-6 border-b border-gray-100 bg-gradient-to-b from-white to-gray-50/50">
-                            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                                {/* Search Bar */}
-                                <div className="relative w-full md:flex-1 group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <Search className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={search}
-                                        onChange={(e) =>
-                                            setSearch(e.target.value)
-                                        }
-                                        placeholder="Cari ID Pesanan, Nama Klien..."
-                                        className="pl-11 pr-4 py-3.5 border-gray-200 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 w-full transition-all shadow-sm group-hover:shadow-md bg-white"
-                                    />
+                        {/* CONTROL BAR */}
+                        <div className="p-6 border-b border-gray-100 flex flex-col lg:flex-row justify-between gap-6 bg-gradient-to-b from-white to-gray-50/50">
+                            <div className="relative w-full lg:w-96 group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Search className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
                                 </div>
+                                <input
+                                    type="text"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Cari ID, Nama User..."
+                                    className="pl-10 pr-4 py-3 border-gray-200 rounded-2xl text-sm focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 w-full transition-all shadow-sm group-hover:shadow-md"
+                                />
+                            </div>
 
-                                {/* Dropdown Filter */}
-                                <div className="relative w-full md:w-64 group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <Filter className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
-                                    </div>
-                                    <select
-                                        value={status}
-                                        onChange={(e) =>
-                                            setStatus(e.target.value)
-                                        }
-                                        className="pl-11 pr-10 py-3.5 w-full border-gray-200 rounded-2xl text-sm font-bold text-gray-700 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 appearance-none bg-white shadow-sm cursor-pointer hover:border-emerald-300 transition-all"
-                                    >
-                                        {filterOptions.map((opt) => (
-                                            <option
-                                                key={opt.value}
-                                                value={opt.value}
-                                            >
-                                                {opt.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
-                                        <ChevronDown className="h-4 w-4" />
-                                    </div>
-                                </div>
-
-                                {/* Reset Button */}
-                                {(search || status !== "all") && (
+                            <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
+                                <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                {filterOptions.map((opt) => (
                                     <button
-                                        onClick={() => {
-                                            setSearch("");
-                                            setStatus("all");
-                                        }}
-                                        className="p-3.5 rounded-2xl bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors border border-gray-200 shadow-sm"
-                                        title="Reset Filter"
+                                        key={opt.value}
+                                        onClick={() => setStatus(opt.value)}
+                                        className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                                            status === opt.value
+                                                ? "bg-gray-900 text-white border-gray-900 shadow-lg shadow-gray-900/20"
+                                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-emerald-300"
+                                        }`}
                                     >
-                                        <ArrowRightLeft className="w-5 h-5" />
+                                        {opt.label}
                                     </button>
-                                )}
+                                ))}
                             </div>
                         </div>
 
-                        {/* --- TABLE CONTENT --- */}
+                        {/* TABLE CONTENT */}
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-100">
                                 <thead className="bg-gray-50/80 backdrop-blur-sm">
@@ -383,7 +321,7 @@ export default function Index({ auth, orders, couriers, filters }) {
                                                     </td>
 
                                                     <td className="py-4 px-6 whitespace-nowrap">
-                                                        <span className="text-sm font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded-md whitespace-nowrap">
+                                                        <span className="text-sm font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded-md">
                                                             {order.orderable
                                                                 ?.name ||
                                                                 "Paket Custom"}
@@ -410,7 +348,7 @@ export default function Index({ auth, orders, couriers, filters }) {
                                                         {order.courier ? (
                                                             <div className="flex items-center gap-2">
                                                                 <Truck className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                                                                <span className="text-sm font-bold text-gray-800 whitespace-nowrap">
+                                                                <span className="text-sm font-bold text-gray-800">
                                                                     {
                                                                         order
                                                                             .courier
@@ -419,19 +357,19 @@ export default function Index({ auth, orders, couriers, filters }) {
                                                                 </span>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-xs text-gray-400 italic whitespace-nowrap">
+                                                            <span className="text-xs text-gray-400 italic">
                                                                 Belum ditugaskan
                                                             </span>
                                                         )}
                                                     </td>
 
                                                     <td className="py-4 px-6 text-right text-sm font-medium whitespace-nowrap">
-                                                        <button
-                                                            onClick={() =>
-                                                                setSelectedOrder(
-                                                                    order
-                                                                )
-                                                            }
+                                                        {/* [UPDATE] Link ke Halaman Show (Bukan Modal) */}
+                                                        <Link
+                                                            href={route(
+                                                                "admin.pindahan.show",
+                                                                order.id
+                                                            )}
                                                             className={`inline-flex items-center px-4 py-2 border text-sm leading-4 font-bold rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all transform hover:-translate-y-0.5 ${
                                                                 isUrgent
                                                                     ? "border-transparent text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-200"
@@ -442,7 +380,7 @@ export default function Index({ auth, orders, couriers, filters }) {
                                                             {isUrgent
                                                                 ? "Tindak"
                                                                 : "Detail"}
-                                                        </button>
+                                                        </Link>
                                                     </td>
                                                 </tr>
                                             );
@@ -479,7 +417,6 @@ export default function Index({ auth, orders, couriers, filters }) {
                             </table>
                         </div>
 
-                        {/* Pagination */}
                         <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
                             <Pagination links={orders.links} />
                         </div>

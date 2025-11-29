@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Head, Link, router } from "@inertiajs/react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import {
     Check,
     X,
@@ -14,7 +14,7 @@ import {
     Phone,
     Search,
     Box,
-    ArrowLeft, // [1] Import ArrowLeft
+    ArrowLeft,
 } from "lucide-react";
 
 // --- Helper: Format Rupiah ---
@@ -84,19 +84,30 @@ const OrderCard = ({ order }) => {
     const isPenitipan =
         order.orderable_type?.includes("Service") || !!details.branch_address;
 
+    // Cek apakah pesanan sudah selesai/batal
+    const isFinished = ["completed", "cancelled", "rejected"].includes(
+        order.status
+    );
+
+    // Link WA Kurir yang Aman
     const getCourierWa = (phone) => {
         if (!phone) return "#";
         let number = phone.replace(/\D/g, "");
         if (number.startsWith("0")) number = "62" + number.slice(1);
+        const userName = order.user?.name || "Pelanggan";
         return `https://wa.me/${number}?text=${encodeURIComponent(
-            `Halo, saya ${order.user.name} pemilik pesanan #${order.id}. Bagaimana statusnya?`
+            `Halo, saya ${userName} pemilik pesanan #${order.id}. Bagaimana statusnya?`
         )}`;
     };
+
+    // Link Detail
+    const detailLink = isFinished ? "#" : route("history.show", order.id);
 
     return (
         <div className="bg-white rounded-3xl p-6 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-gray-100 hover:border-emerald-200 transition-all group relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-gray-50 to-transparent rounded-bl-full -mr-4 -mt-4 group-hover:from-emerald-50 transition-colors"></div>
 
+            {/* Header Card */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 relative z-10 gap-4">
                 <div className="flex items-center gap-4">
                     <div
@@ -142,6 +153,7 @@ const OrderCard = ({ order }) => {
                 </div>
             </div>
 
+            {/* Info Kurir */}
             {order.courier && (
                 <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-1 rounded-2xl border border-blue-100">
                     <div className="bg-white/60 backdrop-blur-sm p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -176,27 +188,44 @@ const OrderCard = ({ order }) => {
                             </div>
                         </div>
 
+                        {/* [MODIFIKASI] Tombol Kontak Kurir - Mati jika selesai */}
                         <div className="flex gap-2 w-full sm:w-auto">
-                            <a
-                                href={getCourierWa(order.courier.phone)}
-                                target="_blank"
-                                className="flex-1 sm:flex-none inline-flex justify-center items-center gap-2 px-4 py-2 bg-green-500 text-white text-xs font-bold rounded-xl hover:bg-green-600 transition-all shadow-sm hover:shadow-green-200"
-                            >
-                                <MessageCircle size={14} /> WhatsApp
-                            </a>
-                            {order.courier.phone && (
-                                <a
-                                    href={`tel:${order.courier.phone}`}
-                                    className="flex-1 sm:flex-none inline-flex justify-center items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-50 transition-all"
-                                >
-                                    <Phone size={14} /> Telpon
-                                </a>
+                            {isFinished ? (
+                                // Tampilan Disabled jika sudah selesai
+                                <>
+                                    <span className="flex-1 sm:flex-none inline-flex justify-center items-center gap-2 px-4 py-2 bg-gray-100 text-gray-400 text-xs font-bold rounded-xl cursor-not-allowed border border-gray-200">
+                                        <MessageCircle size={14} /> WhatsApp
+                                    </span>
+                                    <span className="flex-1 sm:flex-none inline-flex justify-center items-center gap-2 px-4 py-2 bg-gray-100 text-gray-400 text-xs font-bold rounded-xl cursor-not-allowed border border-gray-200">
+                                        <Phone size={14} /> Telpon
+                                    </span>
+                                </>
+                            ) : (
+                                // Tampilan Aktif jika masih proses
+                                <>
+                                    <a
+                                        href={getCourierWa(order.courier.phone)}
+                                        target="_blank"
+                                        className="flex-1 sm:flex-none inline-flex justify-center items-center gap-2 px-4 py-2 bg-green-500 text-white text-xs font-bold rounded-xl hover:bg-green-600 transition-all shadow-sm hover:shadow-green-200"
+                                    >
+                                        <MessageCircle size={14} /> WhatsApp
+                                    </a>
+                                    {order.courier.phone && (
+                                        <a
+                                            href={`tel:${order.courier.phone}`}
+                                            className="flex-1 sm:flex-none inline-flex justify-center items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-50 transition-all"
+                                        >
+                                            <Phone size={14} /> Telpon
+                                        </a>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
                 </div>
             )}
 
+            {/* Footer Actions */}
             <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                 <div className="flex items-center text-xs text-gray-400">
                     <MapPin size={14} className="mr-1.5" />
@@ -214,9 +243,15 @@ const OrderCard = ({ order }) => {
                             Bayar Sekarang{" "}
                             <ChevronRight size={14} className="ml-1" />
                         </Link>
+                    ) : isFinished ? (
+                        <span className="inline-flex items-center px-5 py-2.5 bg-gray-100 text-gray-400 text-xs font-bold rounded-xl cursor-not-allowed border border-gray-200">
+                            {order.status === "completed"
+                                ? "Pesanan Selesai"
+                                : "Dibatalkan"}
+                        </span>
                     ) : (
                         <Link
-                            href={route("history.show", order.id)}
+                            href={detailLink}
                             className="inline-flex items-center px-5 py-2.5 bg-gray-900 text-white text-xs font-bold rounded-xl hover:bg-gray-800 hover:shadow-lg transition-all"
                         >
                             {[
@@ -235,6 +270,7 @@ const OrderCard = ({ order }) => {
     );
 };
 
+// --- Komponen Pagination ---
 const Pagination = ({ links }) => (
     <div className="mt-10 flex justify-center gap-2">
         {links.map((link, key) =>
@@ -260,6 +296,7 @@ const Pagination = ({ links }) => (
     </div>
 );
 
+// --- MAIN PAGE ---
 export default function Index({ auth, orders }) {
     useEffect(() => {
         const interval = setInterval(() => {
@@ -269,14 +306,14 @@ export default function Index({ auth, orders }) {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gray-50/50">
+        <div className="min-h-screen bg-gray-50/50 flex flex-col font-sans">
             <Head title="Riwayat Pesanan" />
 
-            {/* --- CUSTOM HEADER (Hanya Tombol Kembali) --- */}
+            {/* --- CUSTOM HEADER (Sticky) --- */}
             <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     <Link
-                        href="/" // Kembali ke halaman utama
+                        href="/"
                         className="flex items-center gap-3 text-gray-600 hover:text-green-600 transition-colors group"
                     >
                         <div className="p-2 rounded-full bg-gray-50 group-hover:bg-green-50 transition-colors">
@@ -286,20 +323,31 @@ export default function Index({ auth, orders }) {
                             Kembali
                         </span>
                     </Link>
+                    <div className="text-sm font-bold text-gray-400">
+                        Titipsini.com
+                    </div>
                 </div>
             </div>
-            {/* --- END CUSTOM HEADER --- */}
 
-            <div className="py-8 md:py-12">
+            {/* --- CONTENT AREA --- */}
+            <div className="flex-1 py-10">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Page Title Content */}
-                    <div className="mb-8">
-                        <h1 className="text-3xl font-black text-gray-900 tracking-tight">
-                            Aktivitas Saya
-                        </h1>
-                        <p className="text-gray-500 mt-2">
-                            Pantau semua pesanan Anda di sini.
-                        </p>
+                    <div className="mb-10 flex flex-col md:flex-row justify-between items-end gap-4">
+                        <div>
+                            <h1 className="text-3xl font-black text-gray-900 tracking-tight">
+                                Aktivitas Saya
+                            </h1>
+                            <p className="text-gray-500 mt-2">
+                                Pantau status pengiriman dan riwayat transaksi
+                                Anda.
+                            </p>
+                        </div>
+                        <Link
+                            href="/layanan"
+                            className="inline-flex items-center px-5 py-3 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 hover:border-emerald-300 transition-all shadow-sm group"
+                        >
+                            + Pesan Baru
+                        </Link>
                     </div>
 
                     {/* Order List */}
@@ -332,6 +380,36 @@ export default function Index({ auth, orders }) {
                     )}
                 </div>
             </div>
+
+            {/* --- CUSTOM FOOTER --- */}
+            <footer className="bg-white border-t border-gray-200 py-8 mt-auto">
+                <div className="container mx-auto px-4 text-center text-gray-500 text-sm">
+                    <p>
+                        &copy; {new Date().getFullYear()} Titipsini.com. All
+                        rights reserved.
+                    </p>
+                    <div className="mt-2 flex justify-center gap-4 text-xs font-medium">
+                        <Link
+                            href="#"
+                            className="hover:text-green-600 transition"
+                        >
+                            Syarat & Ketentuan
+                        </Link>
+                        <Link
+                            href="#"
+                            className="hover:text-green-600 transition"
+                        >
+                            Kebijakan Privasi
+                        </Link>
+                        <Link
+                            href="#"
+                            className="hover:text-green-600 transition"
+                        >
+                            Bantuan
+                        </Link>
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 }

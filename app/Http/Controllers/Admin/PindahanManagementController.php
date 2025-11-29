@@ -22,7 +22,7 @@ class PindahanManagementController extends Controller
         $search = $request->input('search');
         $status = $request->input('status');
 
-        // [UPDATE PENTING] Tambahkan 'trackings' di dalam with()
+        // [MODIFIKASI PENTING] Tambahkan 'trackings' agar Admin bisa lihat riwayat & foto bukti di Modal
         $orders = Order::with(['user', 'orderable', 'payment', 'courier', 'trackings'])
             ->whereHasMorph('orderable', [MovingPackage::class])
             ->when($search, function ($query, $search) {
@@ -41,6 +41,7 @@ class PindahanManagementController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        // Ambil data kurir untuk dropdown di modal
         $couriers = User::whereHas('roles', function ($query) {
             $query->where('name', 'kurir');
         })->select('id', 'name', 'courier_status')->get();
@@ -49,6 +50,27 @@ class PindahanManagementController extends Controller
             'orders' => $orders,
             'couriers' => $couriers,
             'filters' => $request->only(['search', 'status']),
+        ]);
+    }
+
+    public function show(Order $order)
+    {
+        // Validasi tipe order
+        if (!$order->orderable_type || !str_contains($order->orderable_type, 'MovingPackage')) {
+            abort(404);
+        }
+
+        // Load relasi lengkap
+        $order->load(['user', 'orderable', 'payment', 'courier', 'trackings']);
+
+        // Ambil data kurir untuk dropdown
+        $couriers = User::whereHas('roles', function ($query) {
+            $query->where('name', 'kurir');
+        })->select('id', 'name', 'courier_status')->get();
+
+        return Inertia::render('Admin/Pindahan/Show', [
+            'order' => $order,
+            'couriers' => $couriers,
         ]);
     }
 
@@ -77,7 +99,7 @@ class PindahanManagementController extends Controller
         }
 
         $payment = $order->payment;
-        // Hapus file fisik (opsional, aktifkan jika ingin hemat storage)
+        // Hapus file fisik (opsional)
         // Storage::disk('public')->delete($payment->payment_proof_path);
 
         $payment->delete();
@@ -91,33 +113,21 @@ class PindahanManagementController extends Controller
      */
     public function assignCourier(Request $request, Order $order)
     {
-        // 1. Pastikan order sudah dibayar/processing atau sedang dalam proses penjemputan
-        // (Kita izinkan ganti kurir meski status sudah ready_for_pickup)
+        // Izinkan ganti kurir selama belum selesai
         if (!in_array($order->status, ['processing', 'ready_for_pickup', 'picked_up', 'on_delivery'])) {
             return Redirect::back()->with('error', 'Status pesanan tidak valid untuk penugasan kurir.');
         }
 
-        // 2. Ambil daftar ID kurir yang valid
         $courierIds = User::whereHas('roles', function ($query) {
             $query->where('name', 'kurir');
         })->pluck('id')->toArray();
 
-        // 3. Validasi input
         $validated = $request->validate([
-            'courier_id' => [
-                'required',
-                'integer',
-                Rule::in($courierIds),
-            ],
-        ], [
-            'courier_id.in' => 'User yang dipilih bukan seorang kurir atau tidak valid.'
+            'courier_id' => ['required', 'integer', Rule::in($courierIds)],
         ]);
 
-        // 4. Update order
         $order->update([
             'courier_id' => $validated['courier_id'],
-            // Jika status masih processing, ubah jadi ready_for_pickup. 
-            // Jika sudah on_delivery, biarkan saja (hanya ganti orangnya).
             'status' => $order->status === 'processing' ? 'ready_for_pickup' : $order->status,
         ]);
 
@@ -125,7 +135,27 @@ class PindahanManagementController extends Controller
     }
 
     /**
-     * [BARU] API untuk Admin memantau lokasi kurir secara live
+     * [BARU] Method untuk Admin memfinalisasi pesanan (Selesai)
+     * Digunakan setelah kurir mengantar barang (status 'delivered').
+     */
+    public function completeOrder(Order $order)
+    {
+        if ($order->status !== 'delivered') {
+            return Redirect::back()->with('error', 'Pesanan belum sampai di tujuan (status belum delivered).');
+        }
+
+        $order->update(['status' => 'completed']);
+
+        // Opsional: Set kurir jadi available lagi
+        if ($order->courier) {
+            $order->courier->update(['courier_status' => 'available']);
+        }
+
+        return Redirect::back()->with('success', 'Pesanan pindahan berhasil diselesaikan!');
+    }
+
+    /**
+     * API untuk Admin memantau lokasi kurir secara live
      */
     public function getCourierLocation(User $courier)
     {

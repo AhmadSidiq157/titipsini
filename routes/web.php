@@ -134,9 +134,11 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
         // Manajemen Pindahan
         Route::prefix('pindahan')->name('pindahan.')->group(function () {
             Route::get('/', [PindahanManagementController::class, 'index'])->name('index');
+            Route::get('/{order}', [PindahanManagementController::class, 'show'])->name('show');
             Route::post('/{order}/approve', [PindahanManagementController::class, 'approvePayment'])->name('approve');
             Route::post('/{order}/reject', [PindahanManagementController::class, 'rejectPayment'])->name('reject');
             Route::post('/{order}/assign-courier', [PindahanManagementController::class, 'assignCourier'])->name('assignCourier');
+            Route::post('/{order}/complete', [PindahanManagementController::class, 'completeOrder'])->name('complete');
             Route::get('/courier/{courier}/location', [PindahanManagementController::class, 'getCourierLocation'])->name('courier-location');
         });
 

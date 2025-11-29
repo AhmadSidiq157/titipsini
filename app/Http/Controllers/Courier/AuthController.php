@@ -77,6 +77,8 @@ class AuthController extends Controller
             // Data Akun
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
+            // [PERBAIKAN 1] Tambahkan validasi phone
+            'phone' => 'required|string|max:20',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
 
             // Data Kendaraan & Dokumen
@@ -101,6 +103,8 @@ class AuthController extends Controller
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
+                // [PERBAIKAN 2] Masukkan request phone ke database
+                'phone' => $request->phone,
                 'password' => Hash::make($request->password),
                 'courier_status' => 'offline', // Default status kehadiran
             ]);
