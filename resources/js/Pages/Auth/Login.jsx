@@ -5,6 +5,7 @@ import TextInput from "@/Components/TextInput";
 import Checkbox from "@/Components/Checkbox";
 import { Head, Link, useForm } from "@inertiajs/react";
 import { motion } from "framer-motion";
+import { Mail, Lock, ArrowRight } from "lucide-react";
 
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -27,115 +28,123 @@ export default function Login({ status, canResetPassword }) {
     };
 
     return (
-        <div className="min-h-screen w-full flex overflow-hidden bg-white">
+        <div className="flex h-screen w-full bg-white overflow-hidden">
             <Head title="Masuk Akun" />
 
-            {/* --- BAGIAN KIRI (FORM) --- */}
+            {/* --- BAGIAN KIRI (FORM LOGIN) --- */}
             <motion.div
-                initial={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, x: -30 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6 }}
-                className="w-full md:w-1/2 flex flex-col justify-center items-center p-8 md:p-16 lg:p-24 shadow-xl z-10"
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="w-full md:w-1/2 h-full flex flex-col justify-center items-center p-8 relative z-10 bg-white shadow-2xl overflow-y-auto"
             >
-                <div className="w-full max-w-md">
-                    {/* LOGO SECTION */}
-                    <div className="text-center mb-10">
-                        <div href="/" className="inline-block mb-4">
-                            {/* [OPSI 1] Logo Gambar (Recomended) */}
-                            {/* Ganti '/images/logo.jpg' dengan path logo Anda yang sebenarnya */}
+                <div className="w-full max-w-[400px] space-y-5 my-auto">
+                    {/* Header / Logo */}
+                    <div className="text-center mb-8">
+                        <div
+                            // Memberi jarak ke bawah agar tidak menempel dengan teks
+                            className="inline-block mb-6"
+                        >
                             <img
                                 src="/images/titipsini.com.png"
                                 alt="Logo TitipSini"
-                                className="h-12 md:h-14 mx-auto object-contain"
+                                className="h-14 mx-auto object-contain"
                             />
-
-                            {/* [OPSI 2] Jika logo belum siap, pakai Teks ini (Komentari Opsi 1 jika pakai ini) */}
-                            {/* <div className="flex items-center justify-center gap-1">
-                                <span className="text-3xl font-black text-gray-800 tracking-tighter">
-                                    Titipsini<span className="text-green-600">.com</span>
-                                </span>
-                            </div> 
-                            */}
                         </div>
-
-                        <h4 className="text-xl font-semibold text-gray-700 mt-2">
+                        <h2 className="text-2xl font-black text-gray-900 tracking-tight">
                             Selamat Datang
-                        </h4>
-                        <p className="text-sm text-gray-500 mt-1">
-                            Masuk untuk mengelola kiriman dan pesanan Anda.
+                        </h2>
+                        <p className="text-gray-500 text-sm font-medium mt-2">
+                            Masuk untuk mengelola kiriman Anda.
                         </p>
                     </div>
 
                     {status && (
-                        <div className="mb-6 font-medium text-sm text-green-700 bg-green-100 border border-green-200 p-4 rounded-xl text-center">
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 text-sm font-bold text-center shadow-sm"
+                        >
                             {status}
-                        </div>
+                        </motion.div>
                     )}
 
-                    <form onSubmit={submit} className="space-y-6">
+                    <form onSubmit={submit} className="space-y-4">
                         {/* Email Input */}
-                        <div>
+                        <div className="space-y-1">
                             <InputLabel
                                 htmlFor="email"
                                 value="Email"
-                                className="text-gray-700 font-bold"
+                                className="text-gray-700 font-bold text-xs uppercase tracking-wide ml-1"
                             />
-                            <TextInput
-                                id="email"
-                                type="email"
-                                name="email"
-                                value={data.email}
-                                className="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-green-500 focus:ring-green-500 transition-all"
-                                autoComplete="username"
-                                isFocused={true}
-                                onChange={(e) =>
-                                    setData("email", e.target.value)
-                                }
-                                placeholder="nama@email.com"
-                            />
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-400 group-focus-within:text-emerald-600 transition-colors">
+                                    <Mail size={18} strokeWidth={2} />
+                                </div>
+                                <TextInput
+                                    id="email"
+                                    type="email"
+                                    name="email"
+                                    value={data.email}
+                                    // [MODIFIKASI] Menggunakan warna Emerald (Hijau) untuk border saat fokus
+                                    className="pl-11 pr-4 py-3 w-full border-gray-100 bg-gray-50/50 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-300 placeholder:text-gray-400 font-medium text-sm"
+                                    autoComplete="username"
+                                    isFocused={true}
+                                    onChange={(e) =>
+                                        setData("email", e.target.value)
+                                    }
+                                    placeholder="nama@email.com"
+                                />
+                            </div>
                             <InputError
                                 message={errors.email}
-                                className="mt-2"
+                                className="ml-1"
                             />
                         </div>
 
                         {/* Password Input */}
-                        <div>
+                        <div className="space-y-1">
                             <InputLabel
                                 htmlFor="password"
                                 value="Password"
-                                className="text-gray-700 font-bold"
+                                className="text-gray-700 font-bold text-xs uppercase tracking-wide ml-1"
                             />
-                            <TextInput
-                                id="password"
-                                type="password"
-                                name="password"
-                                value={data.password}
-                                className="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-green-500 focus:ring-green-500 transition-all"
-                                autoComplete="current-password"
-                                onChange={(e) =>
-                                    setData("password", e.target.value)
-                                }
-                                placeholder="••••••••"
-                            />
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-400 group-focus-within:text-emerald-600 transition-colors">
+                                    <Lock size={18} strokeWidth={2} />
+                                </div>
+                                <TextInput
+                                    id="password"
+                                    type="password"
+                                    name="password"
+                                    value={data.password}
+                                    // [MODIFIKASI] Menggunakan warna Emerald (Hijau) untuk border saat fokus
+                                    className="pl-11 pr-4 py-3 w-full border-gray-100 bg-gray-50/50 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-300 placeholder:text-gray-400 font-medium text-sm"
+                                    autoComplete="current-password"
+                                    onChange={(e) =>
+                                        setData("password", e.target.value)
+                                    }
+                                    placeholder="••••••••"
+                                />
+                            </div>
                             <InputError
                                 message={errors.password}
-                                className="mt-2"
+                                className="ml-1"
                             />
                         </div>
 
                         {/* Checkbox & Forgot Password */}
-                        <div className="flex items-center justify-between">
-                            <label className="flex items-center cursor-pointer">
+                        <div className="flex items-center justify-between pt-1 px-1">
+                            <label className="flex items-center cursor-pointer group select-none">
                                 <Checkbox
                                     name="remember"
                                     checked={data.remember}
                                     onChange={(e) =>
                                         setData("remember", e.target.checked)
                                     }
-                                    className="text-green-600 focus:ring-green-500 rounded"
+                                    className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 transition-all cursor-pointer"
                                 />
-                                <span className="ms-2 text-sm text-gray-600">
+                                <span className="ml-2 text-xs sm:text-sm text-gray-500 group-hover:text-gray-800 font-medium transition-colors">
                                     Ingat saya
                                 </span>
                             </label>
@@ -143,7 +152,7 @@ export default function Login({ status, canResetPassword }) {
                             {canResetPassword && (
                                 <Link
                                     href={route("password.request")}
-                                    className="text-sm text-green-600 hover:text-green-700 font-semibold hover:underline"
+                                    className="text-xs sm:text-sm font-bold text-emerald-600 hover:text-emerald-800 hover:underline transition-all"
                                 >
                                     Lupa password?
                                 </Link>
@@ -151,52 +160,89 @@ export default function Login({ status, canResetPassword }) {
                         </div>
 
                         {/* Tombol Submit */}
-                        <button
-                            className="w-full py-3.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-green-500/30 transition-all transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
+                        <motion.button
+                            whileHover={{ scale: 1.01, translateY: -1 }}
+                            whileTap={{ scale: 0.98 }}
+                            type="submit"
                             disabled={processing}
+                            className="w-full group relative flex justify-center items-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 shadow-lg shadow-emerald-200/50 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed mt-4"
                         >
-                            {processing
-                                ? "Sedang Memproses..."
-                                : "Masuk Sekarang"}
-                        </button>
+                            {processing ? (
+                                <span className="flex items-center gap-2">
+                                    <svg
+                                        className="animate-spin h-4 w-4 text-white"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        ></circle>
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        ></path>
+                                    </svg>
+                                    Memproses...
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2">
+                                    Masuk Sekarang{" "}
+                                    <ArrowRight
+                                        size={16}
+                                        className="group-hover:translate-x-1 transition-transform duration-300"
+                                    />
+                                </span>
+                            )}
+                        </motion.button>
 
                         {/* Register Link */}
-                        <div className="flex items-center justify-center gap-2 mt-8 pt-6 border-t border-gray-100">
-                            <p className="text-sm text-gray-500">
-                                Belum punya akun?
+                        <div className="text-center pt-2">
+                            <p className="text-xs sm:text-sm text-gray-500 font-medium">
+                                Belum punya akun?{" "}
+                                <Link
+                                    href={route("register")}
+                                    className="font-bold text-emerald-600 hover:text-emerald-800 transition-colors hover:underline decoration-2 underline-offset-4"
+                                >
+                                    Daftar Gratis
+                                </Link>
                             </p>
-                            <Link
-                                href={route("register")}
-                                className="text-sm font-bold text-red-500 hover:text-red-600 border border-red-200 hover:bg-red-50 px-4 py-1.5 rounded-lg transition-all"
-                            >
-                                BUAT AKUN
-                            </Link>
                         </div>
                     </form>
                 </div>
+
+                {/* Footer Kecil */}
+                <div className="absolute bottom-4 text-[10px] text-gray-400 font-medium text-center w-full">
+                    &copy; {new Date().getFullYear()} TitipSini. All rights
+                    reserved.
+                </div>
             </motion.div>
 
-            {/* --- BAGIAN KANAN (GAMBAR / BRANDING) --- */}
-            <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-green-600 via-emerald-600 to-teal-800 relative overflow-hidden items-center justify-center">
-                {/* Decorative Circles */}
-                <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-white opacity-10 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-black opacity-10 rounded-full blur-3xl"></div>
+            {/* --- BAGIAN KANAN (GAMBAR FULL & IMMERSIVE) --- */}
+            <div className="hidden md:flex md:w-1/2 h-full relative bg-gradient-to-br from-emerald-900 via-teal-900 to-emerald-950 items-center justify-center p-10 overflow-hidden">
+                {/* Dekorasi Background (Blob) */}
+                <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-100/60 rounded-full mix-blend-multiply filter blur-[60px] opacity-60 animate-blob"></div>
+                <div className="absolute bottom-0 left-0 w-96 h-96 bg-teal-100/60 rounded-full mix-blend-multiply filter blur-[60px] opacity-60 animate-blob animation-delay-2000"></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-green-50/60 rounded-full mix-blend-multiply filter blur-[60px] opacity-60 animate-blob animation-delay-4000"></div>
 
-                {/* Content Text */}
+                {/* Container Gambar */}
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
-                    className="relative z-10 text-white px-12 max-w-xl text-center"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                    className="relative z-10 w-full h-full flex items-center justify-center"
                 >
-                    <h2 className="text-4xl font-bold mb-6 leading-tight">
-                        Solusi Pindahan & Penitipan Terpercaya
-                    </h2>
-                    <p className="text-lg text-green-50 font-light leading-relaxed mb-8">
-                        "Kami menjaga barang Anda seperti milik kami sendiri.
-                        Nikmati kemudahan layanan logistik dengan pelacakan
-                        real-time dan keamanan terjamin."
-                    </p>
+                    <img
+                        src="/images/titipsini.png"
+                        alt="Ilustrasi TitipSini"
+                        className="max-w-full max-h-[85%] object-contain drop-shadow-2xl"
+                    />
                 </motion.div>
             </div>
         </div>
