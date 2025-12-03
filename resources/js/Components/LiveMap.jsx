@@ -3,27 +3,45 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
-import icon from "leaflet/dist/images/marker-icon.png";
-import iconShadow from "leaflet/dist/images/marker-shadow.png";
+// --- 1. DEFINISI ICON (LANGSUNG DI DALAM BIAR ANTI-ERROR) ---
+const iconUrl = "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png";
+const shadowUrl =
+    "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png";
 
+// Icon Default
 let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
+    iconUrl: iconUrl,
+    shadowUrl: shadowUrl,
     iconSize: [25, 41],
     iconAnchor: [12, 41],
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-const courierIcon = new L.DivIcon({
+// Icon Pin Merah (Lokasi) - Menggunakan Filter CSS
+const locationIcon = new L.DivIcon({
     className: "bg-transparent",
-    html: `<div style="background-color: white; border-radius: 50%; padding: 6px; border: 2px solid #3b82f6; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#3b82f6" stroke="#1d4ed8" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+    html: `<div style="filter: hue-rotate(140deg); -webkit-filter: hue-rotate(140deg);">
+        <img src="${iconUrl}" style="width: 25px; height: 41px; display: block;">
+        <img src="${shadowUrl}" style="width: 41px; height: 41px; display: block; position: absolute; left: 0; top: 0; opacity: 0.5; z-index: -1;">
     </div>`,
-    iconSize: [42, 42],
-    iconAnchor: [21, 42],
-    popupAnchor: [0, -40],
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
 });
 
+// Icon Truk/Biru (Kurir)
+const courierIcon = new L.DivIcon({
+    className: "bg-transparent",
+    html: `<div>
+        <img src="${iconUrl}" style="width: 25px; height: 41px; display: block;">
+        <img src="${shadowUrl}" style="width: 41px; height: 41px; display: block; position: absolute; left: 0; top: 0; opacity: 0.5; z-index: -1;">
+    </div>`,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+});
+
+// --- 2. KOMPONEN BANTUAN (AUTO CENTER) ---
 const RecenterAutomatically = ({ lat, lng }) => {
     const map = useMap();
     useEffect(() => {
@@ -34,22 +52,36 @@ const RecenterAutomatically = ({ lat, lng }) => {
     return null;
 };
 
-export default function LiveMap({ courierLat, courierLng }) {
-    // Default Center (Jakarta) - Dipakai jika koordinat kurir kosong/null/0
+// --- 3. KOMPONEN UTAMA ---
+export default function LiveMap({
+    lat,
+    lng,
+    courierLat,
+    courierLng,
+    isTracking = false, // false = Mode Lokasi, true = Mode Kurir
+}) {
+    // Normalisasi Input Koordinat
+    const latitude = lat || courierLat;
+    const longitude = lng || courierLng;
+
+    // Default Jakarta (Hanya dipakai jika data nol/kosong)
     const defaultCenter = [-6.2088, 106.8456];
 
-    // Pastikan koordinat valid (tidak null, tidak 0)
+    // Cek Validitas Data
     const isValidLocation =
-        courierLat && courierLng && courierLat !== 0 && courierLng !== 0;
+        latitude && longitude && latitude !== 0 && longitude !== 0;
 
-    const center = isValidLocation ? [courierLat, courierLng] : defaultCenter;
+    const center = isValidLocation ? [latitude, longitude] : defaultCenter;
+
+    // Pilih Icon
+    const activeIcon = isTracking ? courierIcon : locationIcon;
 
     return (
-        <div className="h-80 w-full rounded-2xl overflow-hidden shadow-inner border border-gray-200 relative z-0">
+        <div className="h-full w-full rounded-2xl overflow-hidden shadow-inner border border-gray-200 relative z-0">
             <MapContainer
                 center={center}
-                zoom={13}
-                scrollWheelZoom={false}
+                zoom={15}
+                scrollWheelZoom={true}
                 style={{ height: "100%", width: "100%" }}
             >
                 <TileLayer
@@ -57,27 +89,32 @@ export default function LiveMap({ courierLat, courierLng }) {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
-                {/* Marker Kurir hanya muncul jika lokasi valid */}
                 {isValidLocation && (
                     <>
+                        {/* MARKER STANDAR (TIDAK BISA DIGESER) */}
                         <Marker
-                            position={[courierLat, courierLng]}
-                            icon={courierIcon}
+                            position={[latitude, longitude]}
+                            icon={activeIcon}
+                            draggable={false} // KITA KUNCI SECARA EKSPLISIT
                         >
-                            <Popup>🚚 Lokasi Kurir</Popup>
+                            <Popup>
+                                {isTracking
+                                    ? "🚚 Lokasi Kurir"
+                                    : "📍 Lokasi Penjemputan"}
+                            </Popup>
                         </Marker>
-                        <RecenterAutomatically
-                            lat={courierLat}
-                            lng={courierLng}
-                        />
+
+                        {/* Paksa Peta Pindah ke Titik Tersebut */}
+                        <RecenterAutomatically lat={latitude} lng={longitude} />
                     </>
                 )}
             </MapContainer>
 
             {!isValidLocation && (
                 <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur px-4 py-2 rounded-lg shadow text-sm text-gray-600 text-center z-[1000]">
-                    📡 Menunggu sinyal GPS dari kurir... (Menampilkan Peta
-                    Default)
+                    {isTracking
+                        ? "📡 Menunggu sinyal GPS..."
+                        : "🔍 Menunggu data lokasi..."}
                 </div>
             )}
         </div>

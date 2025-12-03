@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Head, Link, usePage } from "@inertiajs/react";
 import GuestLayout from "@/Layouts/GuestLayout";
-import CountUp from "react-countup";
-import { useInView } from "react-intersection-observer";
 import {
     ShieldCheck,
     Clock,
@@ -16,8 +14,8 @@ import {
     Quote,
     ChevronLeft,
     ChevronRight,
-    FileText, // Icon baru untuk Syarat & Ketentuan
-    AlertCircle, // Icon baru untuk perhatian
+    FileText,
+    AlertCircle,
 } from "lucide-react";
 
 // --- HERO SECTION ---
@@ -81,11 +79,11 @@ const Hero = () => {
                     </div>
 
                     <div className="relative hidden lg:block">
-                        <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white transform rotate-2 hover:rotate-0 transition-transform duration-700 group">
+                        <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white">
                             <img
                                 src="/images/hero-home.jpg"
                                 alt="Fasilitas Titipsini"
-                                className="w-full h-auto object-cover scale-105 group-hover:scale-110 transition-transform duration-700"
+                                className="w-full h-auto object-cover"
                                 onError={(e) => {
                                     e.target.onerror = null;
                                     e.target.src =
@@ -94,47 +92,6 @@ const Hero = () => {
                             />
                         </div>
                     </div>
-                </div>
-            </div>
-        </section>
-    );
-};
-
-// --- STATS SECTION ---
-const Stats = () => {
-    const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 });
-    const stats = [
-        { value: 5, suffix: "+", label: "Tahun Pengalaman" },
-        { value: 2000, suffix: "+", label: "Pelanggan Puas" },
-        { value: 10000, suffix: "+", label: "Item Tersimpan" },
-        { value: 99.9, decimals: 1, suffix: "%", label: "Tingkat Keamanan" },
-    ];
-    return (
-        <section
-            ref={ref}
-            className="bg-white py-16 border-b border-emerald-50"
-        >
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-gray-100">
-                    {stats.map((stat, index) => (
-                        <div key={index} className="p-4 group">
-                            <p className="text-4xl lg:text-5xl font-extrabold text-emerald-500 mb-2 group-hover:scale-110 transition-transform duration-300">
-                                {inView ? (
-                                    <CountUp
-                                        end={stat.value}
-                                        duration={2.5}
-                                        decimals={stat.decimals || 0}
-                                    />
-                                ) : (
-                                    "0"
-                                )}
-                                {stat.suffix}
-                            </p>
-                            <p className="text-gray-400 font-bold uppercase tracking-wider text-xs">
-                                {stat.label}
-                            </p>
-                        </div>
-                    ))}
                 </div>
             </div>
         </section>
@@ -459,7 +416,7 @@ const Welcome = () => {
             <Head title="Selamat Datang" />
             <div className="font-sans bg-white selection:bg-emerald-100 selection:text-emerald-800">
                 <Hero />
-                <Stats />
+                {/* Stats section dihapus */}
                 <WhyUs />
                 <TermsSection />
                 <Testimonials />
@@ -473,7 +430,7 @@ const Welcome = () => {
                             <h2 className="text-3xl md:text-4xl font-bold mb-6">
                                 Siap Menitipkan Barang?
                             </h2>
-                            <p className="text-emerald-50 text-lg mb-8 max-w-2xl mx-auto">
+                            <p className="text-emerald-5 text-lg mb-8 max-w-2xl mx-auto">
                                 Jangan biarkan barang bawaan menghambat
                                 aktivitas Anda. Titip sekarang juga!
                             </p>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import { Head, Link, usePage, router } from "@inertiajs/react";
-// [HAPUS] import ManageOrderModal karena file sudah dihapus
 import {
     Eye,
     Truck,
@@ -14,6 +13,7 @@ import {
     Filter,
     ArrowRightLeft,
     MapPin,
+    ChevronDown, // Pastikan icon ini diimport
 } from "lucide-react";
 
 // --- Helper: Format Rupiah ---
@@ -96,7 +96,7 @@ const StatusBadge = ({ status }) => {
     );
 };
 
-// --- Pagination ---
+// --- Pagination Component ---
 const Pagination = ({ links }) => {
     if (!links || links.length <= 1) return null;
     return (
@@ -137,13 +137,11 @@ const Pagination = ({ links }) => {
 };
 
 export default function Index({ auth, orders, couriers, flash, filters }) {
-    // [HAPUS] State modal tidak lagi diperlukan
-    // const [selectedOrder, setSelectedOrder] = useState(null);
-
     const [search, setSearch] = useState(filters?.search || "");
     const [status, setStatus] = useState(filters?.status || "all");
     const isFirstRender = useRef(true);
 
+    // Auto-search effect (Debounce)
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
@@ -160,13 +158,14 @@ export default function Index({ auth, orders, couriers, flash, filters }) {
     }, [search, status]);
 
     const filterOptions = [
-        { value: "all", label: "Semua" },
+        { value: "all", label: "Semua Status" },
         { value: "awaiting_payment", label: "Belum Bayar" },
         { value: "awaiting_verification", label: "Verifikasi" },
         { value: "processing", label: "Perlu Kurir" },
         { value: "ready_for_pickup", label: "Dijemput" },
         { value: "on_delivery", label: "Di Jalan" },
         { value: "completed", label: "Selesai" },
+        { value: "cancelled", label: "Dibatalkan" },
     ];
 
     return (
@@ -196,8 +195,6 @@ export default function Index({ auth, orders, couriers, flash, filters }) {
         >
             <Head title="Manajemen Pesanan Pindahan" />
 
-            {/* [HAPUS] Komponen ManageOrderModal tidak lagi dirender di sini */}
-
             <div className="py-8">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     {flash.success && (
@@ -208,36 +205,64 @@ export default function Index({ auth, orders, couriers, flash, filters }) {
                     )}
 
                     <div className="bg-white overflow-hidden shadow-xl shadow-gray-200/50 sm:rounded-3xl border border-gray-100">
-                        {/* CONTROL BAR */}
-                        <div className="p-6 border-b border-gray-100 flex flex-col lg:flex-row justify-between gap-6 bg-gradient-to-b from-white to-gray-50/50">
-                            <div className="relative w-full lg:w-96 group">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Search className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                        {/* --- CONTROL BAR MODERN & MINIMALIS (Gaya Dropdown) --- */}
+                        <div className="p-6 border-b border-gray-100 bg-gradient-to-b from-white to-gray-50/50">
+                            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                                {/* 1. Search Bar */}
+                                <div className="relative w-full md:flex-1 group">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <Search className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={search}
+                                        onChange={(e) =>
+                                            setSearch(e.target.value)
+                                        }
+                                        placeholder="Cari ID Pesanan, Nama User..."
+                                        className="pl-11 pr-4 py-3.5 border-gray-200 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 w-full transition-all shadow-sm group-hover:shadow-md bg-white"
+                                    />
                                 </div>
-                                <input
-                                    type="text"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Cari ID, Nama User..."
-                                    className="pl-10 pr-4 py-3 border-gray-200 rounded-2xl text-sm focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 w-full transition-all shadow-sm group-hover:shadow-md"
-                                />
-                            </div>
 
-                            <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
-                                <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                {filterOptions.map((opt) => (
-                                    <button
-                                        key={opt.value}
-                                        onClick={() => setStatus(opt.value)}
-                                        className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
-                                            status === opt.value
-                                                ? "bg-gray-900 text-white border-gray-900 shadow-lg shadow-gray-900/20"
-                                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-emerald-300"
-                                        }`}
+                                {/* 2. Filter Dropdown (Menggantikan tombol horizontal) */}
+                                <div className="relative w-full md:w-64 group">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <Filter className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                                    </div>
+                                    <select
+                                        value={status}
+                                        onChange={(e) =>
+                                            setStatus(e.target.value)
+                                        }
+                                        className="pl-11 pr-10 py-3.5 w-full border-gray-200 rounded-2xl text-sm font-bold text-gray-700 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 appearance-none bg-white shadow-sm cursor-pointer hover:border-emerald-300 transition-all"
                                     >
-                                        {opt.label}
+                                        {filterOptions.map((opt) => (
+                                            <option
+                                                key={opt.value}
+                                                value={opt.value}
+                                            >
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
+                                        <ChevronDown className="h-4 w-4" />
+                                    </div>
+                                </div>
+
+                                {/* 3. Reset Button (Muncul jika filter aktif) */}
+                                {(search || status !== "all") && (
+                                    <button
+                                        onClick={() => {
+                                            setSearch("");
+                                            setStatus("all");
+                                        }}
+                                        className="p-3.5 rounded-2xl bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors border border-gray-200 shadow-sm"
+                                        title="Reset Filter"
+                                    >
+                                        <ArrowRightLeft className="w-5 h-5" />
                                     </button>
-                                ))}
+                                )}
                             </div>
                         </div>
 
@@ -364,7 +389,6 @@ export default function Index({ auth, orders, couriers, flash, filters }) {
                                                     </td>
 
                                                     <td className="py-4 px-6 text-right text-sm font-medium whitespace-nowrap">
-                                                        {/* [UPDATE] Link ke Halaman Show (Bukan Modal) */}
                                                         <Link
                                                             href={route(
                                                                 "admin.pindahan.show",

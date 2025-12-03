@@ -323,9 +323,6 @@ export default function Index({ auth, orders }) {
                             Kembali
                         </span>
                     </Link>
-                    <div className="text-sm font-bold text-gray-400">
-                        Titipsini.com
-                    </div>
                 </div>
             </div>
 
@@ -342,12 +339,6 @@ export default function Index({ auth, orders }) {
                                 Anda.
                             </p>
                         </div>
-                        <Link
-                            href="/layanan"
-                            className="inline-flex items-center px-5 py-3 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 hover:border-emerald-300 transition-all shadow-sm group"
-                        >
-                            + Pesan Baru
-                        </Link>
                     </div>
 
                     {/* Order List */}
