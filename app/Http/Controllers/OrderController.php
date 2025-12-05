@@ -61,8 +61,11 @@ class OrderController extends Controller
         $rules = [
             'product_id' => 'required|integer',
             'product_model' => 'required|string',
-            // Kita hapus validasi 'final_amount' input, karena kita akan hitung sendiri
             'form_details' => 'required|array',
+            
+            // [WAJIB DITAMBAHKAN] Agar Latitude & Longitude DITERIMA dan DISIMPAN
+            'form_details.latitude' => 'nullable', 
+            'form_details.longitude' => 'nullable',
         ];
 
         // Validasi Cabang (Wajib untuk Penitipan/Service)
@@ -105,6 +108,8 @@ class OrderController extends Controller
 
         // 4. Jalankan Validasi
         $validatedData = $request->validate($rules);
+        
+        // Ambil data form_details (Sekarang sudah termasuk lat/long karena sudah divalidasi)
         $formDetails = $validatedData['form_details'];
 
         // 5. Handle Upload Foto Barang (Jika ada)
@@ -154,7 +159,7 @@ class OrderController extends Controller
         $order = $product->orders()->create([
             'user_id' => Auth::id(),
             'final_amount' => $finalAmount, // Menggunakan harga hitungan server
-            'user_form_details' => $formDetails,
+            'user_form_details' => $formDetails, // JSON array
             'status' => 'awaiting_payment',
         ]);
 

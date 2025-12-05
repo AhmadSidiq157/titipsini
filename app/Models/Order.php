@@ -7,15 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\HasMany; // [TAMBAHAN] Untuk trackings
+use Illuminate\Database\Eloquent\Relations\HasMany; 
 
 class Order extends Model
 {
     use HasFactory;
 
     /**
-     * Kolom yang boleh diisi secara massal.
-     * Menggunakan fillable lebih aman daripada guarded.
+     * Kolom yang boleh diisi secara massal (Mass Assignment).
      */
     protected $fillable = [
         'user_id',
@@ -23,23 +22,22 @@ class Order extends Model
         'orderable_type',
         'final_amount',
         'status',
-        'user_form_details', // Kolom JSON penting
-        'courier_id',
-        // 'branch_id', // Uncomment jika kolom ini ada di tabel orders Anda
+        'user_form_details', // Kolom JSON penting (menyimpan Alamat, Lat, Lng, Foto, dll)
+        'courier_id',        // ID Kurir yang ditugaskan
+        'branch_id',         // Opsional: Jika ada sistem cabang
     ];
 
     /**
-     * The attributes that should be cast.
-     *
-     * @var array
+     * Casting tipe data otomatis.
      */
     protected $casts = [
-        'user_form_details' => 'array', // Otomatis ubah JSON <-> Array
+        // [PENTING] Mengubah JSON di database menjadi Array PHP/JS
+        'user_form_details' => 'array', 
         'final_amount' => 'decimal:2',
     ];
 
     /**
-     * Dapatkan user (Client) yang memiliki order ini.
+     * Relasi: Dapatkan user (Client) pembuat order.
      */
     public function user(): BelongsTo
     {
@@ -47,7 +45,7 @@ class Order extends Model
     }
 
     /**
-     * Dapatkan user (Kurir) yang ditugaskan untuk order ini.
+     * Relasi: Dapatkan user (Kurir) yang ditugaskan.
      */
     public function courier(): BelongsTo
     {
@@ -55,7 +53,7 @@ class Order extends Model
     }
 
     /**
-     * Dapatkan model (Service atau MovingPackage) yang dipesan.
+     * Relasi: Produk yang dipesan (Service / MovingPackage).
      */
     public function orderable(): MorphTo
     {
@@ -63,7 +61,7 @@ class Order extends Model
     }
 
     /**
-     * Dapatkan data pembayaran manual untuk order ini.
+     * Relasi: Bukti pembayaran manual.
      */
     public function payment(): HasOne
     {
@@ -71,7 +69,7 @@ class Order extends Model
     }
 
     /**
-     * Relasi ke riwayat tracking.
+     * Relasi: Riwayat tracking/status order.
      */
     public function trackings(): HasMany
     {
@@ -79,7 +77,7 @@ class Order extends Model
     }
     
     /**
-     * (Opsional) Relasi ke Cabang jika Anda memiliki kolom branch_id
+     * (Opsional) Relasi ke Cabang.
      */
     public function branch(): BelongsTo
     {
