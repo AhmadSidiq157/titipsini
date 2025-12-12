@@ -1,25 +1,17 @@
 import React, { useState } from "react";
 import { Link } from "@inertiajs/react";
 import {
-    Briefcase,
-    Users,
     LayoutDashboard,
     Settings,
     ChevronDown,
-    Image,
-    MessageSquare,
-    Phone,
     ClipboardList,
-    Package,
-    Target,
-    GraduationCap,
-    BookOpen,
-    Library,
-    Home, // Tambahan ikon untuk Halaman Depan
-    FileText, // Tambahan ikon untuk Halaman Layanan
+    Users,
     ShieldCheck,
+    Truck,
+    CreditCard,
+    Home,
+    FileText,
     MapPin,
-    Truck, // Ikon untuk Kurir
 } from "lucide-react";
 
 // --- KOMPONEN-KOMPONEN KECIL (HELPER) ---
@@ -113,9 +105,10 @@ export default function AdminSidebar() {
         halamanDepan: route().current("admin.services.*"),
         halamanLayanan: route().current("admin.moving-packages.*"),
         pengaturan:
-            route().current("admin.settings.*") ||
-            route().current("admin.branches.*"),
-        // [BARU] State untuk dropdown pesanan
+            // [MODIFIKASI] Hapus 'admin.branches.*' dari sini agar dropdown Pengaturan tidak nyala saat di menu Cabang
+            route().current("admin.settings.contact") ||
+            route().current("admin.settings.social") ||
+            route().current("admin.settings.logo"),
         manajemenPesanan:
             route().current("admin.orders.*") ||
             route().current("admin.pindahan.*"),
@@ -147,7 +140,7 @@ export default function AdminSidebar() {
                     Dashboard
                 </SidebarLink>
 
-                {/* --- [MODIFIKASI] Link Pesanan Menjadi Dropdown --- */}
+                {/* --- Dropdown Manajemen Pesanan --- */}
                 <SidebarDropdown
                     title="Manajemen Pesanan"
                     icon={<ClipboardList className="h-5 w-5" />}
@@ -168,7 +161,24 @@ export default function AdminSidebar() {
                         Pesanan Pindahan
                     </SidebarSubLink>
                 </SidebarDropdown>
-                {/* --- Akhir Modifikasi --- */}
+
+                {/* --- [MENU STANDALONE] --- */}
+
+                <SidebarLink
+                    href={route("admin.payment_settings.index")}
+                    active={route().current("admin.payment_settings.*")}
+                    icon={<CreditCard className="h-5 w-5" />}
+                >
+                    Rekening Transfer
+                </SidebarLink>
+
+                <SidebarLink
+                    href={route("admin.branches.index")}
+                    active={route().current("admin.branches.*")}
+                    icon={<MapPin className="h-5 w-5" />}
+                >
+                    Manajemen Cabang
+                </SidebarLink>
 
                 {/* --- Dropdown Manajemen Halaman Depan --- */}
                 <SidebarDropdown
@@ -202,8 +212,6 @@ export default function AdminSidebar() {
                     </SidebarSubLink>
                 </SidebarDropdown>
 
-                {/* ... (Link nonaktif Anda) ... */}
-
                 <SidebarLink
                     href={route("admin.users.index")}
                     active={route().current("admin.users.*")}
@@ -228,6 +236,7 @@ export default function AdminSidebar() {
                     Verifikasi Kurir
                 </SidebarLink>
 
+                {/* Dropdown Pengaturan */}
                 <SidebarDropdown
                     title="Pengaturan"
                     icon={<Settings className="h-5 w-5" />}
@@ -235,12 +244,6 @@ export default function AdminSidebar() {
                     isOpen={openDropdown.pengaturan}
                     onToggle={() => handleToggle("pengaturan")}
                 >
-                    <SidebarSubLink
-                        href={route("admin.branches.index")}
-                        active={route().current("admin.branches.*")}
-                    >
-                        Manajemen Cabang
-                    </SidebarSubLink>
                     <SidebarSubLink
                         href={route("admin.settings.contact")}
                         active={route().current("admin.settings.contact")}

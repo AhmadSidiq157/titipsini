@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\MovingPackage;
-use App\Http\Requests\StoreMovingPackageRequest; // <-- Import
+use App\Http\Requests\StoreMovingPackageRequest; 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Redirect; // <-- Import
+use Illuminate\Support\Facades\Redirect;
 
 class MovingPackageController extends Controller
 {
@@ -16,8 +16,8 @@ class MovingPackageController extends Controller
      */
     public function index()
     {
-        // Ambil semua data paket dari database
-        $packages = MovingPackage::all();
+        // [UPDATE] Gunakan orderBy agar paket terbaru muncul di atas
+        $packages = MovingPackage::orderBy('created_at', 'desc')->get();
 
         // Render komponen React untuk halaman admin paket
         return Inertia::render('Admin/MovingPackages/Index', [
@@ -38,9 +38,12 @@ class MovingPackageController extends Controller
      */
     public function store(StoreMovingPackageRequest $request)
     {
-        // Request akan divalidasi oleh StoreMovingPackageRequest
+        // Validasi ditangani oleh StoreMovingPackageRequest
+        // Data yang masuk sini sudah bersih (termasuk price_per_km & max_distance)
         MovingPackage::create($request->validated());
-        return Redirect::route('admin.moving-packages.index')->with('success', 'Paket berhasil ditambahkan.');
+        
+        return Redirect::route('admin.moving-packages.index')
+            ->with('success', 'Paket berhasil ditambahkan.');
     }
 
     /**
@@ -64,9 +67,11 @@ class MovingPackageController extends Controller
      */
     public function update(StoreMovingPackageRequest $request, MovingPackage $movingPackage)
     {
-        // Request akan divalidasi oleh StoreMovingPackageRequest
+        // Update data dengan input yang sudah divalidasi
         $movingPackage->update($request->validated());
-        return Redirect::route('admin.moving-packages.index')->with('success', 'Paket berhasil diperbarui.');
+        
+        return Redirect::route('admin.moving-packages.index')
+            ->with('success', 'Paket berhasil diperbarui.');
     }
 
     /**
@@ -74,8 +79,9 @@ class MovingPackageController extends Controller
      */
     public function destroy(MovingPackage $movingPackage)
     {
-        // [PERBAIKAN] Tambahkan logika hapus
         $movingPackage->delete();
-        return Redirect::route('admin.moving-packages.index')->with('success', 'Paket berhasil dihapus.');
+        
+        return Redirect::route('admin.moving-packages.index')
+            ->with('success', 'Paket berhasil dihapus.');
     }
 }

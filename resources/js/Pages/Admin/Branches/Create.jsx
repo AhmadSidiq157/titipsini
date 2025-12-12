@@ -7,6 +7,8 @@ export default function Create({ auth }) {
         name: "",
         address: "",
         phone: "",
+        latitude: "",
+        longitude: "",
         status: "Buka",
         google_maps_embed_url: "",
     });
@@ -50,7 +52,7 @@ export default function Create({ auth }) {
                                     onChange={(e) =>
                                         setData("name", e.target.value)
                                     }
-                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
                                 />
                                 {errors.name && (
                                     <p className="text-sm text-red-600 mt-1">
@@ -65,7 +67,7 @@ export default function Create({ auth }) {
                                     htmlFor="address"
                                     className="block text-sm font-medium text-gray-700"
                                 >
-                                    Alamat
+                                    Alamat Lengkap
                                 </label>
                                 <textarea
                                     id="address"
@@ -74,13 +76,77 @@ export default function Create({ auth }) {
                                     onChange={(e) =>
                                         setData("address", e.target.value)
                                     }
-                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
                                 ></textarea>
                                 {errors.address && (
                                     <p className="text-sm text-red-600 mt-1">
                                         {errors.address}
                                     </p>
                                 )}
+                            </div>
+
+                            {/* --- KOORDINAT (GRID) --- */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div className="col-span-full mb-2">
+                                    <h3 className="text-sm font-bold text-gray-800">
+                                        Titik Koordinat (Wajib)
+                                    </h3>
+                                    {/* [PERBAIKAN DI SINI] Mengganti tanda '->' dengan kata biasa agar tidak error JSX */}
+                                    <p className="text-xs text-gray-500">
+                                        Diperlukan untuk perhitungan jarak
+                                        otomatis. Ambil dari Google Maps (klik
+                                        kanan lokasi lalu pilih angka
+                                        koordinat).
+                                    </p>
+                                </div>
+                                <div>
+                                    <label
+                                        htmlFor="latitude"
+                                        className="block text-xs font-medium text-gray-700 uppercase"
+                                    >
+                                        Latitude
+                                    </label>
+                                    <input
+                                        id="latitude"
+                                        type="number"
+                                        step="any"
+                                        value={data.latitude}
+                                        onChange={(e) =>
+                                            setData("latitude", e.target.value)
+                                        }
+                                        placeholder="Contoh: -6.2088"
+                                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
+                                    />
+                                    {errors.latitude && (
+                                        <p className="text-sm text-red-600 mt-1">
+                                            {errors.latitude}
+                                        </p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label
+                                        htmlFor="longitude"
+                                        className="block text-xs font-medium text-gray-700 uppercase"
+                                    >
+                                        Longitude
+                                    </label>
+                                    <input
+                                        id="longitude"
+                                        type="number"
+                                        step="any"
+                                        value={data.longitude}
+                                        onChange={(e) =>
+                                            setData("longitude", e.target.value)
+                                        }
+                                        placeholder="Contoh: 106.8456"
+                                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
+                                    />
+                                    {errors.longitude && (
+                                        <p className="text-sm text-red-600 mt-1">
+                                            {errors.longitude}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Nomor Telepon */}
@@ -98,7 +164,7 @@ export default function Create({ auth }) {
                                     onChange={(e) =>
                                         setData("phone", e.target.value)
                                     }
-                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
                                 />
                                 {errors.phone && (
                                     <p className="text-sm text-red-600 mt-1">
@@ -121,9 +187,10 @@ export default function Create({ auth }) {
                                     onChange={(e) =>
                                         setData("status", e.target.value)
                                     }
-                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
                                 >
                                     <option value="Buka">Buka</option>
+                                    <option value="Tutup">Tutup</option>
                                     <option value="Segera Hadir">
                                         Segera Hadir
                                     </option>
@@ -136,7 +203,7 @@ export default function Create({ auth }) {
                                     htmlFor="google_maps_embed_url"
                                     className="block text-sm font-medium text-gray-700"
                                 >
-                                    Link Google Maps (Opsional)
+                                    Link Google Maps Embed (Opsional)
                                 </label>
                                 <input
                                     id="google_maps_embed_url"
@@ -148,8 +215,8 @@ export default function Create({ auth }) {
                                             e.target.value
                                         )
                                     }
-                                    placeholder="Tempel link Embed dari Google Maps"
-                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                    placeholder="<iframe src=...>"
+                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
                                 />
                                 {errors.google_maps_embed_url && (
                                     <p className="text-sm text-red-600 mt-1">
@@ -159,7 +226,7 @@ export default function Create({ auth }) {
                             </div>
 
                             {/* Tombol Aksi */}
-                            <div className="flex items-center justify-end space-x-4 pt-4">
+                            <div className="flex items-center justify-end space-x-4 pt-4 border-t border-gray-100">
                                 <Link
                                     href={route("admin.branches.index")}
                                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
@@ -169,9 +236,11 @@ export default function Create({ auth }) {
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="px-4 py-2 bg-indigo-600 text-white font-semibold text-sm rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                                    className="px-4 py-2 bg-emerald-600 text-white font-semibold text-sm rounded-md hover:bg-emerald-700 disabled:opacity-50"
                                 >
-                                    {processing ? "Menyimpan..." : "Simpan"}
+                                    {processing
+                                        ? "Menyimpan..."
+                                        : "Simpan Cabang"}
                                 </button>
                             </div>
                         </form>

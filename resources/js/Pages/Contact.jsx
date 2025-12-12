@@ -12,7 +12,7 @@ import {
     ArrowUpRight,
 } from "lucide-react";
 
-// --- 1. Komponen Kecil (Helpers) untuk mempersingkat kode ---
+// --- 1. Komponen Kecil (Helpers) ---
 const IconBox = ({
     icon: Icon,
     colorClass = "text-indigo-400 group-hover:text-indigo-600",
@@ -44,42 +44,73 @@ const ContactItem = ({ icon, label, value, href }) => (
     </div>
 );
 
-// --- 2. Kartu Cabang ---
+// --- 2. Kartu Cabang (DIPERBAIKI) ---
 const BranchCard = ({ branch }) => {
-    const mapUrl = branch.google_maps_embed_url || "";
-    const linkUrl =
-        branch.google_maps_embed_url ||
-        `https://maps.google.com/?q=${branch.name} ${branch.address}`;
+    // A. Ambil Link Embed (Visual Peta) dari Database
+    const embedUrl = branch.google_maps_embed_url;
+
+    // B. Buat Link Navigasi (Arah Jalan) untuk tombol
+    // Prioritas: Pakai Koordinat (Paling Akurat) -> Fallback: Pakai Nama & Alamat
+    const navigationUrl =
+        branch.latitude && branch.longitude
+            ? `https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`
+            : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                  branch.name + " " + branch.address
+              )}`;
 
     return (
         <div className="flex-shrink-0 w-80 sm:w-96 bg-white rounded-2xl border border-gray-200 overflow-hidden group hover:shadow-xl hover:border-green-200 transition-all duration-300 relative flex flex-col">
-            {/* Peta */}
-            <div className="h-48 w-full bg-gray-100 relative overflow-hidden">
-                {mapUrl ? (
+            {/* Bagian Peta (Visual) */}
+            <div className="h-48 w-full bg-gray-100 relative overflow-hidden group-hover:shadow-inner">
+                {embedUrl ? (
                     <iframe
-                        src={mapUrl}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        allowFullScreen
+                        src={embedUrl}
+                        className="w-full h-full object-cover border-0"
+                        allowFullScreen=""
                         loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        title={`Peta ${branch.name}`}
                     />
                 ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                        <MapIcon className="w-10 h-10 mb-2 opacity-50" />
-                        <span className="text-xs font-medium">Peta Kosong</span>
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50">
+                        <MapIcon className="w-10 h-10 mb-2 opacity-30" />
+                        <span className="text-xs font-medium uppercase tracking-wider">
+                            Peta Belum Diatur Admin
+                        </span>
                     </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
             </div>
-            {/* Info */}
+
+            {/* Bagian Info */}
             <div className="p-6 flex flex-col flex-1 gap-4">
-                <h3 className="text-xl font-bold text-gray-900 leading-snug group-hover:text-green-700 transition-colors line-clamp-2">
-                    {branch.name}
-                </h3>
+                <div className="flex justify-between items-start gap-2">
+                    <h3 className="text-xl font-bold text-gray-900 leading-snug group-hover:text-green-700 transition-colors">
+                        {branch.name}
+                    </h3>
+                    {/* Tombol Buka Rute */}
+                    <a
+                        href={navigationUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-gray-400 hover:text-green-600 transition-colors p-1"
+                        title="Buka Rute di Google Maps"
+                    >
+                        <ArrowUpRight className="w-5 h-5" />
+                    </a>
+                </div>
+
                 <div className="space-y-3 text-sm text-gray-600">
-                    <div className="flex gap-3">
-                        <MapPin className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
-                        <p className="line-clamp-3">{branch.address}</p>
-                    </div>
+                    <a
+                        href={navigationUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex gap-3 group/link cursor-pointer"
+                    >
+                        <MapPin className="w-4 h-4 text-green-600 shrink-0 mt-0.5 group-hover/link:scale-110 transition-transform" />
+                        <p className="line-clamp-3 group-hover/link:text-green-700 transition-colors">
+                            {branch.address}
+                        </p>
+                    </a>
                     <div className="flex gap-3">
                         <Phone className="w-4 h-4 text-green-600 shrink-0" />
                         <p className="truncate">{branch.phone}</p>
@@ -100,14 +131,14 @@ export default function Contact() {
     });
 
     // Helper Data
-    const phone = settings.contact_phone || "";
+    const phone = settings?.contact_phone || "";
     const waLink = `https://wa.me/${phone.replace(
         /\D/g,
         ""
-    )}?text=${encodeURIComponent(settings.whatsapp_message || "Halo!")}`;
+    )}?text=${encodeURIComponent(settings?.whatsapp_message || "Halo!")}`;
     const isSingle = branches?.length === 1;
 
-    // Logic Scroll
+    // Logic Scroll Carousel
     const handleScroll = (dir) => {
         const width = window.innerWidth >= 640 ? 384 : 320;
         scrollRef.current?.scrollBy({
@@ -144,7 +175,7 @@ export default function Contact() {
             disabled={!scrollState[dir]}
             className={`p-2.5 rounded-full border transition-all ${
                 !scrollState[dir]
-                    ? "border-gray-100 text-gray-300"
+                    ? "border-gray-100 text-gray-300 cursor-not-allowed"
                     : "border-gray-200 text-gray-600 hover:border-green-500 hover:text-green-600 hover:bg-green-50"
             }`}
         >
@@ -239,7 +270,7 @@ export default function Contact() {
                             </a>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-8 pt-8 border-t border-gray-100">
-                            {settings.contact_email && (
+                            {settings?.contact_email && (
                                 <ContactItem
                                     icon={Mail}
                                     label="Email Kami"

@@ -1,17 +1,21 @@
 import React from "react";
-import { Head, Link, useForm, usePage } from "@inertiajs/react";
+import { Head, Link, useForm } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
+import { Save, ArrowLeft } from "lucide-react"; // Hapus import Search & Loader2 karena gak dipake
 
-export default function Edit({ auth }) {
-    const { branch } = usePage().props;
-
+export default function Edit({ auth, branch }) {
+    // 1. Load data lama
     const { data, setData, put, processing, errors } = useForm({
         name: branch.name || "",
         address: branch.address || "",
         phone: branch.phone || "",
         status: branch.status || "Buka",
-        google_maps_embed_url: branch.google_maps_embed_url || "",
+        latitude: branch.latitude || "", // Manual Input
+        longitude: branch.longitude || "", // Manual Input
+        google_maps_embed_url: branch.google_maps_embed_url || "", // Manual Input (Ditampilkan)
     });
+
+    // Hapus fungsi handleAutoGenerate karena kita pakai cara manual
 
     const submit = (e) => {
         e.preventDefault();
@@ -22,31 +26,36 @@ export default function Edit({ auth }) {
         <AdminLayout
             user={auth.user}
             header={
-                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
+                <div className="font-semibold text-xl text-gray-800 leading-tight">
                     Edit Cabang
-                </h2>
+                </div>
             }
         >
             <Head title="Edit Cabang" />
 
             <div className="py-12">
                 <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
-                    <div className="bg-white p-8 rounded-lg shadow-md">
-                        <h2 className="text-2xl font-semibold text-gray-700 mb-6">
-                            Edit Data Cabang
-                        </h2>
+                    <div className="bg-white p-8 rounded-lg shadow-md border border-gray-100">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-2xl font-semibold text-gray-700">
+                                Edit Data Cabang
+                            </h2>
+                            <Link
+                                href={route("admin.branches.index")}
+                                className="text-gray-500 hover:text-gray-800 flex items-center gap-1 text-sm"
+                            >
+                                <ArrowLeft size={16} /> Kembali
+                            </Link>
+                        </div>
 
                         <form onSubmit={submit} className="space-y-6">
                             {/* Nama Cabang */}
                             <div>
-                                <label
-                                    htmlFor="name"
-                                    className="block text-sm font-medium text-gray-700"
-                                >
+                                <label className="block text-sm font-medium text-gray-700">
                                     Nama Cabang
                                 </label>
                                 <input
-                                    id="name"
                                     type="text"
                                     value={data.name}
                                     onChange={(e) =>
@@ -63,14 +72,10 @@ export default function Edit({ auth }) {
 
                             {/* Alamat */}
                             <div>
-                                <label
-                                    htmlFor="address"
-                                    className="block text-sm font-medium text-gray-700"
-                                >
-                                    Alamat
+                                <label className="block text-sm font-medium text-gray-700">
+                                    Alamat Lengkap
                                 </label>
                                 <textarea
-                                    id="address"
                                     rows="3"
                                     value={data.address}
                                     onChange={(e) =>
@@ -85,16 +90,57 @@ export default function Edit({ auth }) {
                                 )}
                             </div>
 
+                            {/* INPUT MANUAL KOORDINAT */}
+                            <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div className="col-span-2 text-sm text-gray-500 mb-1 font-semibold">
+                                    * Data Koordinat (Ambil dari Google Maps)
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase">
+                                        Latitude
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={data.latitude}
+                                        onChange={(e) =>
+                                            setData("latitude", e.target.value)
+                                        }
+                                        placeholder="Contoh: -7.770287"
+                                        className="mt-1 block w-full bg-white border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                    />
+                                    {errors.latitude && (
+                                        <p className="text-xs text-red-600 mt-1">
+                                            Wajib diisi!
+                                        </p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase">
+                                        Longitude
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={data.longitude}
+                                        onChange={(e) =>
+                                            setData("longitude", e.target.value)
+                                        }
+                                        placeholder="Contoh: 110.410795"
+                                        className="mt-1 block w-full bg-white border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                    />
+                                    {errors.longitude && (
+                                        <p className="text-xs text-red-600 mt-1">
+                                            Wajib diisi!
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
                             {/* Nomor Telepon */}
                             <div>
-                                <label
-                                    htmlFor="phone"
-                                    className="block text-sm font-medium text-gray-700"
-                                >
+                                <label className="block text-sm font-medium text-gray-700">
                                     Nomor Telepon
                                 </label>
                                 <input
-                                    id="phone"
                                     type="text"
                                     value={data.phone}
                                     onChange={(e) =>
@@ -111,14 +157,10 @@ export default function Edit({ auth }) {
 
                             {/* Status */}
                             <div>
-                                <label
-                                    htmlFor="status"
-                                    className="block text-sm font-medium text-gray-700"
-                                >
-                                    Status
+                                <label className="block text-sm font-medium text-gray-700">
+                                    Status Cabang
                                 </label>
                                 <select
-                                    id="status"
                                     value={data.status}
                                     onChange={(e) =>
                                         setData("status", e.target.value)
@@ -129,19 +171,16 @@ export default function Edit({ auth }) {
                                     <option value="Segera Hadir">
                                         Segera Hadir
                                     </option>
+                                    <option value="Tutup">Tutup</option>
                                 </select>
                             </div>
 
-                            {/* Google Maps Embed URL */}
+                            {/* LINK GOOGLE MAPS (DITAMPILKAN MANUAL) */}
                             <div>
-                                <label
-                                    htmlFor="google_maps_embed_url"
-                                    className="block text-sm font-medium text-gray-700"
-                                >
-                                    Link Google Maps Embed
+                                <label className="block text-sm font-medium text-gray-700">
+                                    Link Embed Google Maps
                                 </label>
                                 <input
-                                    id="google_maps_embed_url"
                                     type="text"
                                     value={data.google_maps_embed_url}
                                     onChange={(e) =>
@@ -150,9 +189,13 @@ export default function Edit({ auth }) {
                                             e.target.value
                                         )
                                     }
-                                    placeholder="https://www.google.com/maps/embed?..."
+                                    placeholder="Tempel link iframe src dari Google Maps di sini..."
                                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                                 />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    * Opsional: Link ini agar peta muncul di
+                                    halaman detail user.
+                                </p>
                                 {errors.google_maps_embed_url && (
                                     <p className="text-sm text-red-600 mt-1">
                                         {errors.google_maps_embed_url}
@@ -160,20 +203,22 @@ export default function Edit({ auth }) {
                                 )}
                             </div>
 
-                            {/* Tombol Aksi */}
-                            <div className="flex items-center justify-end space-x-4 pt-4">
+                            {/* Tombol Simpan */}
+                            <div className="flex justify-end pt-4 border-t border-gray-100">
                                 <Link
                                     href={route("admin.branches.index")}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                                    className="px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 mr-3"
                                 >
                                     Batal
                                 </Link>
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="px-4 py-2 bg-indigo-600 text-white font-semibold text-sm rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                                    className="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150"
                                 >
-                                    {processing ? "Menyimpan..." : "Perbarui"}
+                                    {processing
+                                        ? "Menyimpan..."
+                                        : "Simpan Perubahan"}
                                 </button>
                             </div>
                         </form>

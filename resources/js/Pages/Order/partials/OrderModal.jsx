@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import Modal from "@/Components/Modal";
 import axios from "axios";
-import { Loader2, PackageOpen } from "lucide-react"; // Tambah icon PackageOpen
+import { Loader2, PackageOpen } from "lucide-react";
 
 // Import Steps
 import StepForm from "./Steps/Step1_Form";
 import StepPayment from "./Steps/Step2_Payment";
 import StepSuccess from "./Steps/Step3_Success";
 
-// Loading Screen yang lebih Modern
+// Loading Screen
 const StepLoading = () => (
     <div className="p-12 flex flex-col items-center justify-center min-h-[400px] text-center">
         <div className="relative">
@@ -28,12 +28,15 @@ const StepLoading = () => (
 export default function OrderModal({ show, onClose, product, productType }) {
     const [step, setStep] = useState("loading");
     const [productData, setProductData] = useState(null);
+    const [blockedDates, setBlockedDates] = useState([]); // State untuk tanggal penuh
     const [orderData, setOrderData] = useState(null);
     const [orderStatus, setOrderStatus] = useState(null);
 
     useEffect(() => {
         if (show && product) {
             setStep("loading");
+            setBlockedDates([]); // Reset tanggal
+
             const type =
                 productType === "moving_package" ? "moving_package" : "service";
 
@@ -44,10 +47,18 @@ export default function OrderModal({ show, onClose, product, productType }) {
                         product: res.data.product,
                         productModelClass: res.data.productModelClass,
                     });
-                    // Beri sedikit delay buatan agar animasi loading terlihat smooth (opsional)
+
+                    // Simpan blockedDates dari API Backend jika ada
+                    if (res.data.blockedDates) {
+                        setBlockedDates(res.data.blockedDates);
+                    } else {
+                        setBlockedDates([]);
+                    }
+
                     setTimeout(() => setStep("form"), 500);
                 })
-                .catch(() => {
+                .catch((err) => {
+                    console.error(err);
                     alert("Gagal memuat data layanan. Silakan coba lagi.");
                     onClose();
                 });
@@ -61,6 +72,7 @@ export default function OrderModal({ show, onClose, product, productType }) {
                     <StepForm
                         product={productData.product}
                         productModelClass={productData.productModelClass}
+                        blockedDates={blockedDates}
                         onFormSubmit={(newOrder) => {
                             setOrderData(newOrder);
                             setStep("payment");
@@ -96,7 +108,6 @@ export default function OrderModal({ show, onClose, product, productType }) {
     };
 
     return (
-        // [PENTING] maxWidth diubah ke '4xl' agar UI Step 1 tidak sempit
         <Modal show={show} onClose={onClose} maxWidth="2xl">
             {renderStep()}
         </Modal>

@@ -1,3 +1,33 @@
+/* 1. Import Style Bawaan React Datepicker */
+@import "react-datepicker/dist/react-datepicker.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 2. Custom Style (PENTING!) */
+/* Ini memaksa wrapper datepicker agar lebarnya mengikuti input di dalamnya (100% width) */
+.react-datepicker-wrapper {
+    width: 100%;
+    display: block;
+}
+
+/* Opsional: Kustomisasi warna header kalender agar sesuai tema Emerald kamu */
+.react-datepicker__header {
+    @apply bg-emerald-50 border-emerald-100;
+}
+
+.react-datepicker__current-month,
+.react-datepicker-time__header,
+.react-datepicker-year-header {
+    @apply text-emerald-800 font-bold;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+    @apply bg-emerald-600 border-emerald-600 text-white !important;
+}
+
+.react-datepicker__day--disabled {
+    @apply text-gray-300 hover:bg-transparent cursor-not-allowed;
+}

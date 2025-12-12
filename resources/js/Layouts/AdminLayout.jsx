@@ -78,9 +78,9 @@ export default function AdminLayout({ user, header, children }) {
                                 transition={{ duration: 0.4 }}
                             >
                                 {header && (
-                                    <h1 className="font-semibold text-xl text-gray-800 tracking-tight">
+                                    <div className="font-semibold text-xl text-gray-800 tracking-tight">
                                         {header}
-                                    </h1>
+                                    </div>
                                 )}
                             </motion.div>
 

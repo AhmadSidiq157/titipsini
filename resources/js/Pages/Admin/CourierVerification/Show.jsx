@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
-
+import { ArrowLeft } from "lucide-react";
 // --- Modal Kustom untuk Konfirmasi Tolak ---
 const RejectModal = ({
     show,
@@ -155,10 +155,21 @@ export default function Show({ auth, verification }) {
 
             <div className="py-12">
                 <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
-                    <div className="bg-white shadow-sm sm:rounded-lg overflow-hidden">
+                    {/* [MODIFIKASI] Tombol Kembali */}
+                    <div className="mb-6">
+                        <Link
+                            href={route("admin.courier_verifications.index")}
+                            className="inline-flex items-center text-gray-600 hover:text-emerald-600 transition-colors font-bold"
+                        >
+                            <ArrowLeft className="w-5 h-5 mr-2" />
+                            Kembali ke Daftar
+                        </Link>
+                    </div>
+
+                    <div className="bg-white shadow-sm sm:rounded-lg overflow-hidden border border-gray-100">
                         {/* Data Akun */}
-                        <div className="px-4 py-5 sm:px-6 border-b">
-                            <h3 className="text-lg leading-6 font-medium text-gray-900">
+                        <div className="px-4 py-5 sm:px-6 border-b bg-gray-50/50">
+                            <h3 className="text-lg leading-6 font-bold text-gray-900">
                                 Data Akun Kurir
                             </h3>
                         </div>
@@ -166,6 +177,11 @@ export default function Show({ auth, verification }) {
                             <dl className="divide-y divide-gray-200">
                                 <DataField label="Nama" value={user.name} />
                                 <DataField label="Email" value={user.email} />
+                                {/* [MODIFIKASI] Kolom No. Telepon */}
+                                <DataField
+                                    label="No. Telepon"
+                                    value={user.phone}
+                                />
                                 <DataField
                                     label="Status Akun"
                                     value={verification.status.toUpperCase()}
@@ -174,14 +190,13 @@ export default function Show({ auth, verification }) {
                         </div>
 
                         {/* Data Kendaraan */}
-                        <div className="px-4 py-5 sm:px-6 border-t">
-                            <h3 className="text-lg leading-6 font-medium text-gray-900">
+                        <div className="px-4 py-5 sm:px-6 border-t bg-gray-50/50">
+                            <h3 className="text-lg leading-6 font-bold text-gray-900">
                                 Data Kendaraan & Dokumen
                             </h3>
                         </div>
                         <div className="px-4 py-5 sm:p-6">
                             <dl className="divide-y divide-gray-200">
-                                {/* [BARU] Tipe Kendaraan */}
                                 <DataField
                                     label="Tipe Kendaraan"
                                     value={
@@ -219,7 +234,6 @@ export default function Show({ auth, verification }) {
                                     label="Foto SIM"
                                     url={verification.foto_sim_path}
                                 />
-                                {/* [BARU] Foto STNK */}
                                 <ImageField
                                     label="Foto STNK"
                                     url={verification.foto_stnk_path}
@@ -232,11 +246,11 @@ export default function Show({ auth, verification }) {
                         </div>
 
                         {verification.status === "pending" && (
-                            <div className="px-4 py-3 bg-gray-50 sm:px-6 flex justify-end space-x-4 border-t">
+                            <div className="px-4 py-4 bg-gray-50 sm:px-6 flex justify-end space-x-4 border-t">
                                 <button
                                     onClick={() => setRejectModalOpen(true)}
                                     disabled={processing}
-                                    className="px-4 py-2 bg-red-600 text-white font-semibold text-sm rounded-md hover:bg-red-700 disabled:opacity-50"
+                                    className="px-4 py-2 bg-red-600 text-white font-bold text-sm rounded-xl hover:bg-red-700 disabled:opacity-50 shadow-sm"
                                 >
                                     Tolak
                                 </button>
@@ -248,7 +262,7 @@ export default function Show({ auth, verification }) {
                                     method="post"
                                     as="button"
                                     disabled={processing}
-                                    className="px-4 py-2 bg-green-600 text-white font-semibold text-sm rounded-md hover:bg-green-700 disabled:opacity-50"
+                                    className="px-4 py-2 bg-emerald-600 text-white font-bold text-sm rounded-xl hover:bg-emerald-700 disabled:opacity-50 shadow-sm"
                                 >
                                     Setujui
                                 </Link>

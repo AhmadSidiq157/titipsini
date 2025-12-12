@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import InputLabel from "@/Components/InputLabel";
 import InputError from "@/Components/InputError";
 import PrimaryButton from "@/Components/PrimaryButton";
 import axios from "axios";
+import { usePage } from "@inertiajs/react";
 import {
     CreditCard,
     Copy,
@@ -11,6 +12,8 @@ import {
     FileText,
     ArrowRight,
     Wallet,
+    QrCode, // Icon QRIS
+    Download,
 } from "lucide-react";
 
 // Helper Format Rupiah
@@ -24,23 +27,28 @@ const formatRupiah = (number) => {
 };
 
 export default function StepPayment({ order, onPaymentSubmit }) {
+    const { settings } = usePage().props;
+
+    // Data Bank & QRIS
+    const bankInfo = {
+        bankName: settings.payment_bank_name || "Bank Transfer",
+        accNumber: settings.payment_account_number || "-",
+        accHolder: settings.payment_account_holder || "Admin",
+        instruction:
+            settings.payment_instruction || "Silakan lakukan pembayaran.",
+        qrisImage: settings.payment_qris_image
+            ? `/storage/${settings.payment_qris_image}`
+            : null,
+    };
+
+    // State Tab: 'bank' atau 'qris'
+    const [method, setMethod] = useState("bank");
+
     const [data, setData] = useState({ payment_proof: null, notes: "" });
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState({});
     const [preview, setPreview] = useState(null);
     const [copied, setCopied] = useState(false);
-
-    // Dummy Bank Data (Nanti bisa diambil dari props/backend)
-    const bankDetails = {
-        bank: "BCA",
-        number: "1234567890",
-        name: "Titipsini Indonesia",
-    };
-
-    // Debugging: Cek apakah data order masuk
-    useEffect(() => {
-        console.log("Step 2 Loaded. Order Data:", order);
-    }, [order]);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -54,91 +62,60 @@ export default function StepPayment({ order, onPaymentSubmit }) {
         setData((prev) => ({ ...prev, notes: e.target.value }));
 
     const copyToClipboard = () => {
-        navigator.clipboard.writeText(bankDetails.number);
+        const textToCopy = bankInfo.accNumber.replace(/[^0-9]/g, "");
+        navigator.clipboard.writeText(textToCopy);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
 
     const submit = (e) => {
         e.preventDefault();
-
-        // Validasi Pre-Flight: Pastikan Order ID ada
-        if (!order || !order.id) {
-            alert(
-                "Terjadi kesalahan: Data Order ID tidak ditemukan. Silakan refresh halaman."
-            );
-            return;
-        }
+        if (!order || !order.id) return;
 
         setProcessing(true);
         setErrors({});
 
         const formData = new FormData();
-
-        // [PERBAIKAN UTAMA]
-        // Hanya append jika file benar-benar ada (bukan string kosong)
-        if (data.payment_proof) {
+        if (data.payment_proof)
             formData.append("payment_proof", data.payment_proof);
-        }
-
         formData.append("notes", data.notes || "");
-
-        // Opsional: Jika backend Anda menggunakan method POST murni untuk upload,
-        // baris '_method' di bawah ini TIDAK DIPERLUKAN.
-        // Namun jika route Anda adalah PUT/PATCH, aktifkan baris ini:
-        // formData.append("_method", "PUT");
 
         axios
             .post(route("order.submitPayment", order.id), formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             })
             .then((response) => {
-                // Panggil callback ke parent
-                onPaymentSubmit(response.data.orderStatus);
+                if (onPaymentSubmit) onPaymentSubmit(response.data.orderStatus);
             })
             .catch((error) => {
-                console.error("Payment Submit Error:", error);
-
-                if (error.response?.status === 422) {
+                if (error.response?.status === 422)
                     setErrors(error.response.data.errors);
-                } else {
-                    alert(
-                        "Gagal submit pembayaran. Silakan coba lagi atau cek koneksi."
-                    );
-                }
+                else alert("Gagal submit pembayaran.");
             })
             .finally(() => setProcessing(false));
     };
 
-    // Pastikan order ada sebelum render komponen utama untuk menghindari crash
-    if (!order) {
-        return (
-            <div className="p-8 text-center text-gray-500">
-                Memuat data pesanan...
-            </div>
-        );
-    }
+    if (!order)
+        return <div className="p-8 text-center text-gray-500">Loading...</div>;
 
     return (
         <form onSubmit={submit} className="p-6 md:p-8 space-y-6">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-black text-gray-900 tracking-tight">
                         Pembayaran
                     </h2>
                     <p className="text-sm text-gray-500">
-                        Selesaikan pembayaran untuk memproses pesanan
+                        Pilih metode dan selesaikan pembayaran
                     </p>
                 </div>
-                <div className="px-4 py-1.5 bg-blue-100 text-blue-800 text-xs font-bold uppercase tracking-wider rounded-full shadow-sm">
+                <div className="px-4 py-1.5 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">
                     Step 2/3
                 </div>
             </div>
 
-            {/* Total Bill Card */}
+            {/* Total Tagihan */}
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 text-white p-6 shadow-xl">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500 rounded-full blur-3xl opacity-20 -mt-10 -mr-10"></div>
                 <div className="relative z-10 flex justify-between items-center">
                     <div>
                         <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">
@@ -154,121 +131,164 @@ export default function StepPayment({ order, onPaymentSubmit }) {
                 </div>
             </div>
 
-            {/* Bank Info Section */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center gap-2 mb-4">
-                    <CreditCard className="w-5 h-5 text-gray-500" />
-                    <h4 className="font-bold text-gray-800">Transfer Manual</h4>
-                </div>
-
-                <div className="bg-gray-50 rounded-xl p-4 border border-dashed border-gray-300 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div className="text-center sm:text-left">
-                        <p className="text-xs text-gray-500 font-bold uppercase">
-                            Bank {bankDetails.bank}
-                        </p>
-                        <div className="flex items-center gap-2 justify-center sm:justify-start">
-                            <p className="text-xl font-mono font-bold text-gray-900 tracking-wider">
-                                {bankDetails.number}
-                            </p>
-                        </div>
-                        <p className="text-xs text-gray-400 mt-1">
-                            a/n {bankDetails.name}
-                        </p>
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={copyToClipboard}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-                            copied
-                                ? "bg-emerald-100 text-emerald-700"
-                                : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-100"
-                        }`}
-                    >
-                        {copied ? (
-                            <>
-                                <CheckCircle2 className="w-4 h-4" /> Disalin!
-                            </>
-                        ) : (
-                            <>
-                                <Copy className="w-4 h-4" /> Salin No. Rek
-                            </>
-                        )}
-                    </button>
-                </div>
+            {/* Pilihan Metode Pembayaran (Tabs) */}
+            <div className="flex p-1 bg-gray-100 rounded-xl">
+                <button
+                    type="button"
+                    onClick={() => setMethod("bank")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-bold transition-all ${
+                        method === "bank"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-500 hover:text-gray-700"
+                    }`}
+                >
+                    <CreditCard size={18} /> Transfer Bank
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setMethod("qris")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-bold transition-all ${
+                        method === "qris"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-500 hover:text-gray-700"
+                    }`}
+                >
+                    <QrCode size={18} /> QRIS Code
+                </button>
             </div>
 
-            {/* Upload & Notes Section */}
+            {/* Konten Metode Pembayaran */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm min-h-[200px]">
+                {method === "bank" ? (
+                    // TAMPILAN BANK
+                    <div className="space-y-4 animate-fade-in">
+                        <div className="bg-gray-50 rounded-xl p-4 border border-dashed border-gray-300 flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div className="text-center sm:text-left">
+                                <p className="text-xs text-gray-500 font-bold uppercase">
+                                    {bankInfo.bankName}
+                                </p>
+                                <p className="text-xl font-mono font-bold text-gray-900 tracking-wider my-1">
+                                    {bankInfo.accNumber}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                    a/n {bankInfo.accHolder}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={copyToClipboard}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                                    copied
+                                        ? "bg-emerald-100 text-emerald-700"
+                                        : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-100"
+                                }`}
+                            >
+                                {copied ? (
+                                    <>
+                                        <CheckCircle2 className="w-4 h-4" />{" "}
+                                        Disalin!
+                                    </>
+                                ) : (
+                                    <>
+                                        <Copy className="w-4 h-4" /> Salin
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                        <p className="text-xs text-center text-gray-500">
+                            {bankInfo.instruction}
+                        </p>
+                    </div>
+                ) : (
+                    // TAMPILAN QRIS
+                    <div className="flex flex-col items-center animate-fade-in space-y-4">
+                        {bankInfo.qrisImage ? (
+                            <>
+                                <div className="p-4 bg-white border-2 border-gray-900 rounded-2xl shadow-lg">
+                                    <img
+                                        src={bankInfo.qrisImage}
+                                        alt="QRIS Code"
+                                        className="w-48 h-48 object-contain"
+                                    />
+                                </div>
+                                <p className="text-sm text-gray-600 font-medium text-center px-4">
+                                    Scan QRIS di atas menggunakan aplikasi
+                                    E-Wallet atau Mobile Banking Anda.
+                                </p>
+                                <a
+                                    href={bankInfo.qrisImage}
+                                    download
+                                    className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                                >
+                                    <Download size={12} /> Download QRIS
+                                </a>
+                            </>
+                        ) : (
+                            <div className="text-center py-10 text-gray-400">
+                                <QrCode
+                                    size={48}
+                                    className="mx-auto mb-2 opacity-50"
+                                />
+                                <p>QRIS belum tersedia.</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Upload & Notes */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Upload Area */}
                 <div className="space-y-2">
-                    <InputLabel value="Upload Bukti Transfer" />
+                    <InputLabel value="Upload Bukti Pembayaran" />
                     <label
-                        className={`group flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-2xl cursor-pointer transition-all overflow-hidden relative ${
+                        className={`group flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-2xl cursor-pointer transition-all relative ${
                             errors.payment_proof
                                 ? "border-red-300 bg-red-50"
-                                : "border-gray-300 bg-gray-50 hover:bg-blue-50 hover:border-blue-400"
+                                : "border-gray-300 bg-gray-50 hover:bg-blue-50"
                         }`}
                     >
                         {preview ? (
-                            <>
-                                <img
-                                    src={preview}
-                                    alt="Preview"
-                                    className="w-full h-full object-cover opacity-90"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <span className="text-white text-sm font-bold bg-black/50 px-3 py-1 rounded-full">
-                                        Ganti File
-                                    </span>
-                                </div>
-                            </>
+                            <img
+                                src={preview}
+                                alt="Preview"
+                                className="w-full h-full object-cover rounded-2xl opacity-90"
+                            />
                         ) : (
                             <div className="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center">
-                                <UploadCloud className="w-8 h-8 text-gray-400 mb-2 group-hover:text-blue-500 transition-colors" />
-                                <p className="mb-1 text-sm text-gray-500 font-medium">
+                                <UploadCloud className="w-8 h-8 text-gray-400 mb-2" />
+                                <p className="text-sm text-gray-500">
                                     Klik untuk upload bukti
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                    JPG, PNG, PDF (Max 2MB)
                                 </p>
                             </div>
                         )}
                         <input
                             type="file"
                             className="hidden"
-                            accept="image/*,application/pdf"
+                            accept="image/*"
                             onChange={handleFileChange}
                         />
                     </label>
                     <InputError message={errors.payment_proof?.[0]} />
                 </div>
-
-                {/* Notes Area */}
                 <div className="space-y-2">
-                    <InputLabel htmlFor="notes" value="Catatan (Opsional)" />
-                    <div className="relative">
-                        <FileText className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                        <textarea
-                            id="notes"
-                            value={data.notes}
-                            className="pl-10 block w-full border-gray-200 rounded-2xl focus:ring-emerald-500 focus:border-emerald-500 min-h-[160px] text-sm bg-gray-50"
-                            rows="4"
-                            onChange={handleNotesChange}
-                            placeholder="Contoh: Transfer atas nama Budi, mohon segera diproses."
-                        ></textarea>
-                    </div>
+                    <InputLabel htmlFor="notes" value="Catatan" />
+                    <textarea
+                        id="notes"
+                        value={data.notes}
+                        className="block w-full border-gray-200 rounded-2xl min-h-[160px] text-sm bg-gray-50"
+                        onChange={handleNotesChange}
+                        placeholder="Catatan tambahan..."
+                    ></textarea>
                 </div>
             </div>
 
-            {/* Footer Action */}
             <div className="pt-4 border-t border-gray-100">
                 <PrimaryButton
                     disabled={processing}
-                    className="w-full justify-center py-4 text-base font-bold rounded-xl shadow-lg shadow-emerald-200 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transform hover:-translate-y-1 transition-all"
+                    className="w-full justify-center py-4 text-base font-bold rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700"
                 >
                     {processing ? (
-                        "Memproses Pembayaran..."
+                        "Memproses..."
                     ) : (
                         <span className="flex items-center">
                             Konfirmasi Pembayaran{" "}

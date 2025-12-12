@@ -1,14 +1,20 @@
-import React, { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import React, { useEffect, useState, useMemo, useRef } from "react";
+import {
+    MapContainer,
+    TileLayer,
+    Marker,
+    Popup,
+    useMap,
+    useMapEvents,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
-// --- 1. DEFINISI ICON (LANGSUNG DI DALAM BIAR ANTI-ERROR) ---
+// --- 1. DEFINISI ICON ---
 const iconUrl = "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png";
 const shadowUrl =
     "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png";
 
-// Icon Default
 let DefaultIcon = L.icon({
     iconUrl: iconUrl,
     shadowUrl: shadowUrl,
@@ -17,7 +23,7 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Icon Pin Merah (Lokasi) - Menggunakan Filter CSS
+// Icon Pin Merah (Lokasi User/Input)
 const locationIcon = new L.DivIcon({
     className: "bg-transparent",
     html: `<div style="filter: hue-rotate(140deg); -webkit-filter: hue-rotate(140deg);">
@@ -41,82 +47,168 @@ const courierIcon = new L.DivIcon({
     popupAnchor: [1, -34],
 });
 
-// --- 2. KOMPONEN BANTUAN (AUTO CENTER) ---
-const RecenterAutomatically = ({ lat, lng }) => {
+// --- 2. MAP CONTROLLER (Animasi Pindah) ---
+const MapController = ({ center }) => {
     const map = useMap();
     useEffect(() => {
-        if (lat && lng) {
-            map.setView([lat, lng], map.getZoom());
+        if (center) {
+            // Animasi 'terbang' halus ke lokasi baru
+            map.flyTo(center, map.getZoom(), {
+                animate: true,
+                duration: 1.5,
+            });
         }
-    }, [lat, lng, map]);
+    }, [center, map]);
     return null;
 };
 
-// --- 3. KOMPONEN UTAMA ---
+// --- 3. LOCATION MARKER (Pin yang Bisa Digeser) ---
+const LocationMarker = ({ position, setPosition, onLocationSelect }) => {
+    const markerRef = useRef(null);
+
+    // Event handler: Saat marker selesai ditarik (dragend)
+    const eventHandlers = useMemo(
+        () => ({
+            dragend() {
+                const marker = markerRef.current;
+                if (marker != null) {
+                    const newPos = marker.getLatLng();
+                    setPosition([newPos.lat, newPos.lng]);
+                    // Kirim koordinat ke Parent (Step1_Form)
+                    if (onLocationSelect)
+                        onLocationSelect(newPos.lat, newPos.lng);
+                }
+            },
+        }),
+        [onLocationSelect, setPosition]
+    );
+
+    // Event handler: Saat peta diklik
+    useMapEvents({
+        click(e) {
+            setPosition([e.latlng.lat, e.latlng.lng]);
+            // Kirim koordinat ke Parent
+            if (onLocationSelect) onLocationSelect(e.latlng.lat, e.latlng.lng);
+        },
+    });
+
+    return (
+        <Marker
+            draggable={true} // [PENTING] Izinkan geser
+            eventHandlers={eventHandlers}
+            position={position}
+            ref={markerRef}
+            icon={locationIcon}
+        >
+            <Popup>Geser marker ini ke titik penjemputan.</Popup>
+        </Marker>
+    );
+};
+
+// --- 4. KOMPONEN UTAMA ---
 export default function LiveMap({
     lat,
     lng,
     courierLat,
     courierLng,
-    isTracking = false, // false = Mode Lokasi, true = Mode Kurir
+    isTracking = false, // false = Mode Pilih Lokasi, true = Mode Tracking Kurir
+    onLocationSelect, // Callback function dari Parent (Step1_Form)
 }) {
-    // Normalisasi Input Koordinat
-    const latitude = lat || courierLat;
-    const longitude = lng || courierLng;
+    // --- STEP 1: PARSING DATA ---
+    const parseCoord = (val) => {
+        const num = parseFloat(val);
+        return isNaN(num) ? 0 : num;
+    };
 
-    // Default Jakarta (Hanya dipakai jika data nol/kosong)
-    const defaultCenter = [-6.2088, 106.8456];
+    const dbLat = parseCoord(lat || courierLat);
+    const dbLng = parseCoord(lng || courierLng);
 
-    // Cek Validitas Data
-    const isValidLocation =
-        latitude && longitude && latitude !== 0 && longitude !== 0;
+    // Validasi Data
+    const isDbDataValid = Math.abs(dbLat) > 0.0001 && Math.abs(dbLng) > 0.0001;
 
-    const center = isValidLocation ? [latitude, longitude] : defaultCenter;
+    // Default Seturan (Fallback)
+    const defaultCenter = [-7.770287, 110.410795];
 
-    // Pilih Icon
-    const activeIcon = isTracking ? courierIcon : locationIcon;
+    // State Posisi
+    const [currentPos, setCurrentPos] = useState(
+        isDbDataValid ? [dbLat, dbLng] : defaultCenter
+    );
+    const [statusText, setStatusText] = useState("");
+
+    // --- STEP 2: LOGIKA LOAD AWAL ---
+    useEffect(() => {
+        // KASUS 1: Jika Mode Tracking (Lihat Kurir) & Ada Data -> Pakai Data DB
+        if (isTracking && isDbDataValid) {
+            setCurrentPos([dbLat, dbLng]);
+            setStatusText("Lokasi Kurir");
+            return;
+        }
+
+        // KASUS 2: Jika Mode Input (Pilih Lokasi) & Data Masih Kosong -> Cari GPS
+        if (!isTracking && !isDbDataValid && "geolocation" in navigator) {
+            setStatusText("Mencari lokasi kamu...");
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    console.log("📍 GPS Ditemukan:", latitude, longitude);
+
+                    setCurrentPos([latitude, longitude]);
+                    setStatusText("Lokasi ditemukan!");
+
+                    // Otomatis update parent form saat GPS ketemu
+                    if (onLocationSelect) onLocationSelect(latitude, longitude);
+                },
+                (error) => {
+                    console.error("Gagal GPS:", error);
+                    setStatusText("Gagal deteksi lokasi. Geser peta manual.");
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        } else if (isDbDataValid) {
+            // Jika data sudah ada (misal user balik dari step 2 ke step 1), pakai data itu
+            setCurrentPos([dbLat, dbLng]);
+        }
+    }, [isTracking, dbLat, dbLng, isDbDataValid]);
+    // Dependency array penting agar tidak loop, tapi tetap reaktif
 
     return (
         <div className="h-full w-full rounded-2xl overflow-hidden shadow-inner border border-gray-200 relative z-0">
+            {/* Status Bar */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[1000] bg-white/90 backdrop-blur px-3 py-1 rounded-full shadow text-xs font-bold text-emerald-600 border border-emerald-100 whitespace-nowrap">
+                {statusText ||
+                    (isTracking
+                        ? "Menunggu Data..."
+                        : "Geser Marker untuk Pilih Lokasi")}
+            </div>
+
             <MapContainer
-                center={center}
+                center={currentPos}
                 zoom={15}
                 scrollWheelZoom={true}
                 style={{ height: "100%", width: "100%" }}
             >
                 <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+                    attribution="&copy; OSM"
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
-                {isValidLocation && (
-                    <>
-                        {/* MARKER STANDAR (TIDAK BISA DIGESER) */}
-                        <Marker
-                            position={[latitude, longitude]}
-                            icon={activeIcon}
-                            draggable={false} // KITA KUNCI SECARA EKSPLISIT
-                        >
-                            <Popup>
-                                {isTracking
-                                    ? "🚚 Lokasi Kurir"
-                                    : "📍 Lokasi Penjemputan"}
-                            </Popup>
-                        </Marker>
+                <MapController center={currentPos} />
 
-                        {/* Paksa Peta Pindah ke Titik Tersebut */}
-                        <RecenterAutomatically lat={latitude} lng={longitude} />
-                    </>
+                {isTracking ? (
+                    // MODE TRACKING (Marker Diam / Kurir)
+                    <Marker position={currentPos} icon={courierIcon}>
+                        <Popup>Lokasi Kurir</Popup>
+                    </Marker>
+                ) : (
+                    // MODE INPUT (Marker Bisa Digeser)
+                    <LocationMarker
+                        position={currentPos}
+                        setPosition={setCurrentPos}
+                        onLocationSelect={onLocationSelect}
+                    />
                 )}
             </MapContainer>
-
-            {!isValidLocation && (
-                <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur px-4 py-2 rounded-lg shadow text-sm text-gray-600 text-center z-[1000]">
-                    {isTracking
-                        ? "📡 Menunggu sinyal GPS..."
-                        : "🔍 Menunggu data lokasi..."}
-                </div>
-            )}
         </div>
     );
 }

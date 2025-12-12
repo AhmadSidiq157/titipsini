@@ -16,7 +16,7 @@ use App\Http\Controllers\HistoryController;
 
 // Admin Controllers
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\UserManagementController; // [PENTING] Gunakan Controller yang ada
+use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\WelcomeController;
 use App\Http\Controllers\Admin\ServiceController;
@@ -82,6 +82,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Order & Pembayaran
     Route::prefix('order')->name('order.')->group(function () {
+        
+        // [WAJIB ADA] Route untuk Hitung Ongkir Otomatis (Haversine)
+        Route::post('/calculate-shipping', [OrderController::class, 'calculateShipping'])->name('calculate_shipping');
+        
         Route::get('/create', [OrderController::class, 'create'])->name('create');
         Route::post('/', [OrderController::class, 'store'])->name('store')->middleware('isVerified');
         Route::get('/{order}/payment', [OrderController::class, 'payment'])->name('payment');
@@ -105,12 +109,12 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
     ->name('admin.')
     ->group(function () {
 
-        // [PERBAIKAN] Manajemen User sekarang diarahkan ke UserManagementController
+        // Manajemen User
         Route::get('users', [UserManagementController::class, 'index'])->name('users.index');
         Route::get('users/{user}/make-admin', [UserManagementController::class, 'makeAdmin'])->name('users.makeAdmin');
         Route::get('users/{user}/remove-admin', [UserManagementController::class, 'removeAdmin'])->name('users.removeAdmin');
 
-        // Verifikasi KTP User (Tetap di controller yang sama)
+        // Verifikasi KTP User
         Route::get('verifications', [UserManagementController::class, 'verificationIndex'])->name('verification.index');
         Route::get('verifications/{userVerification}', [UserManagementController::class, 'verificationShow'])->name('verification.show');
         Route::post('verifications/{userVerification}/approve', [UserManagementController::class, 'verificationApprove'])->name('verification.approve');
@@ -120,6 +124,11 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
         Route::resource('services', ServiceController::class);
         Route::resource('moving-packages', MovingPackageController::class);
         Route::resource('branches', BranchController::class);
+
+        // --- PENGATURAN REKENING TRANSFER ---
+        Route::get('/payment-settings', [SettingController::class, 'payment'])->name('payment_settings.index');
+        Route::post('/payment-settings', [SettingController::class, 'updatePayment'])->name('payment_settings.update');
+        // ------------------------------------
 
         // Manajemen Pesanan
         Route::prefix('orders')->name('orders.')->group(function () {
@@ -153,7 +162,7 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
                 Route::post('/{verification}/reject', 'reject')->name('reject');
             });
 
-        // Pengaturan
+        // Pengaturan Lain (Contact, Social, Logo)
         Route::prefix('settings')->name('settings.')->group(function () {
             Route::get('contact', [SettingController::class, 'contact'])->name('contact');
             Route::get('social', [SettingController::class, 'social'])->name('social');

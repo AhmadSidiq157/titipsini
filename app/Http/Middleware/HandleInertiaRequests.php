@@ -5,7 +5,7 @@ namespace App\Http\Middleware;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use App\Models\Setting;
-use App\Models\Branch; // [BARU DITAMBAHKAN] Import Model Branch
+use App\Models\Branch; // Import Model Branch
 use Illuminate\Support\Facades\Cache;
 
 class HandleInertiaRequests extends Middleware
@@ -35,28 +35,35 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
 
         if ($user) {
+            // Load relasi yang sering dibutuhkan
             $user->load('courierVerification', 'roles');
         }
 
-        return [
-            ...parent::share($request),
+        return array_merge(parent::share($request), [
             'auth' => [
                 'user' => $user,
             ],
-            // Data Settings (Sudah ada sebelumnya)
-            'settings' => Cache::rememberForever('settings', function () {
-                return Setting::all()->pluck('value', 'key');
-            }),
+
+            // [MODIFIKASI] Settings Global (Termasuk Data Pembayaran)
+            // Menggunakan toArray() agar formatnya konsisten di JS
+            // Cache 1 jam (60*60) agar perubahan di database tidak 'stuck' selamanya
+            'settings' => function () {
+                return Cache::remember('app_settings', 60 * 60, function () {
+                    return Setting::all()->pluck('value', 'key')->toArray();
+                });
+            },
 
             // [BARU DITAMBAHKAN] Data Branches untuk Dropdown Global
-            // Kita cache juga agar tidak query database setiap pindah halaman
-            'branches' => Cache::rememberForever('branches_list', function () {
-                // Ambil ID dan Nama saja untuk menghemat bandwidth
-                return Branch::select('id', 'name')->get();
-            }),
+            'branches' => function () {
+                return Cache::rememberForever('branches_list', function () {
+                    return Branch::select('id', 'name')->get();
+                });
+            },
 
+            // [MODIFIKASI] Flash Messages (Success & Error)
             'flash' => [
-                'success' => fn() => $request->session()->get('success'),
+                'success' => fn () => $request->session()->get('success'),
+                'error'   => fn () => $request->session()->get('error'),
             ],
 
             'ziggy' => function () use ($request) {
@@ -64,6 +71,6 @@ class HandleInertiaRequests extends Middleware
                     'location' => $request->url(),
                 ]);
             },
-        ];
+        ]);
     }
 }

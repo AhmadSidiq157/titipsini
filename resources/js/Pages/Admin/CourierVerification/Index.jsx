@@ -9,6 +9,7 @@ import {
     Truck,
     Search,
     AlertCircle,
+    Phone,
 } from "lucide-react";
 
 // --- Komponen Status Badge Modern ---
@@ -46,7 +47,7 @@ const StatusBadge = ({ status }) => {
     );
 };
 
-// --- [MODIFIKASI] Pagination Tema Hijau ---
+// --- Pagination Tema Hijau ---
 const Pagination = ({ links }) => {
     if (!links || links.length <= 1) return null;
     return (
@@ -152,6 +153,10 @@ export default function Index({ auth, verifications }) {
                                             <th className="py-4 px-6 border-b border-gray-100 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider">
                                                 Nama Kurir
                                             </th>
+                                            {/* [MODIFIKASI] Header Kolom No. Telepon */}
+                                            <th className="py-4 px-6 border-b border-gray-100 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider">
+                                                No. Telepon
+                                            </th>
                                             <th className="py-4 px-6 border-b border-gray-100 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider">
                                                 Kendaraan
                                             </th>
@@ -178,6 +183,16 @@ export default function Index({ auth, verifications }) {
                                                     </div>
                                                     <div className="text-xs text-gray-500 mt-0.5">
                                                         {v.user.email}
+                                                    </div>
+                                                </td>
+                                                {/* [MODIFIKASI] Body Kolom No. Telepon */}
+                                                <td className="py-4 px-6">
+                                                    <div className="flex items-center text-sm text-gray-700">
+                                                        <Phone
+                                                            size={14}
+                                                            className="text-gray-400 mr-2"
+                                                        />
+                                                        {v.user.phone || "-"}
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-6 text-sm text-gray-700">
@@ -222,7 +237,7 @@ export default function Index({ auth, verifications }) {
                                         {verifications.data.length === 0 && (
                                             <tr>
                                                 <td
-                                                    colSpan="5"
+                                                    colSpan="6"
                                                     className="py-12 text-center text-gray-400 italic"
                                                 >
                                                     Tidak ada data verifikasi

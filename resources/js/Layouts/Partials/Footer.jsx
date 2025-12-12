@@ -10,208 +10,234 @@ import {
     Linkedin,
     Youtube,
     Globe,
+    ChevronRight,
 } from "lucide-react";
 
-// Fungsi helper untuk memilih ikon yang sesuai berdasarkan nama
+// Helper untuk memilih ikon sosmed secara otomatis berdasarkan nama
 const getSocialIconComponent = (name) => {
+    if (!name) return Globe;
     const lowerCaseName = name.toLowerCase();
     if (lowerCaseName.includes("facebook")) return Facebook;
     if (lowerCaseName.includes("instagram")) return Instagram;
-    if (lowerCaseName.includes("twitter")) return Twitter;
+    if (lowerCaseName.includes("twitter") || lowerCaseName.includes("x"))
+        return Twitter;
     if (lowerCaseName.includes("linkedin")) return Linkedin;
     if (lowerCaseName.includes("youtube")) return Youtube;
-
-    return Globe;
+    return Globe; // Icon default jika tidak dikenali
 };
 
 export default function Footer() {
-    const { settings = {} } = usePage().props;
+    // Ambil data settings global dari Middleware
+    const { settings = {}, auth } = usePage().props;
 
-    // Ambil data kontak dan sosmed dari props
-    const contactPhone = settings.contact_phone || "+62 812-3456-7890";
-    const contactEmail = settings.contact_email || "info@titipsini.com";
-    const contactAddress = settings.contact_address || "Jakarta, Indonesia";
+    // Data Kontak (Default strip jika kosong)
+    const contactPhone = settings.contact_phone || "-";
+    const contactEmail = settings.contact_email || "-";
+    const contactAddress = settings.contact_address || "-";
 
-    const socialLinks =
-        settings.social_links && typeof settings.social_links === "string"
-            ? JSON.parse(settings.social_links)
-            : [];
+    // Logic Parsing Social Links (JSON String -> Array Object)
+    let socialLinks = [];
+    try {
+        if (settings.social_links) {
+            // Cek tipe data, jika string kita parse, jika sudah object/array kita pakai langsung
+            socialLinks =
+                typeof settings.social_links === "string"
+                    ? JSON.parse(settings.social_links)
+                    : settings.social_links;
+        }
+    } catch (error) {
+        console.error("Gagal memparsing data social links:", error);
+        socialLinks = [];
+    }
+
+    // Pastikan socialLinks adalah array
+    if (!Array.isArray(socialLinks)) {
+        socialLinks = [];
+    }
 
     return (
-        <footer className="bg-slate-900 text-slate-300">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {/* Kolom Logo & Deskripsi */}
-                    <div>
-                        <Link href="/">
-                            <div className="flex items-center space-x-3 mb-4">
+        <footer className="bg-slate-900 text-slate-300 border-t border-slate-800">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+                    {/* 1. Logo & Deskripsi */}
+                    <div className="space-y-6">
+                        <Link href="/" className="inline-block">
+                            <div className="flex items-center gap-3">
+                                {/* Pastikan file logo ada di public/images/ */}
                                 <img
                                     src="/images/titipsini-fotter1.png"
-                                    alt="Logo Titipsini.com"
-                                    className="h-8 w-auto"
+                                    alt="Logo Titipsini"
+                                    className="h-10 w-auto object-contain brightness-0 invert"
                                 />
-                                <span className="text-2xl font-bold text-white">
-                                    Titipsini.com
+                                <span className="text-2xl font-bold text-white tracking-tight">
+                                    TitipSini
                                 </span>
                             </div>
                         </Link>
-                        <p className="text-sm text-slate-400">
-                            Solusi terpercaya untuk kebutuhan penitipan barang
-                            Anda. Kami berkomitmen memberikan layanan storage
-                            yang aman dengan kualitas tinggi.
+                        <p className="text-sm text-slate-400 leading-relaxed">
+                            Platform terpercaya untuk solusi penitipan barang
+                            dan jasa pindahan dengan keamanan terjamin.
                         </p>
 
-                        {/* --- BAGIAN SOSMED YANG SUDAH DINAMIS --- */}
-                        <div className="flex space-x-4 mt-6">
-                            {socialLinks.map((link) => {
-                                const IconComponent = getSocialIconComponent(
-                                    link.name
-                                );
-                                return (
-                                    <a
-                                        key={link.url}
-                                        href={link.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-slate-400 hover:text-white transition-colors"
-                                        aria-label={link.name}
-                                    >
-                                        <IconComponent size={20} />
-                                    </a>
-                                );
-                            })}
+                        {/* --- BAGIAN SOSMED DINAMIS --- */}
+                        <div className="flex gap-4 flex-wrap">
+                            {socialLinks.length > 0 ? (
+                                socialLinks.map((link, index) => {
+                                    const Icon = getSocialIconComponent(
+                                        link.name
+                                    );
+                                    return (
+                                        <a
+                                            key={index}
+                                            href={link.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-emerald-600 hover:text-white transition-all duration-300 transform hover:-translate-y-1"
+                                            aria-label={link.name}
+                                            title={link.name} // Tooltip native browser
+                                        >
+                                            <Icon size={18} />
+                                        </a>
+                                    );
+                                })
+                            ) : (
+                                // Jika Admin belum input sosmed, tampilkan teks kecil atau kosongkan
+                                <span className="text-xs text-slate-600 italic">
+                                    Sosial media belum diatur.
+                                </span>
+                            )}
                         </div>
                     </div>
 
-                    {/* Kolom Tautan Cepat */}
+                    {/* 2. Tautan Cepat */}
                     <div>
-                        <h4 className="text-lg font-semibold text-white mb-4">
-                            Tautan Cepat
+                        <h4 className="text-lg font-bold text-white mb-6 border-b border-slate-700 pb-2 inline-block">
+                            Jelajahi
                         </h4>
-                        <ul className="space-y-2 text-sm text-slate-400">
+                        <ul className="space-y-3">
                             <li>
                                 <Link
                                     href={route("home")}
-                                    className="hover:text-white transition-colors"
+                                    className="group flex items-center gap-2 hover:text-emerald-400 transition-colors"
                                 >
+                                    <ChevronRight
+                                        size={14}
+                                        className="text-slate-600 group-hover:text-emerald-500 transition-colors"
+                                    />
                                     Beranda
-                                </Link>
-                            </li>
-                            <li>
-                                {/* --- [INI DIA PERBAIKANNYA] ---
-                                    Link diubah dari route('layanan.show')
-                                    menjadi anchor link '/#layanan'
-                                */}
-                                <Link
-                                    href="/#layanan"
-                                    className="hover:text-white transition-colors"
-                                >
-                                    Pindahan
                                 </Link>
                             </li>
                             <li>
                                 <Link
                                     href={route("about")}
-                                    className="hover:text-white transition-colors"
+                                    className="group flex items-center gap-2 hover:text-emerald-400 transition-colors"
                                 >
+                                    <ChevronRight
+                                        size={14}
+                                        className="text-slate-600 group-hover:text-emerald-500 transition-colors"
+                                    />
                                     Tentang Kami
                                 </Link>
                             </li>
                             <li>
                                 <Link
-                                    href="#" // Link FAQ kamu belum ada, jadi kubiarkan
-                                    className="hover:text-white transition-colors"
-                                >
-                                    FAQ
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
                                     href={route("contact.show")}
-                                    className="hover:text-white transition-colors"
+                                    className="group flex items-center gap-2 hover:text-emerald-400 transition-colors"
                                 >
-                                    Kontak
+                                    <ChevronRight
+                                        size={14}
+                                        className="text-slate-600 group-hover:text-emerald-500 transition-colors"
+                                    />
+                                    Hubungi Kami
                                 </Link>
                             </li>
                         </ul>
                     </div>
 
-                    {/* Kolom Layanan */}
+                    {/* 3. Layanan Utama */}
                     <div>
-                        <h4 className="text-lg font-semibold text-white mb-4">
-                            Layanan
+                        <h4 className="text-lg font-bold text-white mb-6 border-b border-slate-700 pb-2 inline-block">
+                            Layanan Utama
                         </h4>
-                        <ul className="space-y-2 text-sm text-slate-400">
-                            {/* --- [PENYESUAIAN] Link ini juga diarahkan ke anchor --- */}
+                        <ul className="space-y-3">
                             <li>
                                 <Link
-                                    href="/#layanan"
-                                    className="hover:text-white transition-colors"
+                                    href={route("penitipan.index")}
+                                    className="group flex items-center gap-2 hover:text-emerald-400 transition-colors"
                                 >
-                                    Penitipan Barang
+                                    <ChevronRight
+                                        size={14}
+                                        className="text-slate-600 group-hover:text-emerald-500 transition-colors"
+                                    />
+                                    Jasa Penitipan Barang
                                 </Link>
                             </li>
                             <li>
                                 <Link
-                                    href="/#layanan"
-                                    className="hover:text-white transition-colors"
+                                    href={route("pindahan.index")}
+                                    className="group flex items-center gap-2 hover:text-emerald-400 transition-colors"
                                 >
-                                    Storage Kendaraan
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    href="/#layanan"
-                                    className="hover:text-white transition-colors"
-                                >
-                                    Layanan Pengiriman
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    href={route("contact.show")} // Arahkan ke kontak
-                                    className="hover:text-white transition-colors"
-                                >
-                                    Customer Support
+                                    <ChevronRight
+                                        size={14}
+                                        className="text-slate-600 group-hover:text-emerald-500 transition-colors"
+                                    />
+                                    Jasa Pindahan
                                 </Link>
                             </li>
                         </ul>
                     </div>
 
-                    {/* Kolom Hubungi Kami */}
+                    {/* 4. Kontak Kami (Dinamis dari Settings) */}
                     <div>
-                        <h4 className="text-lg font-semibold text-white mb-4">
+                        <h4 className="text-lg font-bold text-white mb-6 border-b border-slate-700 pb-2 inline-block">
                             Hubungi Kami
                         </h4>
-                        <ul className="space-y-3 text-sm text-slate-400">
-                            <li className="flex items-start">
-                                <Phone
-                                    size={16}
-                                    className="mr-3 mt-1 flex-shrink-0"
-                                />
-                                <span>{contactPhone}</span>
+                        <ul className="space-y-4">
+                            <li className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 text-emerald-500">
+                                    <MapPin size={18} />
+                                </div>
+                                <span className="text-sm leading-relaxed">
+                                    {contactAddress}
+                                </span>
                             </li>
-                            <li className="flex items-start">
-                                <Mail
-                                    size={16}
-                                    className="mr-3 mt-1 flex-shrink-0"
-                                />
-                                <span>{contactEmail}</span>
+                            <li className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 text-emerald-500">
+                                    <Phone size={18} />
+                                </div>
+                                <span className="text-sm hover:text-white transition-colors">
+                                    {contactPhone}
+                                </span>
                             </li>
-                            <li className="flex items-start">
-                                <MapPin
-                                    size={16}
-                                    className="mr-3 mt-1 flex-shrink-0"
-                                />
-                                <span>{contactAddress}</span>
+                            <li className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 text-emerald-500">
+                                    <Mail size={18} />
+                                </div>
+                                <span className="text-sm hover:text-white transition-colors">
+                                    {contactEmail}
+                                </span>
                             </li>
                         </ul>
                     </div>
                 </div>
 
-                <div className="border-t border-slate-700 mt-12 pt-8 text-center text-slate-500 text-sm">
-                    &copy; {new Date().getFullYear()} Titipsini.com. Semua hak
-                    cipta dilindungi.
+                {/* Footer Bottom */}
+                <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+                    <p>
+                        &copy; {new Date().getFullYear()} TitipSini.com. All
+                        rights reserved.
+                    </p>
+                    <div className="flex gap-6">
+                        <span className="cursor-pointer hover:text-white transition-colors">
+                            Syarat & Ketentuan
+                        </span>
+                        <span className="cursor-pointer hover:text-white transition-colors">
+                            Kebijakan Privasi
+                        </span>
+                        <span className="cursor-pointer hover:text-white transition-colors">
+                            Bantuan
+                        </span>
+                    </div>
                 </div>
             </div>
         </footer>

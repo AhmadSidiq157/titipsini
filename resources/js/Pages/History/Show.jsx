@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, Link, router, usePage } from "@inertiajs/react";
-import LiveMap from "@/Components/LiveMap";
+import { Head, Link, usePage } from "@inertiajs/react";
 import Modal from "@/Components/Modal";
 import {
     ArrowLeft,
@@ -12,7 +11,6 @@ import {
     MapPin,
     Phone,
     Truck,
-    User,
     MessageCircle,
     HelpCircle,
     Copy,
@@ -22,7 +20,6 @@ import {
     X,
     PackageCheck,
     ShieldCheck,
-    AlertTriangle,
 } from "lucide-react";
 
 // --- Helper Functions ---
@@ -69,11 +66,7 @@ const CopyButton = ({ text }) => {
 };
 
 const getMapsLink = (address) =>
-    address
-        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-              address
-          )}`
-        : "#";
+    address ? `https://maps.google.com/?q=${encodeURIComponent(address)}` : "#";
 
 // --- Image Modal ---
 const ImageModal = ({ show, onClose, src, title }) => (
@@ -115,7 +108,6 @@ export default function Show({ auth, order }) {
     const needsPickup = details.delivery_method === "pickup";
     const ServiceIcon = isPenitipan ? Box : Truck;
 
-    // [FIX UTAMA] Definisi 'notes' ada DI DALAM component utama
     const notes = details.notes || "-";
 
     // Kontak Admin
@@ -133,25 +125,6 @@ export default function Show({ auth, order }) {
 
     // State untuk Image Modal
     const [selectedImage, setSelectedImage] = useState(null);
-
-    // --- Live Tracking Logic ---
-    const courierLat = order.courier?.latitude
-        ? parseFloat(order.courier.latitude)
-        : null;
-    const courierLng = order.courier?.longitude
-        ? parseFloat(order.courier.longitude)
-        : null;
-    const isLive = ["on_delivery", "picked_up", "ready_for_pickup"].includes(
-        order.status
-    );
-
-    useEffect(() => {
-        if (!isLive) return;
-        const interval = setInterval(() => {
-            router.reload({ only: ["order"], preserveScroll: true });
-        }, 10000);
-        return () => clearInterval(interval);
-    }, [isLive]);
 
     // --- Render UI ---
     return (
@@ -319,46 +292,8 @@ export default function Show({ auth, order }) {
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            {/* KOLOM KIRI: Map & Details */}
+                            {/* KOLOM KIRI: Details (Map Dihapus) */}
                             <div className="lg:col-span-2 space-y-8">
-                                {/* Live Tracking Map (Hanya jika ada kurir) */}
-                                {order.courier && (
-                                    <div className="bg-white rounded-3xl border border-blue-100 shadow-lg shadow-blue-500/5 overflow-hidden relative">
-                                        <div className="p-4 bg-gradient-to-r from-blue-600 to-indigo-600 flex justify-between items-center text-white">
-                                            <h3 className="text-sm font-bold flex items-center uppercase tracking-wider">
-                                                <MapPin className="w-4 h-4 mr-2" />{" "}
-                                                Live Tracking
-                                            </h3>
-                                            {isLive ? (
-                                                <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded">
-                                                    KURIR AKTIF
-                                                </span>
-                                            ) : (
-                                                <span className="text-[10px] bg-gray-500/50 px-2 py-1 rounded">
-                                                    OFFLINE
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="relative h-80 bg-gray-100">
-                                            {courierLat && courierLng ? (
-                                                <LiveMap
-                                                    courierLat={courierLat}
-                                                    courierLng={courierLng}
-                                                    isTracking={true}
-                                                />
-                                            ) : (
-                                                <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
-                                                    <Truck className="w-12 h-12 mb-2 opacity-30 animate-pulse" />
-                                                    <p className="text-sm font-medium">
-                                                        Menunggu sinyal lokasi
-                                                        kurir...
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
                                 {/* Detail Card */}
                                 <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
                                     <div className="flex justify-between items-start mb-8 pb-6 border-b border-gray-100">
@@ -414,6 +349,7 @@ export default function Show({ auth, order }) {
                                                             details.alamat_penjemputan
                                                         )}
                                                         target="_blank"
+                                                        rel="noreferrer"
                                                         className="inline-flex items-center mt-2 text-xs font-bold text-blue-600 hover:underline"
                                                     >
                                                         <MapPin
@@ -446,6 +382,7 @@ export default function Show({ auth, order }) {
                                                                 : details.alamat_tujuan
                                                         )}
                                                         target="_blank"
+                                                        rel="noreferrer"
                                                         className="inline-flex items-center mt-2 text-xs font-bold text-green-600 hover:underline"
                                                     >
                                                         <MapPin
@@ -568,6 +505,7 @@ export default function Show({ auth, order }) {
                                                     ""
                                                 )}`}
                                                 target="_blank"
+                                                rel="noreferrer"
                                                 className="flex items-center justify-center py-2.5 bg-green-50 text-green-700 border border-green-100 rounded-xl font-bold text-sm hover:bg-green-100 transition"
                                             >
                                                 <MessageCircle className="w-4 h-4 mr-2" />{" "}
@@ -664,6 +602,7 @@ export default function Show({ auth, order }) {
                                     <a
                                         href={adminWaLink}
                                         target="_blank"
+                                        rel="noreferrer"
                                         className="block w-full py-2.5 bg-white text-blue-600 font-bold rounded-xl shadow-sm hover:bg-blue-100 transition"
                                     >
                                         Hubungi Admin

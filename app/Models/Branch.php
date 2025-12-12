@@ -19,6 +19,8 @@ class Branch extends Model
         'address',
         'phone',
         'status',
+        'latitude',
+        'longitude',
         'google_maps_embed_url',
     ];
 }

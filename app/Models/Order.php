@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany; 
+use Illuminate\Database\Eloquent\Builder;
 
 class Order extends Model
 {
@@ -35,6 +36,10 @@ class Order extends Model
         'user_form_details' => 'array', 
         'final_amount' => 'decimal:2',
     ];
+
+    // ==========================================
+    // RELASI DATABASE
+    // ==========================================
 
     /**
      * Relasi: Dapatkan user (Client) pembuat order.
@@ -82,5 +87,76 @@ class Order extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    // ==========================================
+    // SCOPES (FILTER QUERY) - KHUSUS TA AGAR RAPI
+    // ==========================================
+
+    /**
+     * Scope untuk mengambil order yang "Aktif" (Tidak dibatalkan/ditolak).
+     * Penggunaan: Order::active()->get();
+     */
+    public function scopeActive(Builder $query): void
+    {
+        $query->whereNotIn('status', ['cancelled', 'rejected']);
+    }
+
+    /**
+     * Scope khusus Layanan Pindahan.
+     * Penggunaan: Order::moving()->active()->get();
+     */
+    public function scopeMoving(Builder $query): void
+    {
+        $query->where('orderable_type', MovingPackage::class);
+    }
+
+    /**
+     * Scope khusus Layanan Penitipan.
+     * Penggunaan: Order::service()->get();
+     */
+    public function scopeService(Builder $query): void
+    {
+        $query->where('orderable_type', Service::class);
+    }
+
+    // ==========================================
+    // ACCESSORS (SHORTCUT DATA JSON)
+    // ==========================================
+
+    /**
+     * Shortcut ambil Tanggal Pindahan dari JSON.
+     * Cara Pakai: $order->moving_date
+     */
+    public function getMovingDateAttribute()
+    {
+        return $this->user_form_details['tanggal_pindahan'] ?? null;
+    }
+
+    /**
+     * Shortcut ambil Jarak (KM) dari JSON.
+     * Cara Pakai: $order->distance_km
+     */
+    public function getDistanceKmAttribute()
+    {
+        return $this->user_form_details['distance_km'] ?? 0;
+    }
+
+    /**
+     * Shortcut ambil Alamat Jemput dari JSON.
+     * Cara Pakai: $order->pickup_address
+     */
+    public function getPickupAddressAttribute()
+    {
+        return $this->user_form_details['alamat_penjemputan'] ?? '-';
+    }
+
+    /**
+     * Shortcut ambil Alamat Tujuan dari JSON.
+     * Cara Pakai: $order->destination_address
+     */
+    public function getDestinationAddressAttribute()
+    {
+        return $this->user_form_details['alamat_tujuan'] ?? '-';
     }
 }

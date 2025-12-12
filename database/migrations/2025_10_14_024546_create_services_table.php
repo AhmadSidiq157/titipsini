@@ -15,6 +15,10 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->text('description');
+            
+            // [TAMBAHAN BARU] Kolom Price dipindah ke sini
+            $table->bigInteger('price')->default(0); 
+            
             $table->json('features'); // Kolom untuk menyimpan array fitur
             $table->string('illustration'); // Path ke gambar ilustrasi
             $table->timestamps();

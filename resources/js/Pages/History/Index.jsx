@@ -1,14 +1,12 @@
-import React, { useEffect } from "react";
-import { Head, Link, router, usePage } from "@inertiajs/react";
+import React from "react";
+import { Head, Link } from "@inertiajs/react";
 import {
     Check,
     X,
     Clock,
-    Package,
     Truck,
     User,
     Calendar,
-    MapPin,
     ChevronRight,
     MessageCircle,
     Phone,
@@ -188,10 +186,9 @@ const OrderCard = ({ order }) => {
                             </div>
                         </div>
 
-                        {/* [MODIFIKASI] Tombol Kontak Kurir - Mati jika selesai */}
+                        {/* Tombol Kontak Kurir */}
                         <div className="flex gap-2 w-full sm:w-auto">
                             {isFinished ? (
-                                // Tampilan Disabled jika sudah selesai
                                 <>
                                     <span className="flex-1 sm:flex-none inline-flex justify-center items-center gap-2 px-4 py-2 bg-gray-100 text-gray-400 text-xs font-bold rounded-xl cursor-not-allowed border border-gray-200">
                                         <MessageCircle size={14} /> WhatsApp
@@ -201,11 +198,11 @@ const OrderCard = ({ order }) => {
                                     </span>
                                 </>
                             ) : (
-                                // Tampilan Aktif jika masih proses
                                 <>
                                     <a
                                         href={getCourierWa(order.courier.phone)}
                                         target="_blank"
+                                        rel="noreferrer"
                                         className="flex-1 sm:flex-none inline-flex justify-center items-center gap-2 px-4 py-2 bg-green-500 text-white text-xs font-bold rounded-xl hover:bg-green-600 transition-all shadow-sm hover:shadow-green-200"
                                     >
                                         <MessageCircle size={14} /> WhatsApp
@@ -225,26 +222,19 @@ const OrderCard = ({ order }) => {
                 </div>
             )}
 
-            {/* Footer Actions */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <div className="flex items-center text-xs text-gray-400">
-                    <MapPin size={14} className="mr-1.5" />
-                    <span className="max-w-[200px] truncate">
-                        {details.alamat_penjemputan || "Lokasi sesuai detail"}
-                    </span>
-                </div>
-
-                <div className="flex gap-3">
+            {/* Footer Actions (Alamat Dihapus, sisa tombol di kanan) */}
+            <div className="flex items-center justify-end pt-4 border-t border-gray-100">
+                <div className="flex gap-3 w-full sm:w-auto">
                     {order.status === "awaiting_payment" ? (
                         <Link
                             href={route("order.payment", order.id)}
-                            className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-xs font-bold rounded-xl hover:shadow-lg hover:shadow-green-500/30 transition-all"
+                            className="inline-flex w-full sm:w-auto justify-center items-center px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-xs font-bold rounded-xl hover:shadow-lg hover:shadow-green-500/30 transition-all"
                         >
                             Bayar Sekarang{" "}
                             <ChevronRight size={14} className="ml-1" />
                         </Link>
                     ) : isFinished ? (
-                        <span className="inline-flex items-center px-5 py-2.5 bg-gray-100 text-gray-400 text-xs font-bold rounded-xl cursor-not-allowed border border-gray-200">
+                        <span className="inline-flex w-full sm:w-auto justify-center items-center px-5 py-2.5 bg-gray-100 text-gray-400 text-xs font-bold rounded-xl cursor-not-allowed border border-gray-200">
                             {order.status === "completed"
                                 ? "Pesanan Selesai"
                                 : "Dibatalkan"}
@@ -252,7 +242,7 @@ const OrderCard = ({ order }) => {
                     ) : (
                         <Link
                             href={detailLink}
-                            className="inline-flex items-center px-5 py-2.5 bg-gray-900 text-white text-xs font-bold rounded-xl hover:bg-gray-800 hover:shadow-lg transition-all"
+                            className="inline-flex w-full sm:w-auto justify-center items-center px-5 py-2.5 bg-gray-900 text-white text-xs font-bold rounded-xl hover:bg-gray-800 hover:shadow-lg transition-all"
                         >
                             {[
                                 "on_delivery",
@@ -298,13 +288,6 @@ const Pagination = ({ links }) => (
 
 // --- MAIN PAGE ---
 export default function Index({ auth, orders }) {
-    useEffect(() => {
-        const interval = setInterval(() => {
-            router.reload({ only: ["orders"], preserveScroll: true });
-        }, 10000);
-        return () => clearInterval(interval);
-    }, []);
-
     return (
         <div className="min-h-screen bg-gray-50/50 flex flex-col font-sans">
             <Head title="Riwayat Pesanan" />
