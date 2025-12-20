@@ -1,7 +1,5 @@
-// resources/js/Pages/Admin/Orders/OrderComponents.jsx
-
 import React, { useState, useEffect } from "react";
-import { useForm, Link, router } from "@inertiajs/react"; // Import router
+import { useForm, Link, router } from "@inertiajs/react";
 import Modal from "@/Components/Modal";
 import PrimaryButton from "@/Components/PrimaryButton";
 import DangerButton from "@/Components/DangerButton";
@@ -28,6 +26,9 @@ import {
     FileText,
     AlertTriangle,
     Flag,
+    Navigation,
+    Building2,
+    CheckCircle2,
 } from "lucide-react";
 
 // ==========================================
@@ -62,11 +63,16 @@ export const getStatusLabel = (status) => {
     return STATUS_LABELS[status] || status.replace(/_/g, " ");
 };
 
-export const getMapsLink = (address) => {
-    if (!address) return "#";
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        address
-    )}`;
+export const getMapsLink = (lat, lng, address) => {
+    if (lat && lng) {
+        return `http://googleusercontent.com/maps.google.com/?q=${lat},${lng}`;
+    }
+    if (address) {
+        return `http://googleusercontent.com/maps.google.com/?q=${encodeURIComponent(
+            address
+        )}`;
+    }
+    return "#";
 };
 
 // ==========================================
@@ -193,9 +199,16 @@ export const OrderStepper = ({ status, needsPickup }) => {
     );
 };
 
-export const OrderDetailsBox = ({ order }) => {
+export const OrderDetailsBox = ({
+    order,
+    hasCoordinates,
+    hasMovingCoordinates,
+    isMovingService,
+}) => {
     const details = order.user_form_details || {};
     const [showPhoto, setShowPhoto] = useState(false);
+    const isPickup = details.delivery_method === "pickup";
+
     return (
         <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-lg shadow-gray-100 h-full">
             <h3 className="text-xl font-black text-gray-800 mb-6 flex items-center pb-4 border-b border-gray-50">
@@ -242,6 +255,7 @@ export const OrderDetailsBox = ({ order }) => {
                         )}
                     </div>
                 </div>
+
                 {/* Paket Info */}
                 <div className="flex items-start gap-5">
                     <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center flex-shrink-0 text-gray-400 border border-gray-100">
@@ -261,102 +275,153 @@ export const OrderDetailsBox = ({ order }) => {
                         </div>
                     </div>
                 </div>
-                {/* Masa Sewa */}
-                <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200/60">
+
+                {/* --- LOKASI --- */}
+                {isMovingService ? (
+                    <div className="space-y-4">
+                        <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                            <p className="text-xs font-bold text-blue-600 uppercase mb-2 flex items-center gap-1">
+                                <MapPin size={12} /> Lokasi Asal (Jemput)
+                            </p>
+                            <p className="text-sm text-gray-800 leading-snug mb-3">
+                                {details.alamat_penjemputan}
+                            </p>
+                            {details.origin_latitude && (
+                                <a
+                                    href={getMapsLink(
+                                        details.origin_latitude,
+                                        details.origin_longitude
+                                    )}
+                                    target="_blank"
+                                    className="text-xs font-bold text-blue-700 hover:underline flex items-center gap-1"
+                                >
+                                    <Navigation size={10} /> Cek Koordinat Asal
+                                </a>
+                            )}
+                        </div>
+                        <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
+                            <p className="text-xs font-bold text-orange-600 uppercase mb-2 flex items-center gap-1">
+                                <MapPin size={12} /> Lokasi Tujuan (Antar)
+                            </p>
+                            <p className="text-sm text-gray-800 leading-snug mb-3">
+                                {details.alamat_tujuan}
+                            </p>
+                            {details.destination_latitude && (
+                                <a
+                                    href={getMapsLink(
+                                        details.destination_latitude,
+                                        details.destination_longitude
+                                    )}
+                                    target="_blank"
+                                    className="text-xs font-bold text-orange-700 hover:underline flex items-center gap-1"
+                                >
+                                    <Navigation size={10} /> Cek Koordinat
+                                    Tujuan
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    details.delivery_method && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div
+                                className={`p-4 rounded-xl border ${
+                                    isPickup
+                                        ? "bg-blue-50 border-blue-100"
+                                        : "bg-gray-50 border-gray-100"
+                                }`}
+                            >
+                                <p className="text-xs font-bold text-gray-500 uppercase mb-2">
+                                    {isPickup
+                                        ? "Lokasi Penjemputan"
+                                        : "Lokasi Drop Off"}
+                                </p>
+                                {isPickup ? (
+                                    <>
+                                        <p className="text-sm text-gray-800 mb-2">
+                                            {details.alamat_penjemputan}
+                                        </p>
+                                        {hasCoordinates && (
+                                            <a
+                                                href={getMapsLink(
+                                                    details.latitude,
+                                                    details.longitude
+                                                )}
+                                                target="_blank"
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-white rounded border border-blue-200 text-blue-600 text-xs font-bold hover:bg-blue-50"
+                                            >
+                                                <MapPin size={12} /> Buka di
+                                                Maps
+                                            </a>
+                                        )}
+                                    </>
+                                ) : (
+                                    <p className="text-sm text-gray-500 italic">
+                                        User akan mengantar sendiri.
+                                    </p>
+                                )}
+                            </div>
+                            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                                <p className="text-xs font-bold text-emerald-600 uppercase mb-2 flex items-center gap-1">
+                                    <Building2 size={12} /> Gudang Penyimpanan
+                                </p>
+                                <p className="font-bold text-gray-900 text-sm">
+                                    {details.branch_name || "Cabang Utama"}
+                                </p>
+                                <p className="text-xs text-gray-600 mt-1">
+                                    {details.branch_address || "-"}
+                                </p>
+                            </div>
+                        </div>
+                    )
+                )}
+
+                {/* Masa Sewa & Detail Lain */}
+                <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200/60 mt-4">
                     <div className="flex items-center gap-2 text-gray-500 mb-4">
                         <Calendar size={16} className="text-emerald-500" />
                         <span className="text-xs font-bold uppercase tracking-wide">
-                            Masa Sewa
+                            Rincian Waktu & Jarak
                         </span>
                     </div>
-                    <div className="flex items-center justify-between relative">
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
                             <p className="text-xs text-gray-400 mb-1">Mulai</p>
-                            <p className="font-bold text-gray-900 text-sm md:text-base">
-                                {details.start_date || details.tanggal_pindahan}
+                            <p className="font-bold text-gray-900 text-sm">
+                                {details.start_date ||
+                                    details.tanggal_pindahan ||
+                                    "-"}
                             </p>
                         </div>
-                        <div className="flex-1 mx-4 h-px bg-gray-300 relative top-2">
-                            <div className="absolute right-0 -top-1.5 text-gray-300">
-                                <ArrowRight size={14} />
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-xs text-gray-400 mb-1">Durasi</p>
-                            <p className="font-bold text-gray-900 text-sm md:text-base">
+                        <div>
+                            <p className="text-xs text-gray-400 mb-1">
+                                Durasi / Jarak
+                            </p>
+                            <p className="font-bold text-gray-900 text-sm">
                                 {details.duration_value
                                     ? `${details.duration_value} ${details.duration_unit}`
+                                    : details.distance_km
+                                    ? `${details.distance_km} KM`
                                     : "-"}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-400 mb-1">Armada</p>
+                            <p className="font-bold text-gray-900 text-sm capitalize">
+                                {details.vehicle_type || "-"}
                             </p>
                         </div>
                     </div>
                 </div>
-                {/* Alamat & Foto */}
-                {details.delivery_method && (
-                    <div
-                        className={`flex items-center gap-4 p-4 border rounded-2xl ${
-                            details.delivery_method === "pickup"
-                                ? "bg-blue-50/50 border-blue-200"
-                                : "bg-gray-50 border-gray-200"
-                        }`}
-                    >
-                        <div
-                            className={`p-3 rounded-xl ${
-                                details.delivery_method === "pickup"
-                                    ? "bg-blue-100 text-blue-600"
-                                    : "bg-gray-200 text-gray-600"
-                            }`}
-                        >
-                            {details.delivery_method === "pickup" ? (
-                                <Truck size={22} />
-                            ) : (
-                                <Box size={22} />
-                            )}
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-[10px] text-gray-500 uppercase font-bold mb-0.5">
-                                Metode Penyerahan
-                            </p>
-                            <p className="font-bold text-gray-800 text-base">
-                                {details.delivery_method === "pickup"
-                                    ? "Request Penjemputan (Pick Up)"
-                                    : "Diantar Sendiri (Drop Off)"}
-                            </p>
-                            {details.delivery_method === "pickup" && (
-                                <div className="mt-2">
-                                    <div className="text-sm text-gray-600 flex items-start gap-2 bg-white p-2 rounded-lg border border-blue-100">
-                                        <MapPin
-                                            size={14}
-                                            className="mt-0.5 text-blue-500 flex-shrink-0"
-                                        />
-                                        <span className="flex-1 leading-snug">
-                                            {details.alamat_penjemputan}
-                                        </span>
-                                        <CopyButton
-                                            text={details.alamat_penjemputan}
-                                        />
-                                    </div>
-                                    <a
-                                        href={getMapsLink(
-                                            details.alamat_penjemputan
-                                        )}
-                                        target="_blank"
-                                        className="inline-flex items-center mt-2 text-xs font-bold text-blue-600 hover:underline ml-1"
-                                    >
-                                        <ExternalLink size={10} /> Buka di Maps
-                                    </a>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+
+                {/* Foto Barang */}
                 {details.item_photo_path && (
                     <div>
                         <p className="text-xs text-gray-500 uppercase font-bold mb-3 flex items-center">
                             <ImageIcon
                                 size={16}
                                 className="mr-1 text-emerald-500"
-                            />{" "}
+                            />
                             Foto Barang User
                         </p>
                         <div
@@ -382,6 +447,8 @@ export const OrderDetailsBox = ({ order }) => {
                         />
                     </div>
                 )}
+
+                {/* Catatan */}
                 {details.notes && (
                     <div className="bg-amber-50 p-5 rounded-2xl text-sm text-amber-900 border border-amber-100 flex gap-3">
                         <FileText className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-500" />
@@ -402,10 +469,9 @@ export const OrderDetailsBox = ({ order }) => {
 
 export const PaymentVerificationBox = ({ order }) => {
     const [showRejectModal, setShowRejectModal] = useState(false);
-    const [showApproveModal, setShowApproveModal] = useState(false); // [BARU] Modal Approve
+    const [showApproveModal, setShowApproveModal] = useState(false);
     const [showImagePreview, setShowImagePreview] = useState(false);
 
-    // Form untuk Penolakan
     const { data, setData, post, processing, reset } = useForm({
         rejection_reason: "",
     });
@@ -500,7 +566,6 @@ export const PaymentVerificationBox = ({ order }) => {
                             )}
                         </div>
                         <div className="flex gap-3 pt-2">
-                            {/* [MODIFIKASI] Tombol Terima sekarang membuka Modal */}
                             <button
                                 onClick={() => setShowApproveModal(true)}
                                 className="flex-1 flex justify-center items-center px-4 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200"
@@ -528,35 +593,59 @@ export const PaymentVerificationBox = ({ order }) => {
                     </div>
                 )}
 
-                {/* [MODIFIKASI] Modal Konfirmasi Terima */}
+                {/* --- MODAL KONFIRMASI TERIMA PEMBAYARAN (DIPERCANTIK) --- */}
                 <Modal
                     show={showApproveModal}
                     onClose={() => setShowApproveModal(false)}
+                    maxWidth="sm"
                 >
                     <div className="p-6">
-                        <h2 className="text-lg font-bold text-gray-900">
-                            Konfirmasi Pembayaran
-                        </h2>
-                        <p className="mt-2 text-sm text-gray-600">
-                            Pastikan dana sudah benar-benar masuk ke mutasi
-                            rekening perusahaan. Apakah Anda yakin ingin
-                            menyetujui pembayaran ini?
-                        </p>
-                        <div className="mt-6 flex justify-end gap-3">
+                        {/* 1. Ikon Visual Besar di Tengah */}
+                        <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-emerald-100 mb-6 animate-in zoom-in duration-300">
+                            <CheckCircle2
+                                className="h-8 w-8 text-emerald-600"
+                                strokeWidth={2.5}
+                            />
+                        </div>
+
+                        {/* 2. Judul & Deskripsi Center */}
+                        <div className="text-center">
+                            <h2 className="text-xl font-bold text-gray-900 mb-2">
+                                Terima Pembayaran?
+                            </h2>
+                            <p className="text-sm text-gray-500 leading-relaxed mb-6">
+                                Pastikan dana sebesar{" "}
+                                <span className="font-bold text-gray-800">
+                                    {formatRupiah(order.final_amount)}
+                                </span>{" "}
+                                sudah benar-benar masuk ke mutasi rekening
+                                perusahaan. Status akan berubah menjadi{" "}
+                                <span className="text-emerald-600 font-bold">
+                                    Verified
+                                </span>
+                                .
+                            </p>
+                        </div>
+
+                        {/* 3. Tombol Aksi Grid */}
+                        <div className="grid grid-cols-2 gap-3">
                             <button
                                 onClick={() => setShowApproveModal(false)}
-                                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                                className="w-full py-3 bg-white border border-gray-300 rounded-xl text-gray-700 font-bold text-sm hover:bg-gray-50 transition-colors"
                             >
                                 Batal
                             </button>
-                            <PrimaryButton onClick={confirmApprove}>
-                                Ya, Setujui
+                            <PrimaryButton
+                                onClick={confirmApprove}
+                                disabled={processing}
+                                className="w-full justify-center py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg shadow-emerald-200 border-0"
+                            >
+                                {processing ? "Memproses..." : "Ya"}
                             </PrimaryButton>
                         </div>
                     </div>
                 </Modal>
 
-                {/* Modal Tolak */}
                 <Modal
                     show={showRejectModal}
                     onClose={() => setShowRejectModal(false)}
@@ -703,7 +792,6 @@ export const CourierAssignmentBox = ({ order, couriers }) => {
 
 export const StorageStatusBox = ({ order }) => {
     const { post, processing } = useForm();
-    // [MODIFIKASI] State untuk modal konfirmasi selesai
     const [showCompleteModal, setShowCompleteModal] = useState(false);
 
     const handleComplete = () => {
@@ -752,7 +840,6 @@ export const StorageStatusBox = ({ order }) => {
                                 </p>
                             </div>
                         </div>
-                        {/* [MODIFIKASI] Tombol memicu modal */}
                         <PrimaryButton
                             onClick={() => setShowCompleteModal(true)}
                             disabled={processing}
@@ -764,7 +851,6 @@ export const StorageStatusBox = ({ order }) => {
                     </div>
                 </div>
 
-                {/* [MODIFIKASI] Modal Konfirmasi Selesai */}
                 <Modal
                     show={showCompleteModal}
                     onClose={() => setShowCompleteModal(false)}

@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
-import { Head, Link, useForm, usePage } from "@inertiajs/react";
-import { Check, X, ShieldAlert } from "lucide-react";
+import { Head, useForm, usePage, router, Link } from "@inertiajs/react"; // [MODIF] Tambah Link
+import { Check, X, ShieldCheck, AlertTriangle, ArrowLeft } from "lucide-react"; // [MODIF] Tambah ArrowLeft
 import PrimaryButton from "@/Components/PrimaryButton";
 import DangerButton from "@/Components/DangerButton";
 import InputLabel from "@/Components/InputLabel";
@@ -10,7 +10,12 @@ import Modal from "@/Components/Modal";
 
 export default function Show({ auth, verification }) {
     const { flash } = usePage().props;
-    const [isRejectModalOpen, setRejectModalOpen] = React.useState(false);
+
+    // State untuk Modal Reject (Tolak)
+    const [isRejectModalOpen, setRejectModalOpen] = useState(false);
+
+    // State untuk Modal Approve (Setujui)
+    const [isApproveModalOpen, setApproveModalOpen] = useState(false);
 
     // URL lengkap untuk gambar KTP
     const idCardImageUrl = `/storage/${verification.id_card_path}`;
@@ -20,6 +25,7 @@ export default function Show({ auth, verification }) {
         rejection_notes: "",
     });
 
+    // Handle Submit Reject
     const submitReject = (e) => {
         e.preventDefault();
         post(route("admin.verification.reject", verification.id), {
@@ -27,33 +33,110 @@ export default function Show({ auth, verification }) {
         });
     };
 
+    // Handle Submit Approve
+    const submitApprove = () => {
+        router.post(
+            route("admin.verification.approve", verification.id),
+            {},
+            {
+                onSuccess: () => setApproveModalOpen(false),
+            }
+        );
+    };
+
     return (
         <AdminLayout
             user={auth.user}
             header={
-                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
-                    Tinjau Verifikasi #{verification.id}
-                </h2>
+                <div className="flex items-center gap-4">
+                    {/* Tombol Kembali */}
+                    <Link
+                        href={route("admin.verification.index")}
+                        className="p-2 bg-white border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-all shadow-sm group"
+                        title="Kembali ke Daftar"
+                    >
+                        <ArrowLeft
+                            size={20}
+                            className="group-hover:-translate-x-1 transition-transform"
+                        />
+                    </Link>
+
+                    <h2 className="font-semibold text-xl text-gray-800 leading-tight">
+                        Tinjau Verifikasi #{verification.id}
+                    </h2>
+                </div>
             }
         >
             <Head title={`Tinjau Verifikasi #${verification.id}`} />
 
-            {/* Modal untuk Konfirmasi Penolakan */}
+            {/* --- MODAL APPROVE (BARU & KEREN) --- */}
+            <Modal
+                show={isApproveModalOpen}
+                onClose={() => setApproveModalOpen(false)}
+                maxWidth="sm"
+            >
+                <div className="p-6 text-center">
+                    {/* Icon Visual */}
+                    <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6 animate-in zoom-in duration-300">
+                        <ShieldCheck className="h-8 w-8 text-green-600" />
+                    </div>
+
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">
+                        Setujui Verifikasi?
+                    </h2>
+
+                    <p className="text-sm text-gray-500 mb-6">
+                        Apakah Anda yakin data user{" "}
+                        <strong>{verification.user.name}</strong> sudah valid?{" "}
+                        <br />
+                        Status akan berubah menjadi{" "}
+                        <span className="text-green-600 font-bold">
+                            Approved
+                        </span>
+                        .
+                    </p>
+
+                    <div className="flex justify-center gap-3">
+                        <button
+                            onClick={() => setApproveModalOpen(false)}
+                            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-sm transition-colors"
+                        >
+                            Batal
+                        </button>
+                        <PrimaryButton
+                            onClick={submitApprove}
+                            className="bg-green-600 hover:bg-green-700 border-0 shadow-lg shadow-green-200"
+                        >
+                            Ya, Setujui
+                        </PrimaryButton>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* --- MODAL REJECT (YANG LAMA) --- */}
             <Modal
                 show={isRejectModalOpen}
                 onClose={() => setRejectModalOpen(false)}
             >
                 <form onSubmit={submitReject} className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900">
-                        Tolak Verifikasi
-                    </h2>
+                    <div className="flex items-center gap-3 mb-4 text-red-600">
+                        <div className="p-2 bg-red-100 rounded-full">
+                            <AlertTriangle size={24} />
+                        </div>
+                        <h2 className="text-lg font-bold text-gray-900">
+                            Tolak Verifikasi
+                        </h2>
+                    </div>
+
                     <p className="mt-2 text-sm text-gray-600">
                         Anda akan menolak verifikasi untuk{" "}
-                        <span className="font-medium">
+                        <span className="font-medium text-gray-900">
                             {verification.user.name}
                         </span>
-                        . Harap berikan alasan penolakan.
+                        . Harap berikan alasan penolakan agar user bisa
+                        memperbaiki data.
                     </p>
+
                     <div className="mt-6">
                         <InputLabel
                             htmlFor="rejection_notes"
@@ -61,31 +144,35 @@ export default function Show({ auth, verification }) {
                         />
                         <textarea
                             id="rejection_notes"
-                            className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                            className="mt-1 block w-full border-gray-300 focus:border-red-500 focus:ring-red-500 rounded-md shadow-sm"
                             rows="3"
                             value={data.rejection_notes}
                             onChange={(e) =>
                                 setData("rejection_notes", e.target.value)
                             }
+                            placeholder="Contoh: Foto KTP buram, Nama tidak sesuai..."
                         ></textarea>
                         <InputError
                             message={errors.rejection_notes}
                             className="mt-2"
                         />
                     </div>
-                    <div className="mt-6 flex justify-end">
+                    <div className="mt-6 flex justify-end gap-3">
                         <button
-                            type-="button"
+                            type="button"
                             onClick={() => setRejectModalOpen(false)}
-                            className="mr-3 px-4 py-2 text-gray-700"
+                            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-sm transition-colors"
                         >
                             Batal
                         </button>
-                        <DangerButton disabled={processing}>Tolak</DangerButton>
+                        <DangerButton disabled={processing}>
+                            Tolak Verifikasi
+                        </DangerButton>
                     </div>
                 </form>
             </Modal>
 
+            {/* KONTEN UTAMA HALAMAN */}
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Kolom Kiri: Detail Data */}
@@ -130,6 +217,10 @@ export default function Show({ auth, verification }) {
                                 value={verification.id_card_number}
                             />
                             <DetailRow
+                                label="Nomor Telepon"
+                                value={verification.phone || "-"}
+                            />
+                            <DetailRow
                                 label="Jenis Kelamin"
                                 value={verification.gender}
                             />
@@ -164,27 +255,21 @@ export default function Show({ auth, verification }) {
                             />
                         </a>
 
-                        {/* Tombol Aksi hanya muncul jika status 'pending' */}
+                        {/* Tombol Aksi (Hanya muncul jika Pending) */}
                         {verification.status === "pending" && (
-                            <div className="mt-6 flex space-x-3">
-                                <Link
-                                    href={route(
-                                        "admin.verification.approve",
-                                        verification.id
-                                    )}
-                                    method="post"
-                                    as="button"
-                                    className="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                                    onBefore={() =>
-                                        confirm("Setujui verifikasi user ini?")
-                                    }
+                            <div className="mt-6 flex gap-3">
+                                {/* Tombol Approve Membuka Modal */}
+                                <button
+                                    onClick={() => setApproveModalOpen(true)}
+                                    className="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-bold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none transition ease-in-out duration-150 shadow-lg shadow-green-100"
                                 >
                                     <Check className="w-4 h-4 mr-2" />
                                     Approve
-                                </Link>
+                                </button>
+
                                 <DangerButton
                                     onClick={() => setRejectModalOpen(true)}
-                                    className="w-full inline-flex justify-center items-center"
+                                    className="w-full inline-flex justify-center items-center shadow-lg shadow-red-100"
                                 >
                                     <X className="w-4 h-4 mr-2" />
                                     Reject
@@ -198,7 +283,7 @@ export default function Show({ auth, verification }) {
     );
 }
 
-// Komponen helper
+// Komponen Helper
 const getStatusBadge = (status) => {
     switch (status) {
         case "pending":

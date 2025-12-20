@@ -6,8 +6,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Models\UserVerification; // Verifikasi Klien
-use App\Models\CourierVerification; // <-- [BARU] Verifikasi Kurir
+use App\Models\UserVerification; 
+use App\Models\CourierVerification; 
 use App\Models\Role;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;

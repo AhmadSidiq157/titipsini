@@ -13,8 +13,11 @@ import {
     Upload,
     AlertCircle,
     CheckCircle,
+    Phone,
+    X, // Import Icon X untuk tombol hapus gambar
+    ImageIcon, // Icon Gambar
 } from "lucide-react";
-import axios from "axios"; // [PENTING] Import Axios
+import axios from "axios";
 
 export default function VerificationModal({
     show,
@@ -23,13 +26,14 @@ export default function VerificationModal({
     verificationData,
     onVerificationSuccess,
 }) {
-    // State tampilan: 'form', 'pending', atau 'success'
     const [view, setView] = useState("form");
 
-    // Sinkronisasi state dengan props 'status'
+    // [BARU] State untuk menyimpan URL preview gambar
+    const [previewUrl, setPreviewUrl] = useState(null);
+
     useEffect(() => {
         if (status === "approved") {
-            setView("success"); // Jika dibuka saat sudah approved (jarang terjadi, tapi jaga-jaga)
+            setView("success");
         } else if (status === "pending") {
             setView("pending");
         } else {
@@ -37,52 +41,70 @@ export default function VerificationModal({
         }
     }, [status, show]);
 
-    // [BARU] Logika Polling saat status 'pending'
+    // [BARU] Cleanup memory saat komponen unmount atau preview berubah
+    useEffect(() => {
+        return () => {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
+
     useEffect(() => {
         let interval = null;
-
         if (show && view === "pending") {
             interval = setInterval(() => {
                 axios
                     .get(route("verification.check_status"))
                     .then((res) => {
                         if (res.data.status === "approved") {
-                            // 1. Ubah tampilan jadi Centang Hijau
                             setView("success");
-
-                            // 2. Tunggu 1.5 detik, lalu panggil callback parent
                             setTimeout(() => {
                                 if (onVerificationSuccess) {
-                                    onVerificationSuccess(); // <-- INI KUNCINYA
+                                    onVerificationSuccess();
                                 }
                             }, 1500);
                         } else if (res.data.status === "rejected") {
-                            // Jika ditolak, reload halaman agar data rejection terambil (atau handle manual)
                             window.location.reload();
                         }
                     })
                     .catch((err) => console.error("Polling error:", err));
-            }, 3000); // Cek setiap 3 detik
+            }, 3000);
         }
-
         return () => {
             if (interval) clearInterval(interval);
         };
     }, [show, view]);
 
-    // Setup Form
     const { data, setData, post, processing, errors, reset, clearErrors } =
         useForm({
             legal_name: verificationData?.legal_name || "",
             id_card_type: verificationData?.id_card_type || "KTP",
             id_card_number: verificationData?.id_card_number || "",
+            phone: verificationData?.phone || "",
             address_on_id: verificationData?.address_on_id || "",
             gender: verificationData?.gender || "laki-laki",
             id_card_path: null,
         });
 
+    // [MODIFIKASI] Logic saat file dipilih untuk generate preview
     const handleFileChange = (e) => {
-        setData("id_card_path", e.target.files[0]);
+        const file = e.target.files[0];
+        if (file) {
+            setData("id_card_path", file);
+            // Buat URL sementara untuk preview
+            const objectUrl = URL.createObjectURL(file);
+            setPreviewUrl(objectUrl);
+        }
+    };
+
+    // [BARU] Fungsi untuk menghapus gambar yang dipilih
+    const removeImage = () => {
+        setData("id_card_path", null);
+        setPreviewUrl(null);
+        // Reset value input file agar bisa pilih file yang sama lagi jika mau
+        const fileInput = document.getElementById("id_card_path");
+        if (fileInput) fileInput.value = "";
     };
 
     const submit = (e) => {
@@ -91,13 +113,14 @@ export default function VerificationModal({
         post(route("verification.store"), {
             preserveScroll: true,
             onSuccess: () => {
-                setView("pending"); // Pindah ke tampilan pending & mulai polling
+                setView("pending");
+                setPreviewUrl(null); // Reset preview saat sukses
                 reset();
             },
         });
     };
 
-    // --- TAMPILAN 1: SUKSES (TRANSISI) ---
+    // --- TAMPILAN 1: SUKSES ---
     if (view === "success") {
         return (
             <Modal show={show} onClose={() => {}} maxWidth="sm">
@@ -122,18 +145,15 @@ export default function VerificationModal({
                     <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
                         <Clock className="w-10 h-10 text-blue-600 animate-pulse" />
                     </div>
-
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">
                         Menunggu Verifikasi
                     </h2>
-
                     <p className="text-gray-600 mb-6">
                         Admin sedang meninjau data Anda. <br />
                         <span className="font-semibold text-blue-600">
                             Halaman ini akan otomatis tertutup saat disetujui.
                         </span>
                     </p>
-
                     <div className="flex justify-center">
                         <button
                             onClick={onClose}
@@ -179,7 +199,7 @@ export default function VerificationModal({
                 )}
 
                 <form onSubmit={submit} className="space-y-5">
-                    {/* Form fields (Sama persis seperti sebelumnya) */}
+                    {/* Nama Lengkap */}
                     <div>
                         <InputLabel
                             htmlFor="legal_name"
@@ -206,6 +226,7 @@ export default function VerificationModal({
                         />
                     </div>
 
+                    {/* Jenis Identitas & Kelamin */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <InputLabel
@@ -244,27 +265,57 @@ export default function VerificationModal({
                         </div>
                     </div>
 
-                    <div>
-                        <InputLabel
-                            htmlFor="id_card_number"
-                            value="Nomor Identitas (NIK / No. SIM)"
-                        />
-                        <TextInput
-                            id="id_card_number"
-                            value={data.id_card_number}
-                            onChange={(e) =>
-                                setData("id_card_number", e.target.value)
-                            }
-                            className="mt-1 block w-full"
-                            placeholder="Contoh: 3201234567890001"
-                            required
-                        />
-                        <InputError
-                            message={errors.id_card_number}
-                            className="mt-2"
-                        />
+                    {/* Nomor Identitas & Telepon */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <InputLabel
+                                htmlFor="id_card_number"
+                                value="Nomor Identitas (NIK / SIM)"
+                            />
+                            <TextInput
+                                id="id_card_number"
+                                value={data.id_card_number}
+                                onChange={(e) =>
+                                    setData("id_card_number", e.target.value)
+                                }
+                                className="mt-1 block w-full"
+                                placeholder="Contoh: 320123..."
+                                required
+                            />
+                            <InputError
+                                message={errors.id_card_number}
+                                className="mt-2"
+                            />
+                        </div>
+                        <div>
+                            <InputLabel
+                                htmlFor="phone"
+                                value="Nomor Telepon / WhatsApp"
+                            />
+                            <div className="relative mt-1">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <Phone className="h-4 w-4 text-gray-400" />
+                                </span>
+                                <TextInput
+                                    id="phone"
+                                    type="tel"
+                                    value={data.phone}
+                                    onChange={(e) =>
+                                        setData("phone", e.target.value)
+                                    }
+                                    className="pl-9 block w-full"
+                                    placeholder="0812..."
+                                    required
+                                />
+                            </div>
+                            <InputError
+                                message={errors.phone}
+                                className="mt-2"
+                            />
+                        </div>
                     </div>
 
+                    {/* Alamat */}
                     <div>
                         <InputLabel
                             htmlFor="address_on_id"
@@ -291,47 +342,75 @@ export default function VerificationModal({
                         />
                     </div>
 
+                    {/* [MODIFIKASI UTAMA] Foto KTP dengan Preview */}
                     <div>
                         <InputLabel
                             htmlFor="id_card_path"
                             value="Foto KTP/SIM"
                         />
-                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-green-500 transition-colors bg-gray-50">
-                            <div className="space-y-1 text-center">
-                                <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                                <div className="flex text-sm text-gray-600 justify-center">
-                                    <label
-                                        htmlFor="id_card_path"
-                                        className="relative cursor-pointer bg-white rounded-md font-medium text-green-600 hover:text-green-500 focus-within:outline-none"
+
+                        {/* Jika ada preview gambar, tampilkan gambar. Jika tidak, tampilkan kotak upload */}
+                        {previewUrl ? (
+                            <div className="mt-2 relative group w-full h-48 bg-gray-100 rounded-lg border-2 border-green-500 overflow-hidden shadow-sm">
+                                <img
+                                    src={previewUrl}
+                                    alt="Preview KTP"
+                                    className="w-full h-full object-contain"
+                                />
+                                {/* Overlay Gelap saat hover */}
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={removeImage}
+                                        className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-all transform hover:scale-110 shadow-lg"
+                                        title="Hapus foto"
                                     >
-                                        <span>Upload file</span>
-                                        <input
-                                            id="id_card_path"
-                                            type="file"
-                                            className="sr-only"
-                                            onChange={handleFileChange}
-                                            accept="image/*"
-                                            required={!verificationData}
-                                        />
-                                    </label>
-                                    <p className="pl-1">atau drag and drop</p>
+                                        <X size={20} />
+                                    </button>
                                 </div>
-                                <p className="text-xs text-gray-500">
-                                    PNG, JPG, GIF up to 2MB
-                                </p>
-                                {data.id_card_path && (
-                                    <p className="text-sm text-green-600 font-semibold mt-2">
-                                        File terpilih: {data.id_card_path.name}
-                                    </p>
-                                )}
+                                <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold shadow">
+                                    Terpilih
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-green-500 transition-colors bg-gray-50 hover:bg-green-50/30">
+                                <div className="space-y-1 text-center">
+                                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                                    <div className="flex text-sm text-gray-600 justify-center">
+                                        <label
+                                            htmlFor="id_card_path"
+                                            className="relative cursor-pointer bg-white rounded-md font-medium text-green-600 hover:text-green-500 focus-within:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                        >
+                                            <span className="px-2">
+                                                Upload file
+                                            </span>
+                                            <input
+                                                id="id_card_path"
+                                                type="file"
+                                                className="sr-only"
+                                                onChange={handleFileChange}
+                                                accept="image/*"
+                                                required={!verificationData}
+                                            />
+                                        </label>
+                                        <p className="pl-1">
+                                            atau drag and drop
+                                        </p>
+                                    </div>
+                                    <p className="text-xs text-gray-500">
+                                        PNG, JPG, GIF up to 2MB
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         <InputError
                             message={errors.id_card_path}
                             className="mt-2"
                         />
                     </div>
 
+                    {/* Footer Buttons */}
                     <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t">
                         <button
                             type="button"
