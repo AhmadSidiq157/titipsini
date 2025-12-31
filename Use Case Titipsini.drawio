@@ -1,0 +1,122 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.9">
+  <diagram name="Halaman-1" id="x4aKJkeT8_PirSJzp9WG">
+    <mxGraphModel dx="2522" dy="507" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-15" edge="1" parent="1" source="Ju7aHo12jp-6xzZ3MPGU-2" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="Ju7aHo12jp-6xzZ3MPGU-14" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-18" edge="1" parent="1" source="Ju7aHo12jp-6xzZ3MPGU-2" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="Ju7aHo12jp-6xzZ3MPGU-11" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-1095" y="489.9999999999999" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-24" edge="1" parent="1" source="Ju7aHo12jp-6xzZ3MPGU-2" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;" target="Ju7aHo12jp-6xzZ3MPGU-22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-64" edge="1" parent="1" source="Ju7aHo12jp-6xzZ3MPGU-2" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="Ju7aHo12jp-6xzZ3MPGU-20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="User&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="30" x="-1280" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-34" edge="1" parent="1" source="Ju7aHo12jp-6xzZ3MPGU-6" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=0.1;exitDx=0;exitDy=0;exitPerimeter=0;" target="Ju7aHo12jp-6xzZ3MPGU-11">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-1170" y="635" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-50" edge="1" parent="1" source="Ju7aHo12jp-6xzZ3MPGU-6" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;" target="Ju7aHo12jp-6xzZ3MPGU-35">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-6" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Kurir&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="30" x="-570" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-56" edge="1" parent="1" source="Ju7aHo12jp-6xzZ3MPGU-8" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="Ju7aHo12jp-6xzZ3MPGU-55">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-58" edge="1" parent="1" source="Ju7aHo12jp-6xzZ3MPGU-8" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;" target="Ju7aHo12jp-6xzZ3MPGU-57">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-66" edge="1" parent="1" source="Ju7aHo12jp-6xzZ3MPGU-8" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="Ju7aHo12jp-6xzZ3MPGU-65">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-8" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Admin&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="30" x="-1280" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-11" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Login" vertex="1">
+          <mxGeometry height="30" width="70" x="-950" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-14" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Register" vertex="1">
+          <mxGeometry height="30" width="70" x="-1210" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-20" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Order Layanan" vertex="1">
+          <mxGeometry height="30" width="100" x="-1060" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-22" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Lacak Status Pesanan" vertex="1">
+          <mxGeometry height="40" width="100" x="-1020" y="585" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-47" edge="1" parent="1" source="Ju7aHo12jp-6xzZ3MPGU-26" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" target="Ju7aHo12jp-6xzZ3MPGU-20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-48" connectable="0" parent="Ju7aHo12jp-6xzZ3MPGU-47" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" vertex="1">
+          <mxGeometry relative="1" x="0.1313" y="-2" as="geometry">
+            <mxPoint x="20" y="-10" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-26" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Batalkan Pesanan" vertex="1">
+          <mxGeometry height="40" width="90" x="-870" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-51" edge="1" parent="1" source="Ju7aHo12jp-6xzZ3MPGU-35" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;dashed=1;" target="Ju7aHo12jp-6xzZ3MPGU-41">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-52" connectable="0" parent="Ju7aHo12jp-6xzZ3MPGU-51" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" vertex="1">
+          <mxGeometry relative="1" x="0.0454" y="3" as="geometry">
+            <mxPoint x="4" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-35" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Update Status pengiriman" vertex="1">
+          <mxGeometry height="40" width="120" x="-730" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-39" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Registrasi Data Kendaraan" vertex="1">
+          <mxGeometry height="40" width="120" x="-750" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-41" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Upload Bukti Foto" vertex="1">
+          <mxGeometry height="40" width="110" x="-880" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-45" edge="1" parent="1" source="Ju7aHo12jp-6xzZ3MPGU-6" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=0.1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.724;entryY=0.939;entryDx=0;entryDy=0;entryPerimeter=0;" target="Ju7aHo12jp-6xzZ3MPGU-39">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-54" edge="1" parent="1" source="Ju7aHo12jp-6xzZ3MPGU-8" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=0.1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.061;entryY=0.887;entryDx=0;entryDy=0;entryPerimeter=0;" target="Ju7aHo12jp-6xzZ3MPGU-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-60" edge="1" parent="1" source="Ju7aHo12jp-6xzZ3MPGU-55" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" target="Ju7aHo12jp-6xzZ3MPGU-59">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-61" connectable="0" parent="Ju7aHo12jp-6xzZ3MPGU-60" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.2527" y="-2" as="geometry">
+            <mxPoint x="5" y="6" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-55" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Validasi Pembayaran" vertex="1">
+          <mxGeometry height="40" width="90" x="-1160" y="585" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-57" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Verifikasi User &amp;amp; Kurir" vertex="1">
+          <mxGeometry height="40" width="110" x="-1170" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-59" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Cek Mutasi Bank" vertex="1">
+          <mxGeometry height="40" width="110" x="-1000" y="660" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-62" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Upload Bukti Pembayaran" vertex="1">
+          <mxGeometry height="40" width="110" x="-1090" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-63" edge="1" parent="1" source="Ju7aHo12jp-6xzZ3MPGU-2" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.021;entryY=0.696;entryDx=0;entryDy=0;entryPerimeter=0;" target="Ju7aHo12jp-6xzZ3MPGU-62">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ju7aHo12jp-6xzZ3MPGU-65" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Kelola Data&amp;nbsp;" vertex="1">
+          <mxGeometry height="30" width="90" x="-1160" y="700" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
