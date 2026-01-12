@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, Link, usePage } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react"; // Hapus import AuthenticatedLayout
 import Modal from "@/Components/Modal";
 import {
     ArrowLeft,
@@ -33,11 +32,16 @@ const formatRupiah = (number) => {
 
 const getStatusLabel = (status) => {
     const labels = {
+        unpaid: "Belum Bayar",
         awaiting_payment: "Menunggu Bayar",
-        awaiting_verification: "Verifikasi",
-        processing: "Diproses",
+        awaiting_verification: "Verifikasi Pembayaran",
+        verified: "Pembayaran Diterima",
+        processing: "Sedang Diproses",
+        process: "Diproses",
         ready_for_pickup: "Menunggu Kurir",
-        picked_up: "Kurir Menjemput",
+        courier_assigned: "Kurir Ditugaskan",
+        courier_otw_pickup: "Kurir Menuju Lokasi",
+        picked_up: "Paket Diambil Kurir",
         on_delivery: "Sedang Diantar",
         delivered: "Sampai Tujuan",
         completed: "Selesai",
@@ -66,7 +70,11 @@ const CopyButton = ({ text }) => {
 };
 
 const getMapsLink = (address) =>
-    address ? `https://maps.google.com/?q=${encodeURIComponent(address)}` : "#";
+    address
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+              address
+          )}`
+        : "#";
 
 // --- Image Modal ---
 const ImageModal = ({ show, onClose, src, title }) => (
@@ -126,33 +134,37 @@ export default function Show({ auth, order }) {
     // State untuk Image Modal
     const [selectedImage, setSelectedImage] = useState(null);
 
-    // --- Render UI ---
     return (
-        <AuthenticatedLayout user={auth.user} header={null}>
+        // Gunakan Fragment <>...</> agar tidak ada wrapper Layout
+        <>
             <Head title={`Detail Order #${order.id}`} />
 
-            <div className="min-h-screen bg-gray-50/50 flex flex-col font-sans">
-                {/* Header */}
-                <div className="bg-white border-b border-gray-200 sticky top-0 z-30 px-4 md:px-8 py-4 shadow-sm">
+            {/* Container Full Screen */}
+            <div className="min-h-screen bg-[#F8F9FA] flex flex-col font-sans text-gray-800">
+                {/* 1. HEADER KHUSUS (Sticky Top) */}
+                <div className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40 px-4 md:px-8 py-4 shadow-sm transition-all">
                     <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
                         <div className="flex items-center w-full md:w-auto">
+                            {/* Tombol Kembali ke List History */}
                             <Link
                                 href={route("history.index")}
-                                className="p-2 mr-3 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+                                className="group p-2 mr-3 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-all active:scale-95"
                             >
-                                <ArrowLeft size={20} />
+                                <ArrowLeft
+                                    size={22}
+                                    className="group-hover:-translate-x-1 transition-transform"
+                                />
                             </Link>
+
+                            {/* Judul & Tanggal */}
                             <div>
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-xl font-black text-gray-800 tracking-tight">
+                                <div className="flex items-center gap-3">
+                                    <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">
                                         Order #{order.id}
                                     </h2>
-                                    <CopyButton
-                                        text={`#${order.id}`}
-                                        label="Salin"
-                                    />
+                                    <CopyButton text={`#${order.id}`} />
                                 </div>
-                                <p className="text-xs text-gray-500 font-medium">
+                                <p className="text-xs text-gray-500 font-medium mt-0.5">
                                     {new Date(order.created_at).toLocaleString(
                                         "id-ID",
                                         {
@@ -163,11 +175,17 @@ export default function Show({ auth, order }) {
                                 </p>
                             </div>
                         </div>
+
+                        {/* Badge Status di Header */}
                         <div className="flex items-center gap-3 w-full md:w-auto justify-end">
                             <span
                                 className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm ${
                                     order.status === "completed"
                                         ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        : ["cancelled", "rejected"].includes(
+                                              order.status
+                                          )
+                                        ? "bg-red-50 text-red-700 border-red-200"
                                         : "bg-blue-50 text-blue-700 border-blue-200"
                                 }`}
                             >
@@ -177,151 +195,201 @@ export default function Show({ auth, order }) {
                     </div>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 py-8">
+                {/* 2. MAIN CONTENT SCROLLABLE */}
+                <div className="flex-1 py-8 overflow-y-auto">
                     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-                        {/* Stepper */}
-                        <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 mb-8 overflow-x-auto">
-                            <div className="flex items-center justify-between min-w-[500px] relative px-4 py-4">
-                                {/* Garis Stepper */}
-                                <div className="absolute top-1/2 left-4 right-4 h-1 bg-gray-200 -z-10 rounded-full"></div>
-                                {/* Logic Active Index */}
-                                {(() => {
-                                    const steps = [
-                                        {
-                                            key: "awaiting_payment",
-                                            label: "Bayar",
-                                            icon: Clock,
-                                        },
-                                        {
-                                            key: "awaiting_verification",
-                                            label: "Verifikasi",
-                                            icon: ShieldCheck,
-                                        },
-                                        ...(needsPickup
-                                            ? [
-                                                  {
-                                                      key: "ready_for_pickup",
-                                                      label: "Jemput",
-                                                      icon: Truck,
-                                                  },
-                                              ]
-                                            : []),
-                                        {
-                                            key: "processing",
+                        {/* --- TIMELINE PROGRESS (Horizontal Scroll) --- */}
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-8 overflow-hidden">
+                            <div className="overflow-x-auto pb-2 -mb-2 custom-scrollbar">
+                                <div className="flex items-center justify-between min-w-[600px] relative px-4 py-4">
+                                    {/* Garis Dasar Abu */}
+                                    <div className="absolute top-1/2 left-4 right-4 h-1 bg-gray-100 -z-10 rounded-full"></div>
+
+                                    {(() => {
+                                        const status = order.status;
+                                        const steps = [
+                                            {
+                                                key: "payment",
+                                                label: "Bayar",
+                                                icon: Clock,
+                                                activeStatuses: [
+                                                    "unpaid",
+                                                    "awaiting_payment",
+                                                ],
+                                            },
+                                            {
+                                                key: "verification",
+                                                label: "Verifikasi",
+                                                icon: ShieldCheck,
+                                                activeStatuses: [
+                                                    "paid",
+                                                    "awaiting_verification",
+                                                    "pending_verification",
+                                                ],
+                                            },
+                                        ];
+
+                                        if (needsPickup) {
+                                            steps.push({
+                                                key: "pickup",
+                                                label: "Jemput",
+                                                icon: Truck,
+                                                activeStatuses: [
+                                                    "ready_for_pickup",
+                                                    "courier_assigned",
+                                                    "courier_otw_pickup",
+                                                ],
+                                            });
+                                        }
+
+                                        steps.push({
+                                            key: "process",
                                             label: "Proses",
                                             icon: Box,
-                                        },
-                                        {
+                                            activeStatuses: [
+                                                "verified",
+                                                "processing",
+                                                "process",
+                                                "picked_up",
+                                                "on_delivery",
+                                                "delivery_otw",
+                                                "delivered",
+                                            ],
+                                        });
+
+                                        steps.push({
                                             key: "completed",
                                             label: "Selesai",
                                             icon: PackageCheck,
-                                        },
-                                    ];
-                                    let activeIndex = steps.findIndex(
-                                        (s) => s.key === order.status
-                                    );
-                                    if (order.status === "verified")
-                                        activeIndex = 1;
-                                    if (
-                                        ["picked_up", "on_delivery"].includes(
-                                            order.status
-                                        )
-                                    )
-                                        activeIndex = needsPickup ? 2 : 1;
-                                    if (order.status === "delivered")
-                                        activeIndex = needsPickup ? 3 : 2;
-                                    if (
-                                        ["cancelled", "rejected"].includes(
-                                            order.status
-                                        )
-                                    )
-                                        activeIndex = -1;
+                                            activeStatuses: [
+                                                "completed",
+                                                "done",
+                                            ],
+                                        });
 
-                                    return (
-                                        <>
-                                            <div
-                                                className="absolute top-1/2 left-4 h-1 bg-emerald-500 -z-10 rounded-full transition-all duration-1000"
-                                                style={{
-                                                    width:
-                                                        activeIndex === -1
-                                                            ? "0%"
-                                                            : `${
-                                                                  (activeIndex /
-                                                                      (steps.length -
-                                                                          1)) *
-                                                                  100
-                                                              }%`,
-                                                }}
-                                            ></div>
-                                            {steps.map((step, index) => {
-                                                const isActive =
-                                                    index <= activeIndex &&
-                                                    activeIndex !== -1;
-                                                const Icon = step.icon;
-                                                return (
-                                                    <div
-                                                        key={step.key}
-                                                        className="flex flex-col items-center gap-2 relative group"
-                                                    >
+                                        let activeIndex = 0;
+                                        const foundIndex = steps.findIndex(
+                                            (step) =>
+                                                step.activeStatuses.includes(
+                                                    status
+                                                )
+                                        );
+
+                                        if (foundIndex !== -1) {
+                                            activeIndex = foundIndex;
+                                        } else {
+                                            if (
+                                                ["completed", "done"].includes(
+                                                    status
+                                                )
+                                            )
+                                                activeIndex = steps.length - 1;
+                                            else if (
+                                                [
+                                                    "cancelled",
+                                                    "rejected",
+                                                ].includes(status)
+                                            )
+                                                activeIndex = -1;
+                                        }
+
+                                        return (
+                                            <>
+                                                {/* Garis Hijau Progress */}
+                                                <div
+                                                    className="absolute top-1/2 left-4 h-1 bg-emerald-500 -z-10 rounded-full transition-all duration-1000 ease-out"
+                                                    style={{
+                                                        width:
+                                                            activeIndex === -1
+                                                                ? "0%"
+                                                                : `${
+                                                                      (activeIndex /
+                                                                          (steps.length -
+                                                                              1)) *
+                                                                      100
+                                                                  }%`,
+                                                    }}
+                                                ></div>
+
+                                                {steps.map((step, index) => {
+                                                    const isActive =
+                                                        index <= activeIndex &&
+                                                        activeIndex !== -1;
+                                                    const Icon = step.icon;
+
+                                                    return (
                                                         <div
-                                                            className={`w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all duration-300 z-10 ${
-                                                                isActive
-                                                                    ? "bg-emerald-500 border-emerald-100 text-white shadow-lg"
-                                                                    : "bg-white border-gray-200 text-gray-300"
-                                                            }`}
+                                                            key={step.key}
+                                                            className="flex flex-col items-center gap-3 relative group"
                                                         >
-                                                            <Icon size={18} />
+                                                            <div
+                                                                className={`w-12 h-12 rounded-full flex items-center justify-center border-4 transition-all duration-500 z-10 ${
+                                                                    isActive
+                                                                        ? "bg-emerald-500 border-emerald-50 text-white shadow-lg shadow-emerald-200 scale-110"
+                                                                        : "bg-white border-gray-100 text-gray-300"
+                                                                }`}
+                                                            >
+                                                                <Icon
+                                                                    size={20}
+                                                                    strokeWidth={
+                                                                        isActive
+                                                                            ? 2.5
+                                                                            : 2
+                                                                    }
+                                                                />
+                                                            </div>
+                                                            <span
+                                                                className={`text-xs font-bold whitespace-nowrap px-3 py-1 rounded-full transition-colors ${
+                                                                    isActive
+                                                                        ? "text-emerald-700 bg-emerald-50"
+                                                                        : "text-gray-400"
+                                                                }`}
+                                                            >
+                                                                {step.label}
+                                                            </span>
                                                         </div>
-                                                        <span
-                                                            className={`text-xs font-bold whitespace-nowrap ${
-                                                                isActive
-                                                                    ? "text-emerald-700"
-                                                                    : "text-gray-400"
-                                                            }`}
-                                                        >
-                                                            {step.label}
-                                                        </span>
-                                                    </div>
-                                                );
-                                            })}
-                                        </>
-                                    );
-                                })()}
+                                                    );
+                                                })}
+                                            </>
+                                        );
+                                    })()}
+                                </div>
                             </div>
                         </div>
 
+                        {/* --- GRID UTAMA (Kiri: Detail, Kanan: Sidebar) --- */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            {/* KOLOM KIRI: Details (Map Dihapus) */}
+                            {/* KOLOM KIRI: Informasi Utama */}
                             <div className="lg:col-span-2 space-y-8">
-                                {/* Detail Card */}
+                                {/* CARD DETAIL PESANAN */}
                                 <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+                                    {/* Judul Card */}
                                     <div className="flex justify-between items-start mb-8 pb-6 border-b border-gray-100">
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-5">
                                             <div
-                                                className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md ${
+                                                className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-gray-100 ${
                                                     isPenitipan
-                                                        ? "bg-emerald-500"
-                                                        : "bg-blue-600"
+                                                        ? "bg-gradient-to-br from-emerald-400 to-emerald-600"
+                                                        : "bg-gradient-to-br from-blue-500 to-blue-700"
                                                 }`}
                                             >
-                                                <ServiceIcon size={24} />
+                                                <ServiceIcon size={28} />
                                             </div>
                                             <div>
-                                                <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
-                                                    Layanan
+                                                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
+                                                    Layanan Dipilih
                                                 </p>
-                                                <h2 className="text-xl font-bold text-gray-900">
+                                                <h2 className="text-xl font-black text-gray-900 leading-tight">
                                                     {orderable.name ||
                                                         orderable.title}
                                                 </h2>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">
+                                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
                                                 Total Biaya
                                             </p>
-                                            <p className="text-xl font-extrabold text-emerald-600">
+                                            <p className="text-2xl font-black text-emerald-600 tracking-tight">
                                                 {formatRupiah(
                                                     order.final_amount
                                                 )}
@@ -329,18 +397,22 @@ export default function Show({ auth, order }) {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-6">
-                                        <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200 relative overflow-hidden">
-                                            <div className="absolute left-[29px] top-10 bottom-10 w-0.5 border-l-2 border-dashed border-gray-300 z-0"></div>
+                                    <div className="space-y-8">
+                                        {/* ALAMAT (Timeline Vertical) */}
+                                        <div className="bg-[#F8F9FB] rounded-3xl p-6 border border-gray-100 relative overflow-hidden">
+                                            {/* Garis Putus-putus */}
+                                            <div className="absolute left-[38px] top-12 bottom-12 w-0.5 border-l-2 border-dashed border-gray-300 z-0"></div>
 
-                                            {/* Pickup */}
-                                            <div className="relative z-10 mb-6 flex items-start gap-4">
-                                                <div className="w-6 h-6 rounded-full bg-white border-4 border-blue-500 shadow-sm flex-shrink-0 mt-0.5"></div>
+                                            {/* Pickup Point */}
+                                            <div className="relative z-10 mb-8 flex items-start gap-5">
+                                                <div className="w-5 h-5 rounded-full bg-white border-[5px] border-blue-500 shadow-sm flex-shrink-0 mt-1"></div>
                                                 <div className="flex-1">
-                                                    <p className="text-xs text-blue-500 font-bold uppercase mb-1">
-                                                        Lokasi Jemput
-                                                    </p>
-                                                    <p className="text-sm font-medium text-gray-800 leading-snug">
+                                                    <div className="flex justify-between items-start">
+                                                        <p className="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">
+                                                            Lokasi Jemput
+                                                        </p>
+                                                    </div>
+                                                    <p className="text-sm font-semibold text-gray-800 leading-relaxed">
                                                         {details.alamat_penjemputan ||
                                                             "Tidak tersedia"}
                                                     </p>
@@ -350,25 +422,25 @@ export default function Show({ auth, order }) {
                                                         )}
                                                         target="_blank"
                                                         rel="noreferrer"
-                                                        className="inline-flex items-center mt-2 text-xs font-bold text-blue-600 hover:underline"
+                                                        className="inline-flex items-center mt-2 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
                                                     >
                                                         <MapPin
                                                             size={12}
-                                                            className="mr-1"
+                                                            className="mr-1.5"
                                                         />{" "}
                                                         Buka Maps
                                                     </a>
                                                 </div>
                                             </div>
 
-                                            {/* Delivery */}
-                                            <div className="relative z-10 flex items-start gap-4">
-                                                <div className="w-6 h-6 rounded-full bg-white border-4 border-green-500 shadow-sm flex-shrink-0 mt-0.5"></div>
+                                            {/* Delivery Point */}
+                                            <div className="relative z-10 flex items-start gap-5">
+                                                <div className="w-5 h-5 rounded-full bg-white border-[5px] border-green-500 shadow-sm flex-shrink-0 mt-1"></div>
                                                 <div className="flex-1">
-                                                    <p className="text-xs text-green-500 font-bold uppercase mb-1">
-                                                        Tujuan
+                                                    <p className="text-xs text-green-600 font-bold uppercase tracking-wider mb-1">
+                                                        Tujuan Pengiriman
                                                     </p>
-                                                    <p className="text-sm font-medium text-gray-800 leading-snug">
+                                                    <p className="text-sm font-semibold text-gray-800 leading-relaxed">
                                                         {isPenitipan
                                                             ? details.branch_address
                                                                 ? `${details.branch_name} - ${details.branch_address}`
@@ -383,11 +455,11 @@ export default function Show({ auth, order }) {
                                                         )}
                                                         target="_blank"
                                                         rel="noreferrer"
-                                                        className="inline-flex items-center mt-2 text-xs font-bold text-green-600 hover:underline"
+                                                        className="inline-flex items-center mt-2 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:text-green-600 hover:border-green-200 transition-all shadow-sm"
                                                     >
                                                         <MapPin
                                                             size={12}
-                                                            className="mr-1"
+                                                            className="mr-1.5"
                                                         />{" "}
                                                         Buka Maps
                                                     </a>
@@ -395,30 +467,40 @@ export default function Show({ auth, order }) {
                                             </div>
                                         </div>
 
-                                        {/* Info Tambahan */}
+                                        {/* Info Tambahan Grid */}
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                                <p className="text-xs text-gray-400 font-bold uppercase mb-1">
-                                                    Tanggal Jadwal
+                                            <div className="p-5 bg-white rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors shadow-sm">
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-2">
+                                                    Jadwal
                                                 </p>
-                                                <p className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                                                    <Calendar size={14} />{" "}
+                                                <p className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                                    <Calendar
+                                                        size={16}
+                                                        className="text-gray-400"
+                                                    />
                                                     {details.tanggal_pindahan
                                                         ? new Date(
                                                               details.tanggal_pindahan
                                                           ).toLocaleDateString(
-                                                              "id-ID"
+                                                              "id-ID",
+                                                              {
+                                                                  dateStyle:
+                                                                      "full",
+                                                              }
                                                           )
                                                         : details.start_date ||
                                                           "-"}
                                                 </p>
                                             </div>
-                                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                                <p className="text-xs text-gray-400 font-bold uppercase mb-1">
+                                            <div className="p-5 bg-white rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors shadow-sm">
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-2">
                                                     Metode
                                                 </p>
-                                                <p className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                                                    <Truck size={14} />{" "}
+                                                <p className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                                    <Truck
+                                                        size={16}
+                                                        className="text-gray-400"
+                                                    />
                                                     {details.delivery_method ===
                                                     "pickup"
                                                         ? "Dijemput Kurir"
@@ -429,76 +511,94 @@ export default function Show({ auth, order }) {
 
                                         {/* Notes Display */}
                                         {notes && notes !== "-" && (
-                                            <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
-                                                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">
-                                                    Catatan Tambahan
-                                                </p>
-                                                <p className="text-xs text-gray-700 italic leading-relaxed">
-                                                    "{notes}"
-                                                </p>
+                                            <div className="p-5 rounded-2xl bg-amber-50 border border-amber-100 flex gap-4 items-start">
+                                                <div className="mt-1">
+                                                    <HelpCircle
+                                                        size={18}
+                                                        className="text-amber-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">
+                                                        Catatan Tambahan
+                                                    </p>
+                                                    <p className="text-sm text-gray-800 italic leading-relaxed">
+                                                        "{notes}"
+                                                    </p>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* KOLOM KANAN: Sidebar */}
+                            {/* KOLOM KANAN: Sidebar Status & Kurir */}
                             <div className="lg:col-span-1 space-y-6">
-                                {/* Status Card */}
-                                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 text-center">
+                                {/* CARD STATUS SAAT INI */}
+                                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 text-center relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-purple-500"></div>
                                     <div
-                                        className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                                        className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-lg ${
                                             order.status === "completed"
-                                                ? "bg-green-100 text-green-600"
-                                                : "bg-blue-100 text-blue-600"
+                                                ? "bg-emerald-100 text-emerald-600"
+                                                : "bg-blue-50 text-blue-600"
                                         }`}
                                     >
                                         {order.status === "completed" ? (
-                                            <CheckCircle2 size={32} />
+                                            <CheckCircle2 size={40} />
                                         ) : (
-                                            <Truck size={32} />
+                                            <Truck size={40} />
                                         )}
                                     </div>
-                                    <h3 className="text-lg font-bold text-gray-900 mb-1">
+                                    <h3 className="text-xl font-black text-gray-900 mb-2">
                                         {getStatusLabel(order.status)}
                                     </h3>
-                                    <p className="text-xs text-gray-500 px-4">
-                                        Status pesanan Anda saat ini.
+                                    <p className="text-xs text-gray-500 px-4 leading-relaxed mb-6">
+                                        Pantau terus status pesanan Anda di
+                                        halaman ini.
                                     </p>
+
                                     {order.status === "awaiting_payment" && (
                                         <Link
                                             href={route(
                                                 "order.payment",
                                                 order.id
                                             )}
-                                            className="block w-full mt-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 shadow-lg shadow-green-200"
+                                            className="block w-full py-3.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
                                         >
                                             Bayar Sekarang
                                         </Link>
                                     )}
                                 </div>
 
-                                {/* Info Kurir */}
+                                {/* CARD INFO KURIR (Jika Ada) */}
                                 {order.courier && (
-                                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6">
-                                        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                                            <Truck className="w-5 h-5 mr-2 text-gray-500" />{" "}
-                                            Info Kurir
-                                        </h3>
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-xl font-bold text-gray-600 border-2 border-white shadow-md">
+                                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h3 className="text-sm font-bold text-gray-900 flex items-center uppercase tracking-wider">
+                                                <Truck className="w-4 h-4 mr-2 text-gray-400" />{" "}
+                                                Info Kurir
+                                            </h3>
+                                            <span className="px-2 py-1 bg-green-50 text-green-700 text-[10px] font-bold rounded uppercase">
+                                                Mitra
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-2xl font-bold text-gray-500 border-2 border-white shadow-md">
                                                 {order.courier.name.charAt(0)}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-lg text-gray-900">
+                                                <p className="font-bold text-lg text-gray-900 leading-none mb-1">
                                                     {order.courier.name}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
-                                                    Mitra Titipsini
+                                                    ID: {order.courier.id}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="mt-6 grid grid-cols-2 gap-3">
+
+                                        <div className="grid grid-cols-2 gap-3">
                                             <a
                                                 href={`https://wa.me/${order.courier.phone?.replace(
                                                     /\D/g,
@@ -506,47 +606,53 @@ export default function Show({ auth, order }) {
                                                 )}`}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="flex items-center justify-center py-2.5 bg-green-50 text-green-700 border border-green-100 rounded-xl font-bold text-sm hover:bg-green-100 transition"
+                                                className="flex items-center justify-center py-2.5 bg-green-50 text-green-700 border border-green-100 rounded-xl font-bold text-sm hover:bg-green-100 transition shadow-sm"
                                             >
                                                 <MessageCircle className="w-4 h-4 mr-2" />{" "}
-                                                WhatsApp
+                                                Chat
                                             </a>
                                             <a
                                                 href={`tel:${order.courier.phone}`}
-                                                className="flex items-center justify-center py-2.5 bg-gray-50 text-gray-700 border border-gray-200 rounded-xl font-bold text-sm hover:bg-gray-100 transition"
+                                                className="flex items-center justify-center py-2.5 bg-white text-gray-700 border border-gray-200 rounded-xl font-bold text-sm hover:bg-gray-50 transition shadow-sm"
                                             >
                                                 <Phone className="w-4 h-4 mr-2" />{" "}
-                                                Telepon
+                                                Panggil
                                             </a>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Timeline */}
-                                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6">
-                                    <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
-                                        <Flag className="w-5 h-5 mr-2 text-purple-500" />{" "}
-                                        Aktivitas
+                                {/* CARD RIWAYAT AKTIVITAS */}
+                                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                                    <h3 className="text-sm font-bold text-gray-900 mb-6 flex items-center uppercase tracking-wider">
+                                        <Flag className="w-4 h-4 mr-2 text-purple-500" />{" "}
+                                        Riwayat Aktivitas
                                     </h3>
                                     <div className="relative pl-4 border-l-2 border-gray-100 space-y-8 ml-2">
                                         {trackings.length > 0 ? (
                                             trackings.map((log, index) => (
                                                 <div
                                                     key={log.id}
-                                                    className="relative"
+                                                    className="relative group"
                                                 >
                                                     <div
-                                                        className={`absolute -left-[21px] top-1 w-4 h-4 rounded-full border-2 border-white shadow-sm ${
+                                                        className={`absolute -left-[21px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm transition-colors ${
                                                             index === 0
-                                                                ? "bg-purple-500 ring-4 ring-purple-100"
-                                                                : "bg-gray-300"
+                                                                ? "bg-purple-500 ring-4 ring-purple-50"
+                                                                : "bg-gray-300 group-hover:bg-gray-400"
                                                         }`}
                                                     ></div>
-                                                    <div className="mb-1">
-                                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-gray-100 rounded text-gray-500 mr-2">
+                                                    <div className="mb-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                                        <span
+                                                            className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded w-fit ${
+                                                                index === 0
+                                                                    ? "bg-purple-50 text-purple-700"
+                                                                    : "bg-gray-100 text-gray-500"
+                                                            }`}
+                                                        >
                                                             {log.status}
                                                         </span>
-                                                        <span className="text-xs text-gray-400">
+                                                        <span className="text-[10px] text-gray-400 font-medium">
                                                             {new Date(
                                                                 log.created_at
                                                             ).toLocaleString(
@@ -561,7 +667,7 @@ export default function Show({ auth, order }) {
                                                         </span>
                                                     </div>
                                                     <p
-                                                        className={`text-sm ${
+                                                        className={`text-sm mt-1 leading-snug ${
                                                             index === 0
                                                                 ? "text-gray-900 font-semibold"
                                                                 : "text-gray-600"
@@ -576,7 +682,7 @@ export default function Show({ auth, order }) {
                                                                     `/storage/${log.evidence_photo_path}`
                                                                 )
                                                             }
-                                                            className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:text-purple-600 hover:border-purple-200 transition-all"
+                                                            className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:text-purple-600 hover:border-purple-200 hover:bg-purple-50 transition-all"
                                                         >
                                                             <ImageIcon
                                                                 size={14}
@@ -587,23 +693,23 @@ export default function Show({ auth, order }) {
                                                 </div>
                                             ))
                                         ) : (
-                                            <p className="text-gray-400 text-sm italic">
-                                                Belum ada riwayat.
+                                            <p className="text-gray-400 text-sm italic text-center py-4">
+                                                Belum ada riwayat aktivitas.
                                             </p>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Admin Help */}
-                                <div className="bg-blue-50 rounded-3xl p-6 border border-blue-100 text-center">
-                                    <p className="text-blue-800 font-bold mb-2 flex items-center justify-center gap-2">
-                                        <HelpCircle size={18} /> Bantuan CS
+                                {/* CARD BANTUAN */}
+                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-6 border border-blue-100 text-center">
+                                    <p className="text-blue-800 font-bold mb-3 flex items-center justify-center gap-2 text-sm uppercase tracking-wide">
+                                        <HelpCircle size={16} /> Butuh Bantuan?
                                     </p>
                                     <a
                                         href={adminWaLink}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="block w-full py-2.5 bg-white text-blue-600 font-bold rounded-xl shadow-sm hover:bg-blue-100 transition"
+                                        className="block w-full py-3 bg-white text-blue-600 font-bold rounded-xl shadow-sm hover:shadow-md hover:text-blue-700 transition-all"
                                     >
                                         Hubungi Admin
                                     </a>
@@ -613,8 +719,8 @@ export default function Show({ auth, order }) {
                     </div>
                 </div>
 
-                {/* Footer */}
-                <footer className="bg-white border-t border-gray-200 py-8 mt-auto text-center text-gray-500 text-sm">
+                {/* 3. FOOTER SIMPLE */}
+                <footer className="bg-white border-t border-gray-200 py-6 text-center text-gray-400 text-xs font-medium">
                     <p>
                         © {new Date().getFullYear()} Titipsini.com. All rights
                         reserved.
@@ -622,12 +728,13 @@ export default function Show({ auth, order }) {
                 </footer>
             </div>
 
+            {/* MODAL IMAGE */}
             <ImageModal
                 show={!!selectedImage}
                 onClose={() => setSelectedImage(null)}
                 src={selectedImage}
                 title="Bukti Lapangan"
             />
-        </AuthenticatedLayout>
+        </>
     );
 }

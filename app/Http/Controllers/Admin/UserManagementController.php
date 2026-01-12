@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Models\UserVerification;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Redirect;
+use App\Notifications\SimpleNotification; // Import notifikasi (jika sudah ada)
 
 class UserManagementController extends Controller
 {
@@ -107,17 +108,35 @@ class UserManagementController extends Controller
     /**
      * Menyetujui verifikasi KTP user.
      * Route: admin.verification.approve
+     * [UPDATE] Menambahkan logika update data user (No HP) saat approve.
      */
     public function verificationApprove(UserVerification $userVerification)
     {
+        // 1. Update status di tabel user_verifications
         $userVerification->update([
             'status' => 'approved',
-            'rejection_notes' => null
+            'rejection_notes' => null,
+            // 'approved_at' => now(), // [OPSIONAL] Uncomment jika sudah migrasi kolom 'approved_at'
         ]);
 
-        $userVerification->user()->update(['is_verified' => true]);
+        // 2. Ambil user terkait
+        $user = $userVerification->user;
 
-        return redirect()->back()->with('success', 'Verifikasi berhasil disetujui.');
+        // 3. Update data di tabel users (Flag verified + Salin No HP)
+        if ($user) {
+            $user->update([
+                'is_verified' => true,
+                
+                // [PENTING] Menyalin nomor telepon dari pengajuan ke profil user utama
+                // Menggunakan tanda '??' untuk mengecek apakah nama kolomnya 'phone_number' atau 'phone'
+                'phone' => $userVerification->phone ?? $userVerification->phone_number,
+            ]);
+
+            // Kirim notifikasi lonceng ke user (jika fitur notifikasi aktif)
+            // $user->notify(new SimpleNotification('Akun Terverifikasi! ✅', 'Selamat, identitas Anda telah diverifikasi oleh Admin.', '/dashboard'));
+        }
+
+        return redirect()->back()->with('success', 'Verifikasi berhasil disetujui dan data profil (No. HP) telah diperbarui.');
     }
 
     /**
@@ -130,12 +149,20 @@ class UserManagementController extends Controller
             'rejection_notes' => 'required|string|max:1000',
         ]);
 
+        // Update status verifikasi jadi rejected
         $userVerification->update([
             'status' => 'rejected',
             'rejection_notes' => $request->rejection_notes,
         ]);
 
-        $userVerification->user()->update(['is_verified' => false]);
+        // Update user jadi not verified
+        $user = $userVerification->user;
+        if ($user) {
+            $user->update(['is_verified' => false]);
+            
+            // Kirim notifikasi lonceng ke user
+            // $user->notify(new SimpleNotification('Verifikasi Ditolak ❌', 'Mohon cek alasan penolakan dan ajukan ulang.', '/verification/create'));
+        }
 
         return redirect()->back()->with('success', 'Verifikasi berhasil ditolak.');
     }

@@ -29,11 +29,10 @@ import {
     Navigation,
     Building2,
     CheckCircle2,
+    Hash, // [BARU] Icon untuk Jumlah Barang
 } from "lucide-react";
 
-// ==========================================
 // 1. UTILITY FUNCTIONS
-// ==========================================
 
 export const formatRupiah = (number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -75,9 +74,7 @@ export const getMapsLink = (lat, lng, address) => {
     return "#";
 };
 
-// ==========================================
 // 2. HELPER COMPONENTS
-// ==========================================
 
 export const CopyButton = ({ text, label = "Salin" }) => {
     const [copied, setCopied] = useState(false);
@@ -123,9 +120,7 @@ export const ImageModal = ({ show, onClose, src, title }) => (
     </Modal>
 );
 
-// ==========================================
 // 3. MAIN UI COMPONENTS
-// ==========================================
 
 export const OrderStepper = ({ status, needsPickup }) => {
     const steps = [
@@ -209,6 +204,11 @@ export const OrderDetailsBox = ({
     const [showPhoto, setShowPhoto] = useState(false);
     const isPickup = details.delivery_method === "pickup";
 
+    // [BARU] Ambil data khusus Quantity & Note dari tabel Order (bukan dari JSON)
+    // Jika tidak ada di root order, coba ambil dari JSON details sebagai fallback
+    const quantity = order.quantity || details.quantity || 1;
+    const note = order.note || details.notes || details.note || "-";
+
     return (
         <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-lg shadow-gray-100 h-full">
             <h3 className="text-xl font-black text-gray-800 mb-6 flex items-center pb-4 border-b border-gray-50">
@@ -241,6 +241,7 @@ export const OrderDetailsBox = ({
                                         .replace(/^0/, "62")
                                         .replace(/\D/g, "")}`}
                                     target="_blank"
+                                    rel="noopener noreferrer"
                                     className="inline-flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg font-medium"
                                 >
                                     <MessageCircle size={14} /> WhatsApp
@@ -266,9 +267,23 @@ export const OrderDetailsBox = ({
                             Paket Layanan
                         </p>
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                            <p className="font-bold text-gray-900 text-lg">
-                                {order.orderable.title || order.orderable.name}
-                            </p>
+                            <div>
+                                <p className="font-bold text-gray-900 text-lg">
+                                    {order.orderable.title ||
+                                        order.orderable.name}
+                                </p>
+                                {/* [BARU] Menampilkan Jumlah Barang */}
+                                <div className="flex items-center gap-1 mt-1 text-sm text-gray-600">
+                                    <Hash
+                                        size={14}
+                                        className="text-emerald-500"
+                                    />
+                                    <span className="font-bold">
+                                        {quantity} Unit
+                                    </span>{" "}
+                                    Barang
+                                </div>
+                            </div>
                             <span className="text-emerald-700 font-black text-lg bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">
                                 {formatRupiah(order.final_amount)}
                             </span>
@@ -448,17 +463,15 @@ export const OrderDetailsBox = ({
                     </div>
                 )}
 
-                {/* Catatan */}
-                {details.notes && (
+                {/* [BARU] Catatan (Tampil Jika Ada) */}
+                {note && note !== "-" && (
                     <div className="bg-amber-50 p-5 rounded-2xl text-sm text-amber-900 border border-amber-100 flex gap-3">
                         <FileText className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-500" />
                         <div>
                             <span className="font-bold block mb-1 text-amber-700">
                                 Catatan Tambahan:
                             </span>
-                            <span className="italic font-medium">
-                                "{details.notes}"
-                            </span>
+                            <span className="italic font-medium">"{note}"</span>
                         </div>
                     </div>
                 )}

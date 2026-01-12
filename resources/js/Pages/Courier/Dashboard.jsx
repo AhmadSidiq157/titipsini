@@ -11,6 +11,8 @@ import {
     Box,
     ArrowRight,
     Wifi,
+    History,
+    PlayCircle,
 } from "lucide-react";
 
 // --- Helper: Status Badge ---
@@ -122,7 +124,7 @@ export default function Dashboard({
                             </div>
                         </div>
 
-                        {/* [MODIFIKASI] Status Badge Otomatis (Tanpa Tombol) */}
+                        {/* Status Badge Otomatis */}
                         <div className="flex flex-col items-end">
                             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-emerald-500/20 border-emerald-500/50 text-emerald-300 backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)]">
                                 <Wifi size={12} className="animate-pulse" />
@@ -139,7 +141,12 @@ export default function Dashboard({
                     {/* FLOATING STATS CARD */}
                     <div className="absolute -bottom-12 left-6 right-6 z-20">
                         <div className="bg-white rounded-3xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] p-1 flex divide-x divide-gray-100 border border-gray-100">
-                            <div className="flex-1 py-5 text-center group cursor-pointer hover:bg-gray-50 rounded-l-3xl transition-colors">
+                            <div
+                                onClick={() => setTab("active")}
+                                className={`flex-1 py-5 text-center group cursor-pointer rounded-l-3xl transition-colors ${
+                                    tab === "active" ? "bg-gray-50" : ""
+                                }`}
+                            >
                                 <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 tracking-wider">
                                     Tugas Aktif
                                 </p>
@@ -147,7 +154,12 @@ export default function Dashboard({
                                     {stats.active}
                                 </p>
                             </div>
-                            <div className="flex-1 py-5 text-center group cursor-pointer hover:bg-gray-50 transition-colors">
+                            <div
+                                onClick={() => setTab("history")}
+                                className={`flex-1 py-5 text-center group cursor-pointer rounded-r-3xl transition-colors ${
+                                    tab === "history" ? "bg-gray-50" : ""
+                                }`}
+                            >
                                 <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 tracking-wider">
                                     Selesai
                                 </p>
@@ -155,7 +167,7 @@ export default function Dashboard({
                                     {stats.completed}
                                 </p>
                             </div>
-                            <div className="flex-1 py-5 text-center group cursor-pointer hover:bg-gray-50 rounded-r-3xl transition-colors">
+                            <div className="flex-1 py-5 text-center rounded-r-3xl">
                                 <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 tracking-wider">
                                     Rating
                                 </p>
@@ -188,10 +200,10 @@ export default function Dashboard({
                         </motion.div>
                     )}
 
-                    {/* --- TABS --- */}
-                    <div className="bg-white/70 backdrop-blur-sm p-1.5 rounded-2xl flex relative mb-6 shadow-sm border border-gray-200/60">
+                    {/* --- TABS (MODIFIED) --- */}
+                    <div className="bg-gray-200/50 p-1.5 rounded-2xl flex relative mb-6">
                         <motion.div
-                            className="absolute top-1.5 bottom-1.5 bg-white rounded-xl shadow-sm border border-gray-100 z-0"
+                            className="absolute top-1.5 bottom-1.5 bg-white rounded-xl shadow-sm border border-gray-200 z-0"
                             initial={false}
                             animate={{
                                 width: "calc(50% - 6px)",
@@ -204,24 +216,39 @@ export default function Dashboard({
                             }}
                         />
 
+                        {/* Tab Tugas Berjalan */}
                         <button
                             onClick={() => setTab("active")}
-                            className={`flex-1 py-3 text-sm font-bold rounded-xl relative z-10 transition-colors duration-200 ${
+                            className={`flex-1 py-3 text-sm font-bold rounded-xl relative z-10 flex items-center justify-center gap-2 transition-colors duration-200 ${
                                 tab === "active"
-                                    ? "text-gray-900"
-                                    : "text-gray-400 hover:text-gray-600"
+                                    ? "text-emerald-700"
+                                    : "text-gray-500 hover:text-gray-700"
                             }`}
                         >
+                            <PlayCircle
+                                size={18}
+                                className={
+                                    tab === "active" ? "text-emerald-600" : ""
+                                }
+                            />
                             Tugas Berjalan
                         </button>
+
+                        {/* Tab Riwayat */}
                         <button
                             onClick={() => setTab("history")}
-                            className={`flex-1 py-3 text-sm font-bold rounded-xl relative z-10 transition-colors duration-200 ${
+                            className={`flex-1 py-3 text-sm font-bold rounded-xl relative z-10 flex items-center justify-center gap-2 transition-colors duration-200 ${
                                 tab === "history"
-                                    ? "text-gray-900"
-                                    : "text-gray-400 hover:text-gray-600"
+                                    ? "text-blue-700"
+                                    : "text-gray-500 hover:text-gray-700"
                             }`}
                         >
+                            <History
+                                size={18}
+                                className={
+                                    tab === "history" ? "text-blue-600" : ""
+                                }
+                            />
                             Riwayat
                         </button>
                     </div>
@@ -243,8 +270,13 @@ export default function Dashboard({
                                                 "courier.tasks.show",
                                                 task.id
                                             )}
-                                            className="block bg-white rounded-[1.5rem] p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-gray-100 hover:border-emerald-200 hover:shadow-lg active:scale-[0.98] transition-all relative overflow-hidden group"
+                                            className={`block bg-white rounded-[1.5rem] p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border transition-all relative overflow-hidden group ${
+                                                tab === "active"
+                                                    ? "border-gray-100 hover:border-emerald-200"
+                                                    : "border-gray-100 hover:border-blue-200"
+                                            }`}
                                         >
+                                            {/* Side Accent Line */}
                                             <div
                                                 className={`absolute left-0 top-0 bottom-0 w-1.5 ${
                                                     task.user_form_details

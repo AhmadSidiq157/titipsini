@@ -3,6 +3,7 @@ import { Link } from "@inertiajs/react";
 import AdminSidebar from "./Partials/AdminSidebar";
 import { Menu, X, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import NotificationDropdown from "@/Components/NotificationDropdown"; // [1] Import Lonceng
 
 export default function AdminLayout({ user, header, children }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -52,6 +53,7 @@ export default function AdminLayout({ user, header, children }) {
                     </>
                 )}
             </AnimatePresence>
+
             {/* Konten Utama */}
             <div className="flex-1 flex flex-col overflow-hidden backdrop-blur-xl">
                 {/* Navbar */}
@@ -84,16 +86,20 @@ export default function AdminLayout({ user, header, children }) {
                                 )}
                             </motion.div>
 
-                            {/* User Info */}
+                            {/* User Info & Notifikasi */}
                             <div className="flex items-center space-x-4">
+                                {/* [2] PASANG NOTIFIKASI DISINI */}
+                                <NotificationDropdown />
+
                                 <motion.span
-                                    className="text-sm text-gray-700 bg-gray-100 px-3 py-1 rounded-full shadow-sm"
+                                    className="text-sm text-gray-700 bg-gray-100 px-3 py-1 rounded-full shadow-sm hidden sm:inline-block" // Hide di mobile biar ga sempit
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: 0.2 }}
                                 >
                                     👋 {user ? user.name : "Admin"}
                                 </motion.span>
+
                                 <Link
                                     href={route("logout")}
                                     method="post"
@@ -101,7 +107,9 @@ export default function AdminLayout({ user, header, children }) {
                                     className="flex items-center space-x-1 text-sm text-gray-500 hover:text-red-600 transition-colors"
                                 >
                                     <LogOut size={18} />
-                                    <span>Logout</span>
+                                    <span className="hidden sm:inline">
+                                        Logout
+                                    </span>
                                 </Link>
                             </div>
                         </div>

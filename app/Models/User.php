@@ -6,36 +6,40 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Models\UserVerification; 
-use App\Models\CourierVerification; 
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Builder; // Import Builder untuk Scope
+
+// Import Model Relasi
+use App\Models\UserVerification;
+use App\Models\CourierVerification;
 use App\Models\Role;
+use App\Models\Order;
+
+// Import Class Relasi Eloquent
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    // [PENTING] 'Notifiable' wajib ada untuk fitur notifikasi lonceng/email
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
      */
     protected $fillable = [
         'name',
         'email',
         'phone',
         'password',
-        'courier_status',
-        'latitude',
+        'courier_status', // Status: available, on_delivery, offline
+        'latitude',       // Posisi Real-time
         'longitude',
     ];
 
     /**
      * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
      */
     protected $hidden = [
         'password',
@@ -44,8 +48,6 @@ class User extends Authenticatable
 
     /**
      * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
      */
     protected function casts(): array
     {
@@ -64,11 +66,16 @@ class User extends Authenticatable
         return $this->belongsToMany(Role::class);
     }
 
+    /**
+     * Cek apakah user punya role tertentu (contoh: $user->hasRole('admin'))
+     */
     public function hasRole(string $roleName): bool
     {
+        // Cek jika relasi sudah diload sebelumnya (Eager Loading)
         if ($this->relationLoaded('roles')) {
             return $this->roles->contains('name', $roleName);
         }
+        // Cek langsung ke database
         return $this->roles()->where('name', $roleName)->exists();
     }
 
@@ -79,23 +86,29 @@ class User extends Authenticatable
 
     public function isClient(): bool
     {
-        return $this->hasRole('client');
+        return $this->hasRole('client'); // Sesuaikan dengan nama di DB ('client' atau 'user')
     }
 
     public function isCourier(): bool
     {
-        return $this->hasRole('kurir');
+        return $this->hasRole('kurir'); // Sesuaikan dengan nama di DB ('kurir')
     }
 
     // ===================================================================
     // RELASI ORDER
     // ===================================================================
 
+    /**
+     * Order yang dibuat oleh User ini (sebagai Client).
+     */
     public function clientOrders(): HasMany
     {
         return $this->hasMany(Order::class, 'user_id');
     }
 
+    /**
+     * Order yang dikerjakan oleh User ini (sebagai Kurir).
+     */
     public function courierTasks(): HasMany
     {
         return $this->hasMany(Order::class, 'courier_id');
@@ -114,7 +127,7 @@ class User extends Authenticatable
     }
 
     /**
-     * [BARU] Relasi ke verifikasi Kurir (SIM, KTP, Kendaraan).
+     * Relasi ke verifikasi Kurir (SIM, KTP, Kendaraan).
      */
     public function courierVerification(): HasOne
     {
@@ -122,7 +135,7 @@ class User extends Authenticatable
     }
 
     /**
-     * [BARU] Helper untuk mendapatkan status verifikasi kurir.
+     * Helper untuk mendapatkan status verifikasi kurir.
      */
     public function courierVerificationStatus(): ?string
     {
@@ -130,10 +143,36 @@ class User extends Authenticatable
     }
 
     /**
-     * [BARU] Helper untuk cek apakah kurir sudah disetujui.
+     * Helper untuk cek apakah kurir sudah disetujui.
      */
     public function isCourierVerified(): bool
     {
         return $this->courierVerificationStatus() === 'approved';
+    }
+
+    // ===================================================================
+    // SCOPES (Shortcut Query) [BARU & PENTING]
+    // ===================================================================
+
+    /**
+     * Scope untuk mengambil semua Admin.
+     * Cara Pakai: User::admins()->get();
+     */
+    public function scopeAdmins(Builder $query): void
+    {
+        $query->whereHas('roles', function ($q) {
+            $q->where('name', 'admin');
+        });
+    }
+
+    /**
+     * Scope untuk mengambil semua Kurir.
+     * Cara Pakai: User::couriers()->get();
+     */
+    public function scopeCouriers(Builder $query): void
+    {
+        $query->whereHas('roles', function ($q) {
+            $q->where('name', 'kurir');
+        });
     }
 }

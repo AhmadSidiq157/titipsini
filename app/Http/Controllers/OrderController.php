@@ -7,11 +7,15 @@ use App\Models\Service;
 use App\Models\MovingPackage;
 use App\Models\Branch;
 use App\Models\ManualPayment;
+use App\Models\ActivityLog;
+use App\Models\User; 
+use App\Notifications\PaymentSubmitted; 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Notification; 
 use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
@@ -67,7 +71,6 @@ class OrderController extends Controller
             $product = MovingPackage::findOrFail($id);
             $productModelClass = MovingPackage::class;
 
-            // [LOGIKA DATE BLOCKING]
             // Cek order pindahan yang aktif (tidak cancel/reject)
             $orders = Order::where('orderable_type', MovingPackage::class)
                 ->whereNotIn('status', ['cancelled', 'rejected']) 
@@ -102,7 +105,7 @@ class OrderController extends Controller
     }
 
     /**
-     * [MODIFIKASI UTAMA] Menghitung estimasi biaya pengiriman ke SEMUA CABANG (Multi-Option).
+     * Menghitung estimasi biaya pengiriman ke SEMUA CABANG (Multi-Option).
      * Mengembalikan daftar harga agar user bisa memilih sendiri.
      */
     public function calculateShipping(Request $request)
@@ -223,6 +226,9 @@ class OrderController extends Controller
                 'form_details.duration_unit' => 'required|string|in:hour,day,week,month',
                 'form_details.delivery_method' => 'required|string|in:drop_off,pickup',
                 'form_details.item_photo' => 'nullable|image|max:5120',
+                
+                // [BARU] Validasi Quantity & Notes
+                'form_details.quantity' => 'required|integer|min:1', 
                 'form_details.notes' => 'nullable|string|max:1000',
             ]);
 
@@ -255,6 +261,7 @@ class OrderController extends Controller
         if ($request->hasFile('form_details.item_photo')) {
             $path = $request->file('form_details.item_photo')->store('order_items', 'public');
             $formDetails['item_photo_path'] = $path;
+            $formDetails['item_photo'] = null; // Reset biar gak error saat save json
             unset($formDetails['item_photo']);
         }
 
@@ -277,23 +284,27 @@ class OrderController extends Controller
         if ($modelClass === Service::class) {
             $basePrice = $product->price;
             $duration = (int) $formDetails['duration_value'];
+            
+            // [BARU] Ambil Quantity (Default 1 jika kosong)
+            $quantity = isset($formDetails['quantity']) ? (int) $formDetails['quantity'] : 1;
 
             $timeMultiplier = match ($formDetails['duration_unit']) {
                 'hour' => 0.1,
                 'day' => 1,
                 'week' => 6,
                 'month' => 25,
+                'year' => 300, // [OPSIONAL] Jika ada unit tahun
                 default => 1,
             };
 
-            $servicePrice = round($basePrice * $duration * $timeMultiplier);
+            // [BARU] Rumus Harga dengan Quantity
+            $servicePrice = round($basePrice * $duration * $timeMultiplier * $quantity);
+            
             $shippingCost = isset($formDetails['shipping_cost']) ? (int) $formDetails['shipping_cost'] : 0;
             $finalAmount = $servicePrice + $shippingCost;
 
         } 
         elseif ($modelClass === MovingPackage::class) {
-            // [LOGIKA BARU] Pindahan
-            
             // A. Cek Kuota Tanggal
             $date = $formDetails['tanggal_pindahan'];
             $existingOrdersCount = Order::where('orderable_type', MovingPackage::class)
@@ -320,38 +331,48 @@ class OrderController extends Controller
             );
 
             // C. Validasi Batas Jarak Paket (Max Distance)
-            // Jika max_distance tidak null, maka kita cek
             if (!is_null($product->max_distance) && $distanceKm > $product->max_distance) {
                 throw ValidationException::withMessages([
                     'form_details.alamat_tujuan' => 'Jarak pengiriman (' . $distanceKm . ' KM) melebihi batas maksimal paket ini (' . $product->max_distance . ' KM). Silakan pilih paket Luar Kota.'
                 ]);
             }
 
-            // D. Hitung Harga: Base Price + Surcharge Jarak
-            $basePrice = $product->price; // Harga 3KM pertama
-            $pricePerKm = $product->price_per_km; // Harga per KM tambahan
+            // D. Hitung Harga
+            $basePrice = $product->price;
+            $pricePerKm = $product->price_per_km;
             $freeDistance = 3;
 
-            // Hitung kelebihan jarak (minimal 0)
             $extraDistance = max(0, $distanceKm - $freeDistance);
-            
-            // Biaya tambahan = kelebihan jarak (dibulatkan ke atas) * harga per km
             $distanceSurcharge = ceil($extraDistance) * $pricePerKm;
-
             $finalAmount = $basePrice + $distanceSurcharge;
 
-            // Simpan detail kalkulasi ke form data (untuk history/admin)
             $formDetails['distance_km'] = $distanceKm;
             $formDetails['distance_surcharge'] = $distanceSurcharge;
         }
 
-        // 7. Buat Order
+        // 7. [BARU] Pisahkan Data Kolom Khusus
+        // Ambil data quantity & note dari formDetails, lalu hapus dari array (biar gak duplikat di JSON)
+        $quantityToSave = isset($formDetails['quantity']) ? (int) $formDetails['quantity'] : 1;
+        $noteToSave = isset($formDetails['notes']) ? $formDetails['notes'] : null;
+
+        // 8. Buat Order
         $order = $product->orders()->create([
             'user_id' => Auth::id(),
             'final_amount' => $finalAmount,
-            'user_form_details' => $formDetails,
+            
+            // [BARU] Simpan ke Kolom Dedikasi
+            'quantity' => $quantityToSave,
+            'note' => $noteToSave,
+            
+            'user_form_details' => $formDetails, // Sisanya masuk JSON
             'status' => 'awaiting_payment',
         ]);
+
+        // Rekam Aktivitas
+        ActivityLog::record(
+            'ORDER_PLACED', 
+            'Pesanan baru #' . $order->id . ' masuk dari ' . Auth::user()->name
+        );
 
         return response()->json([
             'message' => 'Order berhasil dibuat',
@@ -392,13 +413,29 @@ class OrderController extends Controller
                 'user_id' => Auth::id(),
                 'payment_proof_path' => $path,
                 'notes' => $request->notes,
-                'amount' => $order->final_amount, // Asumsi bayar full
+                'amount' => $order->final_amount,
                 'status' => 'pending_verification'
             ]
         );
 
         // Update status order utama
         $order->update(['status' => 'awaiting_verification']);
+
+        // ========================================================
+        // [LOGIKA BARU] KIRIM NOTIFIKASI KE SEMUA ADMIN
+        // ========================================================
+        try {
+            // 1. Ambil semua user yang role-nya 'admin'
+            $admins = User::where('role', 'admin')->get();
+            
+            // 2. Kirim notifikasi 'PaymentSubmitted' ke admin-admin tersebut
+            Notification::send($admins, new PaymentSubmitted($order));
+        } catch (\Exception $e) {
+            // Jika notifikasi gagal (misal tabel belum ada), biarkan user tetap sukses upload
+            // Kamu bisa uncomment baris bawah ini untuk debugging
+            // \Log::error('Gagal kirim notif: ' . $e->getMessage());
+        }
+        // ========================================================
 
         return response()->json([
             'message' => 'Bukti pembayaran berhasil diupload.',

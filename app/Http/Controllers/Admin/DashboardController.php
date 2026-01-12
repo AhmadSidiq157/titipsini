@@ -3,58 +3,69 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\MovingPackage;
-use App\Models\Service;
-use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
-use Inertia\Response; // <-- [PERBAIKAN] Ini dia baris yang hilang
+
+// Import Model
+use App\Models\Order;
 
 class DashboardController extends Controller
 {
-    // [MODIFIKASI] Ganti return type ke 'Response|RedirectResponse'
+    /**
+     * Menampilkan Dashboard Admin dengan statistik lengkap.
+     */
     public function index(Request $request): Response|RedirectResponse
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // 1. Cek apakah pengguna adalah admin
+        // 1. LOGIC ADMIN
         if ($user->isAdmin()) {
-
-            // --- JIKA ADMIN: Tampilkan Admin Dashboard ---
             $stats = [
-                'total_users' => User::count(),
-                'new_users_this_week' => User::where('created_at', '>=', Carbon::now()->subWeek())->count(),
-                'total_services' => Service::count(),
-                'total_moving_packages' => MovingPackage::count(),
-               
+                'total_orders' => Order::count(),
+                'revenue' => Order::where('status', 'completed')->sum('final_amount'),
+                'active_orders' => Order::whereIn('status', [
+                    'processing', 'ready_for_pickup', 'courier_assigned', 
+                    'courier_otw_pickup', 'picked_up', 'on_delivery'
+                ])->count(),
+                'pending_orders' => Order::whereIn('status', [
+                    'pending_verification', 'awaiting_verification'
+                ])->count(),
             ];
-            $recent_activities = [
-                ['type' => 'user_registered', 'description' => 'User baru, Budi Santoso, telah mendaftar.', 'time' => '5 menit lalu'],
-                ['type' => 'item_created', 'description' => 'Posisi Magang "Marketing Intern" telah ditambahkan.', 'time' => '1 jam lalu'],
-                ['type' => 'item_updated', 'description' => 'Paket Pindahan "Luar Kota" telah diperbarui.', 'time' => '3 jam lalu'],
-                ['type' => 'user_login', 'description' => 'Anda login ke sistem.', 'time' => 'Kemarin'],
-            ];
+
+            // Ambil data aktivitas terbaru (dummy atau real)
+            $recent_activities = Order::with('user')
+                ->latest()
+                ->take(5)
+                ->get()
+                ->map(function ($order) {
+                    return [
+                        'type' => 'order_placed',
+                        'description' => "Order #{$order->id} dibuat oleh {$order->user->name}",
+                        'time' => $order->created_at->diffForHumans(),
+                    ];
+                });
 
             return Inertia::render('Admin/Dashboard', [
                 'stats' => $stats,
                 'recentActivities' => $recent_activities,
             ]);
         }
-        // 2. Cek apakah pengguna adalah kurir
+        
+        // 2. LOGIC KURIR
         else if ($user->isCourier()) {
-
-            // JIKA KURIR: Arahkan ke rute dashboard kurir
+            // Redirect ke dashboard khusus kurir
             return redirect()->route('courier.dashboard');
         }
-        // 3. [PERBAIKAN] Jika bukan admin atau kurir (dia adalah KLIEN)
+        
+        // 3. LOGIC USER BIASA (CLIENT)
         else {
-
-            // JIKA KLIEN: Arahkan kembali ke Halaman Utama (Homepage)
-            return redirect()->route('home');
+            // [FIXED] Redirect ke Halaman Utama (Home)
+            // Pastikan route 'home' sudah ada di web.php (biasanya '/')
+            return redirect()->route('home'); 
         }
     }
 }

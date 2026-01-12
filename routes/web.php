@@ -13,6 +13,8 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\UserVerificationController;
 use App\Http\Controllers\MitraController;
 use App\Http\Controllers\HistoryController;
+// [PENTING] Import NotificationController untuk fitur Notifikasi
+use App\Http\Controllers\NotificationController;
 
 // Admin Controllers
 use App\Http\Controllers\Admin\DashboardController;
@@ -66,7 +68,7 @@ Route::get('/penitipan', [LayananPageController::class, 'penitipan'])->name('pen
 Route::get('/mitra', [MitraController::class, 'index'])->name('mitra.index');
 
 
-// --- RUTE UNTUK PENGGUNA TERAUTENTIKASI (CLIENT) ---
+// --- RUTE UNTUK PENGGUNA TERAUTENTIKASI (CLIENT & UMUM) ---
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -80,10 +82,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/history/{order}', [HistoryController::class, 'show'])->name('history.show');
     Route::get('/order/{order}/status', [OrderController::class, 'getStatus'])->name('order.status');
 
+    // [LANGKAH 3: RUTE NOTIFIKASI] (Global untuk User & Admin)
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');
+
     // Order & Pembayaran
     Route::prefix('order')->name('order.')->group(function () {
-        
-        // [WAJIB ADA] Route untuk Hitung Ongkir Otomatis (Haversine)
+        // Route untuk Hitung Ongkir Otomatis (Haversine)
         Route::post('/calculate-shipping', [OrderController::class, 'calculateShipping'])->name('calculate_shipping');
         
         Route::get('/create', [OrderController::class, 'create'])->name('create');
@@ -109,6 +115,9 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
     ->name('admin.')
     ->group(function () {
 
+        // Dashboard Admin
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
         // Manajemen User
         Route::get('users', [UserManagementController::class, 'index'])->name('users.index');
         Route::get('users/{user}/make-admin', [UserManagementController::class, 'makeAdmin'])->name('users.makeAdmin');
@@ -128,13 +137,12 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
         // --- PENGATURAN REKENING TRANSFER ---
         Route::get('/payment-settings', [SettingController::class, 'payment'])->name('payment_settings.index');
         Route::post('/payment-settings', [SettingController::class, 'updatePayment'])->name('payment_settings.update');
-        // ------------------------------------
 
         // Manajemen Pesanan
         Route::prefix('orders')->name('orders.')->group(function () {
             Route::get('/', [OrderManagementController::class, 'index'])->name('index');
             Route::get('/{order}', [OrderManagementController::class, 'show'])->name('show');
-            Route::post('/{order}/approve', [OrderManagementController::class, 'approvePayment'])->name('approve');
+            Route::post('/{order}/approve', [OrderManagementController::class, 'verifyPayment'])->name('approve');
             Route::post('/{order}/reject', [OrderManagementController::class, 'rejectPayment'])->name('reject');
             Route::post('/{order}/complete', [OrderManagementController::class, 'completeOrder'])->name('complete');
             Route::post('/{order}/assign-courier', [OrderManagementController::class, 'assignCourier'])->name('assignCourier');
@@ -162,7 +170,7 @@ Route::middleware(['auth', 'verified', 'isAdmin'])
                 Route::post('/{verification}/reject', 'reject')->name('reject');
             });
 
-        // Pengaturan Lain (Contact, Social, Logo)
+        // Pengaturan Lain
         Route::prefix('settings')->name('settings.')->group(function () {
             Route::get('contact', [SettingController::class, 'contact'])->name('contact');
             Route::get('social', [SettingController::class, 'social'])->name('social');
@@ -179,13 +187,21 @@ Route::middleware(['auth', 'verified', 'courier'])
     ->prefix('courier')
     ->name('courier.')
     ->group(function () {
+        // Dashboard
         Route::get('/verification/pending', [CourierAuthController::class, 'pending'])->name('verification.pending');
         Route::get('/dashboard', [CourierDashboardController::class, 'index'])->name('dashboard');
         Route::post('/toggle-status', [CourierDashboardController::class, 'toggleStatus'])->name('toggle-status');
-        Route::get('/tasks/{id}', [CourierTaskController::class, 'show'])->name('tasks.show');
-        Route::post('/tasks/{id}/update-status', [CourierTaskController::class, 'updateStatus'])->name('tasks.updateStatus');
-        Route::post('/tasks/{id}/tracking', [CourierTaskController::class, 'addTrackingNote'])->name('tasks.addTracking');
-        Route::post('/location/update', [CourierTaskController::class, 'updateLocation'])->name('updateLocation');
+
+        // Route Tasks
+        // Ini rute yang akan dipakai oleh OrderAssignedNotification (ke Kurir)
+        Route::prefix('tasks')->name('tasks.')->group(function() {
+            Route::get('/{id}', [CourierTaskController::class, 'show'])->name('show');
+            Route::post('/{id}/update-status', [CourierTaskController::class, 'updateStatus'])->name('update_status');
+            Route::post('/{id}/tracking', [CourierTaskController::class, 'addTrackingNote'])->name('add_note');
+        });
+
+        // Aksi Update Lokasi
+        Route::post('/location/update', [CourierTaskController::class, 'updateLocation'])->name('update_location');
     });
 
 

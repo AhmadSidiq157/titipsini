@@ -69,14 +69,13 @@ export default function Show({ auth, verification }) {
         >
             <Head title={`Tinjau Verifikasi #${verification.id}`} />
 
-            {/* --- MODAL APPROVE (BARU & KEREN) --- */}
+            {/* --- MODAL APPROVE --- */}
             <Modal
                 show={isApproveModalOpen}
                 onClose={() => setApproveModalOpen(false)}
                 maxWidth="sm"
             >
                 <div className="p-6 text-center">
-                    {/* Icon Visual */}
                     <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6 animate-in zoom-in duration-300">
                         <ShieldCheck className="h-8 w-8 text-green-600" />
                     </div>
@@ -113,7 +112,7 @@ export default function Show({ auth, verification }) {
                 </div>
             </Modal>
 
-            {/* --- MODAL REJECT (YANG LAMA) --- */}
+            {/* --- MODAL REJECT --- */}
             <Modal
                 show={isRejectModalOpen}
                 onClose={() => setRejectModalOpen(false)}
@@ -258,7 +257,6 @@ export default function Show({ auth, verification }) {
                         {/* Tombol Aksi (Hanya muncul jika Pending) */}
                         {verification.status === "pending" && (
                             <div className="mt-6 flex gap-3">
-                                {/* Tombol Approve Membuka Modal */}
                                 <button
                                     onClick={() => setApproveModalOpen(true)}
                                     className="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-bold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none transition ease-in-out duration-150 shadow-lg shadow-green-100"

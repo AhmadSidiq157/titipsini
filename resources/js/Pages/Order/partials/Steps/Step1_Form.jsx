@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { usePage } from "@inertiajs/react";
 import { Truck, Box } from "lucide-react";
 import FormPenitipan from "./FormPenitipan";
 import FormPindahan from "./FormPindahan";
 
-// Helper Format Rupiah (Bisa dipakai utk display harga awal)
+// Helper Format Rupiah
 const formatRupiah = (number) => {
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
@@ -18,9 +18,15 @@ export default function StepForm(props) {
     const { product, productModelClass } = props;
     const isPindahan = productModelClass.includes("MovingPackage");
 
+    // [BARU] State untuk menyimpan harga dinamis dari child component
+    // Default pakai harga produk, nanti diupdate sama form di bawah
+    const [currentPrice, setCurrentPrice] = useState(
+        parseFloat(product.price) || 0
+    );
+
     return (
-        <div className="p-6 md:p-8 space-y-8">
-            {/* --- HEADER (SHARED) --- */}
+        <div className="p-6 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* --- HEADER --- */}
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-black text-gray-900 tracking-tight">
@@ -35,10 +41,15 @@ export default function StepForm(props) {
                 </div>
             </div>
 
-            {/* --- PRODUCT CARD (SHARED) --- */}
-            <div className="relative overflow-hidden rounded-3xl bg-gray-900 text-white shadow-2xl shadow-gray-200">
-                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-emerald-500 rounded-full blur-3xl opacity-20"></div>
-                <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-blue-500 rounded-full blur-3xl opacity-20"></div>
+            {/* --- PRODUCT CARD (DYNAMIC PRICE) --- */}
+            <div className="relative overflow-hidden rounded-3xl bg-gray-900 text-white shadow-2xl shadow-gray-200 transition-all duration-300">
+                {/* Background Blobs */}
+                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-emerald-500 rounded-full blur-3xl opacity-20 animate-pulse"></div>
+                <div
+                    className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-blue-500 rounded-full blur-3xl opacity-20 animate-pulse"
+                    style={{ animationDelay: "1s" }}
+                ></div>
+
                 <div className="relative p-6 flex items-center justify-between z-10">
                     <div className="flex items-center gap-5">
                         <div
@@ -49,9 +60,9 @@ export default function StepForm(props) {
                             } backdrop-blur-md`}
                         >
                             {isPindahan ? (
-                                <Truck size={32} />
+                                <Truck size={32} className="text-white" />
                             ) : (
-                                <Box size={32} />
+                                <Box size={32} className="text-white" />
                             )}
                         </div>
                         <div>
@@ -65,25 +76,27 @@ export default function StepForm(props) {
                             </p>
                         </div>
                     </div>
-                    {/* Harga Dasar (Display Only) */}
+
+                    {/* [BARU] Harga Total Estimasi (Realtime Update) */}
                     <div className="text-right hidden sm:block">
                         <p className="text-xs text-white/50 font-bold uppercase mb-1">
-                            Harga Dasar
+                            Total Estimasi
                         </p>
-                        <p className="text-2xl font-black tracking-tight text-emerald-400">
-                            {formatRupiah(product.price)}
+                        <p className="text-3xl font-black tracking-tight text-emerald-400 drop-shadow-md transition-all duration-300">
+                            {formatRupiah(currentPrice)}
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* --- PEMISAHAN LOGIKA --- */}
+            {/* --- FORM LOGIC --- */}
             {isPindahan ? (
-                // Panggil Component Pindahan
-                <FormPindahan {...props} />
+                // Untuk Pindahan, kita passing setter juga kalau mau dinamis (opsional)
+                // Tapi fokus kita sekarang di Penitipan dulu
+                <FormPindahan {...props} onPriceUpdate={setCurrentPrice} />
             ) : (
-                // Panggil Component Penitipan
-                <FormPenitipan {...props} />
+                // [PENTING] Passing function onPriceUpdate ke FormPenitipan
+                <FormPenitipan {...props} onPriceUpdate={setCurrentPrice} />
             )}
         </div>
     );

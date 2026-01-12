@@ -17,7 +17,6 @@ import {
     Copy,
     Check,
     MapPin,
-    Navigation, // Icon Baru untuk Navigasi
 } from "lucide-react";
 import Modal from "@/Components/Modal";
 import axios from "axios";
@@ -58,44 +57,31 @@ const CopyButton = ({ text }) => {
 // --- Main Component ---
 
 export default function TaskShow({ auth, task }) {
-    // 1. Destructuring Data & Parsing JSON
+    // Destructuring Data
     const details = task.user_form_details || {};
     const client = task.user || {};
 
-    // 2. Logic Tipe Layanan & Ikon
+    // Logic Penentuan Tipe Layanan
     const isPenitipan =
-        !!details.branch_address ||
-        (task.orderable_type && task.orderable_type.includes("Service"));
+        !!details.branch_address || task.orderable_type?.includes("Service");
     const serviceLabel = isPenitipan ? "Layanan Penitipan" : "Jasa Pindahan";
     const ServiceIcon = isPenitipan ? Box : Truck;
 
-    // 3. Logic Lokasi & Koordinat (INTI PERUBAHAN DI SINI)
-
-    // A. Titik Jemput (Pickup / Origin)
+    // Logic Alamat
     const pickupAddress =
         details.alamat_penjemputan ||
         details.pickup_address ||
         "Lokasi Jemput Tidak Tersedia";
-    // Prioritas Koordinat: origin_latitude (Pindahan) -> latitude (Penitipan)
-    const pickupLat = details.origin_latitude || details.latitude;
-    const pickupLng = details.origin_longitude || details.longitude;
-
-    // B. Titik Tujuan (Delivery / Destination)
     const deliveryAddress = isPenitipan
-        ? `${details.branch_name || "Gudang"} - ${details.branch_address}` // Kalau titip, tujuannya Gudang
+        ? `${details.branch_name || "Gudang"} - ${details.branch_address}`
         : details.alamat_tujuan ||
           details.delivery_address ||
-          "Tujuan Tidak Tersedia"; // Kalau pindahan, tujuannya rumah baru
+          "Tujuan Tidak Tersedia";
 
-    // Koordinat Tujuan (Khusus Pindahan)
-    const deliveryLat = details.destination_latitude;
-    const deliveryLng = details.destination_longitude;
-
-    // Kontak & Catatan
     const clientPhone = details.telepon || details.phone || client.phone || "";
     const notes = details.notes || "-";
 
-    // --- States ---
+    // States
     const [showActionModal, setShowActionModal] = useState(false);
     const [gpsError, setGpsError] = useState(null);
     const [currentPos, setCurrentPos] = useState({
@@ -109,7 +95,7 @@ export default function TaskShow({ auth, task }) {
         note: "",
     });
 
-    // Logic Footer Visibility
+    // Logic Footer Visibility (Hanya muncul saat butuh aksi)
     const isFooterVisible = [
         "ready_for_pickup",
         "picked_up",
@@ -118,8 +104,10 @@ export default function TaskShow({ auth, task }) {
 
     // --- Effects (GPS & Auto Reload) ---
     useEffect(() => {
+        // Jika tidak butuh footer (tugas selesai/batal), stop GPS tracking untuk hemat baterai
         if (!isFooterVisible) return;
 
+        // Auto Reload Data Task
         const interval = setInterval(() => {
             router.reload({
                 only: ["task"],
@@ -128,14 +116,17 @@ export default function TaskShow({ auth, task }) {
             });
         }, 10000);
 
+        // GPS Tracker
         let geoId;
         if ("geolocation" in navigator) {
             geoId = navigator.geolocation.watchPosition(
                 (position) => {
                     const { latitude, longitude } = position.coords;
                     setCurrentPos({ lat: latitude, lng: longitude });
+
+                    // [FIX] Menggunakan 'courier.update_location' (sesuai web.php)
                     axios
-                        .post(route("courier.updateLocation"), {
+                        .post(route("courier.update_location"), {
                             lat: latitude,
                             lng: longitude,
                         })
@@ -163,7 +154,9 @@ export default function TaskShow({ auth, task }) {
 
     const submitAction = (e) => {
         e.preventDefault();
-        statusForm.post(route("courier.tasks.updateStatus", task.id), {
+
+        // [FIX] Menggunakan 'courier.tasks.update_status' (sesuai web.php)
+        statusForm.post(route("courier.tasks.update_status", task.id), {
             forceFormData: true,
             onSuccess: () => setShowActionModal(false),
         });
@@ -179,18 +172,11 @@ export default function TaskShow({ auth, task }) {
         )}`;
     };
 
-    // [FUNGSI NAVIGASI PINTAR]
-    // Kalau ada koordinat, pakai koordinat (Akurat). Kalau gak ada, pakai alamat teks.
-    const getMapsLink = (lat, lng, address) => {
-        if (lat && lng) {
-            return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-        }
-        if (address) {
-            return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-                address
-            )}`;
-        }
-        return "#";
+    const getMapsLink = (address) => {
+        if (!address) return "#";
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+            address
+        )}`;
     };
 
     const formattedDate = details.tanggal_pindahan
@@ -200,16 +186,9 @@ export default function TaskShow({ auth, task }) {
               month: "long",
               year: "numeric",
           })
-        : details.start_date
-        ? new Date(details.start_date).toLocaleDateString("id-ID", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-          })
         : "Segera";
 
-    // Status UI Config
+    // Configuration Status UI
     const getStatusConfig = () => {
         const s = task.status;
         if (s === "ready_for_pickup")
@@ -234,7 +213,7 @@ export default function TaskShow({ auth, task }) {
             `}</style>
 
             <div className="min-h-screen flex flex-col bg-gray-50 font-sans text-gray-900 relative">
-                {/* 1. HEADER */}
+                {/* 1. HEADER (Sticky Top) */}
                 <div className="sticky top-0 z-40 flex-none h-16 px-4 bg-white/95 backdrop-blur-sm border-b border-gray-100 flex items-center justify-between shadow-sm">
                     <button
                         onClick={() => window.history.back()}
@@ -252,14 +231,11 @@ export default function TaskShow({ auth, task }) {
 
                 {/* 2. MAIN CONTENT */}
                 <div className={`flex-1 ${isFooterVisible ? "pb-32" : "pb-8"}`}>
-                    {/* PETA UTAMA (Menampilkan Posisi Kurir & Tujuan) */}
+                    {/* PETA */}
                     <div className="w-full h-[38vh] bg-gray-200 relative border-b border-gray-200 shadow-sm z-0">
                         <LiveMap
                             courierLat={currentPos.lat}
                             courierLng={currentPos.lng}
-                            // Tampilkan Marker Tujuan di Peta Mini jika ada koordinat
-                            destinationLat={pickupLat}
-                            destinationLng={pickupLng}
                             className="h-full w-full"
                         />
                         {gpsError && (
@@ -343,37 +319,31 @@ export default function TaskShow({ auth, task }) {
                                 </div>
 
                                 <div className="relative border-l-2 border-dashed border-gray-200 ml-2.5 pl-8 space-y-10">
-                                    {/* 1. LOKASI JEMPUT (ASAL) */}
                                     <div className="relative">
                                         <span className="absolute -left-[39px] top-0 w-5 h-5 bg-blue-50 border-2 border-blue-500 rounded-full z-10"></span>
                                         <div>
                                             <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-1">
-                                                Lokasi Jemput (Asal)
+                                                Lokasi Jemput
                                             </p>
                                             <p className="text-sm text-gray-800 font-medium leading-relaxed mb-3">
                                                 {pickupAddress}
                                             </p>
-
-                                            {/* Tombol Navigasi Cerdas */}
                                             <a
                                                 href={getMapsLink(
-                                                    pickupLat,
-                                                    pickupLng,
                                                     pickupAddress
                                                 )}
                                                 target="_blank"
-                                                className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold shadow-md shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
+                                                className="inline-flex items-center px-3 py-1.5 rounded-lg bg-gray-50 text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors"
                                             >
-                                                <Navigation
-                                                    size={14}
-                                                    className="mr-2"
+                                                <MapPin
+                                                    size={12}
+                                                    className="mr-1.5"
                                                 />{" "}
-                                                Navigasi ke Asal
+                                                Buka Maps
                                             </a>
                                         </div>
                                     </div>
 
-                                    {/* 2. LOKASI TUJUAN */}
                                     <div className="relative">
                                         <span className="absolute -left-[39px] top-0 w-5 h-5 bg-orange-50 border-2 border-orange-500 rounded-full z-10"></span>
                                         <div>
@@ -390,22 +360,18 @@ export default function TaskShow({ auth, task }) {
                                             <p className="text-sm text-gray-800 font-medium leading-relaxed mb-3">
                                                 {deliveryAddress}
                                             </p>
-
-                                            {/* Tombol Navigasi ke Tujuan (Hanya Muncul jika Pindahan atau memang mau ke Gudang) */}
                                             <a
                                                 href={getMapsLink(
-                                                    deliveryLat,
-                                                    deliveryLng,
                                                     deliveryAddress
                                                 )}
                                                 target="_blank"
-                                                className="inline-flex items-center px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors"
+                                                className="inline-flex items-center px-3 py-1.5 rounded-lg bg-gray-50 text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors"
                                             >
                                                 <MapPin
-                                                    size={14}
-                                                    className="mr-2"
+                                                    size={12}
+                                                    className="mr-1.5"
                                                 />{" "}
-                                                Lihat di Peta
+                                                Buka Maps
                                             </a>
                                         </div>
                                     </div>
@@ -528,7 +494,7 @@ export default function TaskShow({ auth, task }) {
                             </label>
 
                             <textarea
-                                className="w-full border-gray-200 bg-gray-50 rounded-xl text-sm p-4 focus:ring-2 focus:ring-gray-900 outline-none resize-none transition-all"
+                                className="w-full border-gray-200 bg-gray-50 rounded-xl text-sm p-4 focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none resize-none transition-all"
                                 rows="2"
                                 value={statusForm.data.note}
                                 onChange={(e) =>
@@ -551,7 +517,7 @@ export default function TaskShow({ auth, task }) {
                                         statusForm.processing ||
                                         !statusForm.data.evidence_photo
                                     }
-                                    className="py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-black disabled:opacity-50 shadow-lg"
+                                    className="py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                                 >
                                     {statusForm.processing
                                         ? "Mengirim..."

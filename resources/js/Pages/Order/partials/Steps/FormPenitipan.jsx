@@ -11,13 +11,17 @@ import {
     Building2,
     Calculator,
     Camera,
-    ArrowRight,
+    ChevronDown,
     MapPin,
     Calendar as CalendarIcon,
     Bike,
     Search,
     Loader2,
     X,
+    ArrowRight,
+    StickyNote,
+    Package, // Icon Paket
+    Clock,
 } from "lucide-react";
 
 const formatRupiah = (number) => {
@@ -33,6 +37,7 @@ export default function FormPenitipan({
     product,
     productModelClass,
     onFormSubmit,
+    onPriceUpdate, // Terima props dari Parent
 }) {
     const { branches, auth } = usePage().props;
 
@@ -46,6 +51,7 @@ export default function FormPenitipan({
         start_date: new Date().toISOString().split("T")[0],
         duration_value: 1,
         duration_unit: "day",
+        quantity: 1,
         notes: "",
         item_photo: null,
         alamat_penjemputan: auth.user.address || "",
@@ -63,22 +69,24 @@ export default function FormPenitipan({
         parseFloat(product.price) || 0
     );
 
-    // [BARU] State untuk Preview Gambar
+    // State untuk Preview Gambar
     const [previewUrl, setPreviewUrl] = useState(null);
 
-    // [BARU] Cleanup memory preview saat komponen unmount/ganti gambar
     useEffect(() => {
         return () => {
             if (previewUrl) URL.revokeObjectURL(previewUrl);
         };
     }, [previewUrl]);
 
-    // 1. Hitung Total (Layanan + Ongkir)
+    // 1. Logic Hitung Total
     useEffect(() => {
         const basePrice = parseFloat(product.price) || 0;
-        const duration = parseFloat(data.duration_value) || 0;
-        let multiplier = 1;
+        const duration =
+            data.duration_value === "" ? 0 : parseFloat(data.duration_value);
+        let qty = data.quantity === "" ? 1 : parseInt(data.quantity);
+        if (qty < 1) qty = 1;
 
+        let multiplier = 1;
         switch (data.duration_unit) {
             case "hour":
                 multiplier = 0.1;
@@ -96,17 +104,28 @@ export default function FormPenitipan({
                 multiplier = 1;
         }
 
-        const servicePrice = Math.round(basePrice * duration * multiplier);
+        const servicePrice = Math.round(
+            basePrice * duration * multiplier * qty
+        );
         const shippingPrice = parseInt(data.shipping_cost) || 0;
-        setEstimatedTotal(servicePrice + shippingPrice);
+
+        const total = servicePrice + shippingPrice;
+        setEstimatedTotal(total);
+
+        // Update Parent
+        if (onPriceUpdate) {
+            onPriceUpdate(total);
+        }
     }, [
         data.duration_value,
         data.duration_unit,
+        data.quantity,
         data.shipping_cost,
         product.price,
+        onPriceUpdate,
     ]);
 
-    // 2. Auto Update Ongkir saat Ganti Armada
+    // 2. Auto Update Ongkir
     useEffect(() => {
         if (
             data.delivery_method === "pickup" &&
@@ -171,7 +190,6 @@ export default function FormPenitipan({
             const options = res.data.options;
             setShippingOptions(options);
 
-            // Auto Select Rekomendasi
             if (options && options.length > 0) {
                 const bestOption = options[0];
                 setData((prev) => ({
@@ -202,7 +220,6 @@ export default function FormPenitipan({
         }
     };
 
-    //  Handler Upload & Preview Gambar
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -211,7 +228,6 @@ export default function FormPenitipan({
         }
     };
 
-    // Hapus Gambar
     const removeImage = () => {
         setData((prev) => ({ ...prev, item_photo: null }));
         setPreviewUrl(null);
@@ -246,6 +262,7 @@ export default function FormPenitipan({
         formData.append("product_id", product.id);
         formData.append("product_model", productModelClass);
         formData.append("final_amount", estimatedTotal);
+
         Object.keys(data).forEach((key) =>
             formData.append(
                 `form_details[${key}]`,
@@ -268,28 +285,40 @@ export default function FormPenitipan({
     };
 
     return (
-        <form onSubmit={submit} className="space-y-8 animate-in fade-in">
-            {/* Total Mobile */}
-            <div className="sm:hidden flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <span className="text-sm font-bold text-gray-500 uppercase">
+        <form onSubmit={submit} className="space-y-6 animate-in fade-in pb-10">
+            {/* CSS Hack: Sembunyikan Spinner */}
+            <style>{`
+                input[type=number]::-webkit-inner-spin-button, 
+                input[type=number]::-webkit-outer-spin-button { 
+                    -webkit-appearance: none; 
+                    margin: 0; 
+                }
+                input[type=number] {
+                    -moz-appearance: textfield;
+                }
+            `}</style>
+
+            {/* Total Mobile Sticky */}
+            <div className="sm:hidden flex justify-between items-center bg-white/90 backdrop-blur-md p-4 rounded-xl border border-gray-200 sticky top-0 z-30 shadow-sm">
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
                     Total Estimasi
                 </span>
-                <span className="text-xl font-black text-emerald-600">
+                <span className="text-lg font-black text-emerald-600">
                     {formatRupiah(estimatedTotal)}
                 </span>
             </div>
 
-            {/* 1. Pilih Cabang (Drop Off) */}
+            {/* 1. Pilih Cabang */}
             {data.delivery_method === "drop_off" && (
-                <div className="space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Building2 className="w-5 h-5 text-gray-400" />
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-emerald-600" />
                         <InputLabel
                             value="Pilih Lokasi Gudang"
-                            className="!mb-0 text-base"
+                            className="!mb-0 text-sm font-bold text-gray-800"
                         />
                     </div>
-                    <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="grid grid-cols-1 gap-3 max-h-52 overflow-y-auto pr-1 custom-scrollbar">
                         {branches &&
                             branches.map((branch) => (
                                 <div
@@ -300,32 +329,33 @@ export default function FormPenitipan({
                                             branch_id: branch.id,
                                         }))
                                     }
-                                    className={`cursor-pointer p-4 rounded-2xl border-2 transition-all ${
+                                    className={`cursor-pointer p-3.5 rounded-xl border transition-all flex items-center gap-3 group hover:shadow-md ${
                                         parseInt(data.branch_id) === branch.id
-                                            ? "border-emerald-500 bg-emerald-50"
-                                            : "border-gray-100 bg-white"
+                                            ? "border-emerald-500 bg-emerald-50/50 ring-1 ring-emerald-500"
+                                            : "border-gray-200 bg-white hover:border-emerald-300"
                                     }`}
                                 >
-                                    <div className="flex items-start gap-3">
-                                        <div
-                                            className={`mt-1 p-2 rounded-full ${
-                                                parseInt(data.branch_id) ===
-                                                branch.id
-                                                    ? "bg-emerald-500 text-white"
-                                                    : "bg-gray-100"
-                                            }`}
-                                        >
-                                            <MapPin size={18} />
-                                        </div>
-                                        <div>
-                                            <h5 className="font-bold text-sm">
-                                                {branch.name}
-                                            </h5>
-                                            <p className="text-xs text-gray-500">
-                                                {branch.address}
-                                            </p>
-                                        </div>
+                                    <div
+                                        className={`p-2 rounded-lg transition-colors ${
+                                            parseInt(data.branch_id) ===
+                                            branch.id
+                                                ? "bg-emerald-500 text-white"
+                                                : "bg-gray-100 text-gray-400 group-hover:bg-emerald-100 group-hover:text-emerald-600"
+                                        }`}
+                                    >
+                                        <MapPin size={18} />
                                     </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h5 className="font-bold text-sm text-gray-800 truncate">
+                                            {branch.name}
+                                        </h5>
+                                        <p className="text-xs text-gray-500 truncate">
+                                            {branch.address}
+                                        </p>
+                                    </div>
+                                    {parseInt(data.branch_id) === branch.id && (
+                                        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                                    )}
                                 </div>
                             ))}
                     </div>
@@ -335,24 +365,27 @@ export default function FormPenitipan({
                 </div>
             )}
 
-            {/* 2. Durasi */}
-            <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                    <Calculator className="w-5 h-5 text-gray-400" />
+            {/* [REVISI TOTAL] Detail Pesanan: Layout Grid 2x2 yang Lega */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <Calculator className="w-4 h-4 text-emerald-600" />
                     <InputLabel
-                        value="Durasi & Waktu Titip"
-                        className="!mb-0 text-base font-semibold text-gray-700"
+                        value="Detail Pesanan"
+                        className="!mb-0 text-sm font-bold text-gray-800"
                     />
                 </div>
-                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="relative">
-                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block tracking-wider">
+
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-5 space-y-5">
+                    {/* Baris 1: Mulai Tanggal & Lama Titip */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {/* 1. Mulai Tanggal */}
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-2 block tracking-wider">
                                 Mulai Tanggal
                             </label>
                             <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <CalendarIcon className="w-5 h-5 text-gray-400" />
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-emerald-500 transition-colors">
+                                    <CalendarIcon className="w-4 h-4" />
                                 </div>
                                 <input
                                     type="date"
@@ -363,15 +396,18 @@ export default function FormPenitipan({
                                             start_date: e.target.value,
                                         }))
                                     }
-                                    className="pl-12 w-full h-14 border border-gray-200 bg-gray-50 rounded-xl text-sm font-semibold text-gray-700 shadow-sm"
+                                    className="pl-10 w-full h-11 border border-gray-200 bg-gray-50 rounded-lg text-sm font-semibold text-gray-700 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all cursor-pointer"
                                 />
                             </div>
                         </div>
+
+                        {/* 2. Lama Titip (Split Input: Kiri Angka | Kanan Dropdown) */}
                         <div>
-                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block tracking-wider">
-                                Lama Penitipan
+                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-2 block tracking-wider">
+                                Lama Titip
                             </label>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="flex h-11 border border-gray-200 rounded-lg bg-gray-50 overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-transparent transition-all">
+                                {/* Input Angka */}
                                 <input
                                     type="number"
                                     min="1"
@@ -382,9 +418,13 @@ export default function FormPenitipan({
                                             duration_value: e.target.value,
                                         }))
                                     }
-                                    className="w-full h-14 text-center border border-gray-200 bg-gray-50 rounded-xl text-lg font-bold text-gray-800 shadow-sm"
+                                    className="w-16 border-none bg-transparent text-center font-bold text-gray-800 focus:ring-0 px-0"
+                                    placeholder="1"
                                 />
-                                <div className="relative">
+                                {/* Garis Pemisah */}
+                                <div className="w-px bg-gray-200 my-2"></div>
+                                {/* Dropdown Unit */}
+                                <div className="flex-1 relative">
                                     <select
                                         value={data.duration_unit}
                                         onChange={(e) =>
@@ -393,17 +433,78 @@ export default function FormPenitipan({
                                                 duration_unit: e.target.value,
                                             }))
                                         }
-                                        className="w-full h-14 border border-gray-200 bg-gray-50 rounded-xl text-sm font-semibold text-gray-700 px-4 appearance-none shadow-sm"
+                                        className="w-full h-full border-none bg-transparent text-sm font-medium text-gray-600 focus:ring-0 cursor-pointer pl-3 pr-8 appearance-none"
                                     >
                                         <option value="hour">Jam</option>
                                         <option value="day">Hari</option>
                                         <option value="week">Minggu</option>
                                         <option value="month">Bulan</option>
                                     </select>
-                                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400">
-                                        <ArrowRight className="w-4 h-4 rotate-90" />
+                                    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400">
+                                        <ChevronDown className="w-4 h-4" />
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="h-px bg-gray-100"></div>
+
+                    {/* Baris 2: Jumlah Barang & Catatan */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {/* 3. Jumlah Barang */}
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-2 block tracking-wider">
+                                Jumlah Barang
+                            </label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-emerald-500 transition-colors">
+                                    <Package className="w-4 h-4" />
+                                </div>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={data.quantity}
+                                    onChange={(e) =>
+                                        setData((p) => ({
+                                            ...p,
+                                            quantity: e.target.value,
+                                        }))
+                                    }
+                                    className="pl-10 w-full h-11 border border-gray-200 bg-gray-50 rounded-lg text-sm font-bold text-gray-800 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                                    placeholder="1"
+                                />
+                                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-xs font-semibold text-gray-400">
+                                    Unit
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 4. Catatan */}
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-2 block tracking-wider">
+                                Catatan (Opsional)
+                            </label>
+                            <div className="relative group">
+                                <div className="absolute top-3.5 left-3 flex items-start pointer-events-none text-gray-400 group-focus-within:text-emerald-500 transition-colors">
+                                    <StickyNote className="w-4 h-4" />
+                                </div>
+                                <textarea
+                                    value={data.notes}
+                                    onChange={(e) =>
+                                        setData((p) => ({
+                                            ...p,
+                                            notes: e.target.value,
+                                        }))
+                                    }
+                                    rows="1"
+                                    className="pl-10 w-full h-11 py-2.5 border border-gray-200 bg-gray-50 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none overflow-hidden placeholder-gray-400"
+                                    placeholder="Cth: Barang pecah belah..."
+                                    onFocus={(e) => (e.target.rows = 3)}
+                                    onBlur={(e) =>
+                                        !e.target.value && (e.target.rows = 1)
+                                    }
+                                ></textarea>
                             </div>
                         </div>
                     </div>
@@ -411,15 +512,15 @@ export default function FormPenitipan({
             </div>
 
             {/* 3. Metode Pengiriman */}
-            <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                    <Truck className="w-5 h-5 text-gray-400" />
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <Truck className="w-4 h-4 text-emerald-600" />
                     <InputLabel
                         value="Metode Penyerahan"
-                        className="!mb-0 text-base"
+                        className="!mb-0 text-sm font-bold text-gray-800"
                     />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                     <div
                         onClick={() =>
                             setData((p) => ({
@@ -428,14 +529,22 @@ export default function FormPenitipan({
                                 shipping_cost: 0,
                             }))
                         }
-                        className={`cursor-pointer rounded-2xl p-4 border-2 flex flex-col items-center text-center transition-all ${
+                        className={`cursor-pointer rounded-xl p-3 border flex flex-col items-center text-center transition-all duration-200 hover:shadow-sm ${
                             data.delivery_method === "drop_off"
-                                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                                : "border-gray-200"
+                                ? "border-emerald-500 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500"
+                                : "border-gray-200 bg-white text-gray-600 hover:border-emerald-300"
                         }`}
                     >
-                        <Box className="w-6 h-6 mb-2" />
-                        <span className="font-bold text-sm">Antar Sendiri</span>
+                        <div
+                            className={`p-2 rounded-full mb-2 ${
+                                data.delivery_method === "drop_off"
+                                    ? "bg-white"
+                                    : "bg-gray-100"
+                            }`}
+                        >
+                            <Box className="w-5 h-5" />
+                        </div>
+                        <span className="font-bold text-xs">Antar Sendiri</span>
                     </div>
                     <div
                         onClick={() =>
@@ -444,14 +553,22 @@ export default function FormPenitipan({
                                 delivery_method: "pickup",
                             }))
                         }
-                        className={`cursor-pointer rounded-2xl p-4 border-2 flex flex-col items-center text-center transition-all ${
+                        className={`cursor-pointer rounded-xl p-3 border flex flex-col items-center text-center transition-all duration-200 hover:shadow-sm ${
                             data.delivery_method === "pickup"
-                                ? "border-blue-500 bg-blue-50 text-blue-700"
-                                : "border-gray-200"
+                                ? "border-blue-500 bg-blue-50 text-blue-700 ring-1 ring-blue-500"
+                                : "border-gray-200 bg-white text-gray-600 hover:border-blue-300"
                         }`}
                     >
-                        <Truck className="w-6 h-6 mb-2" />
-                        <span className="font-bold text-sm">
+                        <div
+                            className={`p-2 rounded-full mb-2 ${
+                                data.delivery_method === "pickup"
+                                    ? "bg-white"
+                                    : "bg-gray-100"
+                            }`}
+                        >
+                            <Truck className="w-5 h-5" />
+                        </div>
+                        <span className="font-bold text-xs">
                             Request Jemput
                         </span>
                     </div>
@@ -460,14 +577,21 @@ export default function FormPenitipan({
 
             {/* 4. Form Pickup */}
             {data.delivery_method === "pickup" && (
-                <div className="space-y-6 bg-blue-50/50 p-5 rounded-2xl border border-blue-100 animate-in slide-in-from-top-2">
-                    {/* A. Armada */}
+                <div className="space-y-5 bg-white p-5 rounded-xl border border-blue-100 shadow-sm animate-in slide-in-from-top-2">
+                    <div className="flex items-center gap-2 text-blue-700 mb-2 pb-2 border-b border-blue-50">
+                        <MapPin size={16} />
+                        <span className="font-bold text-sm">
+                            Detail Penjemputan
+                        </span>
+                    </div>
+
+                    {/* Armada */}
                     <div>
                         <InputLabel
                             value="Pilih Armada"
-                            className="text-blue-800"
+                            className="text-gray-600 mb-2 text-xs uppercase"
                         />
-                        <div className="grid grid-cols-3 gap-3 mt-2">
+                        <div className="grid grid-cols-3 gap-3">
                             {[
                                 { id: "motor", label: "Motor", icon: Bike },
                                 { id: "pickup", label: "Pickup", icon: Truck },
@@ -481,20 +605,20 @@ export default function FormPenitipan({
                                             vehicle_type: v.id,
                                         }))
                                     }
-                                    className={`cursor-pointer p-4 rounded-xl border flex flex-col items-center justify-center text-center transition-all shadow-sm ${
+                                    className={`cursor-pointer p-3 rounded-lg border flex flex-col items-center justify-center text-center transition-all ${
                                         data.vehicle_type === v.id
-                                            ? "bg-white border-blue-500 text-blue-800 shadow-md ring-2 ring-blue-500"
-                                            : "bg-white/60 border-blue-200 text-gray-500"
+                                            ? "bg-blue-50 border-blue-500 text-blue-700 shadow-sm ring-1 ring-blue-200"
+                                            : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
                                     }`}
                                 >
                                     <v.icon
-                                        className={`w-6 h-6 mb-2 ${
+                                        className={`w-5 h-5 mb-1 ${
                                             data.vehicle_type === v.id
                                                 ? "text-blue-600"
                                                 : "text-gray-400"
                                         }`}
                                     />
-                                    <span className="text-xs font-bold">
+                                    <span className="text-[10px] font-bold uppercase">
                                         {v.label}
                                     </span>
                                 </div>
@@ -502,71 +626,73 @@ export default function FormPenitipan({
                         </div>
                     </div>
 
-                    {/* B. Alamat & Peta */}
+                    {/* Alamat & Peta */}
                     <div>
                         <InputLabel
                             value="Alamat Lengkap"
-                            className="text-blue-800"
+                            className="text-gray-600 text-xs uppercase"
                         />
-                        <textarea
-                            value={data.alamat_penjemputan}
-                            onChange={(e) =>
-                                setData((p) => ({
-                                    ...p,
-                                    alamat_penjemputan: e.target.value,
-                                }))
-                            }
-                            rows="2"
-                            className="w-full border-blue-200 rounded-xl text-sm mb-3 px-4 py-3"
-                            placeholder="Contoh: Jl. Malioboro..."
-                        ></textarea>
+                        <div className="relative mt-1">
+                            <textarea
+                                value={data.alamat_penjemputan}
+                                onChange={(e) =>
+                                    setData((p) => ({
+                                        ...p,
+                                        alamat_penjemputan: e.target.value,
+                                    }))
+                                }
+                                rows="2"
+                                className="w-full border-gray-200 rounded-lg text-sm p-3 pr-10 shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-gray-50/50"
+                                placeholder="Contoh: Jl. Malioboro No. 12..."
+                            ></textarea>
+                            <div className="absolute top-3 right-3 text-gray-400">
+                                <MapPin size={16} />
+                            </div>
+                        </div>
                         <button
                             type="button"
                             onClick={searchAddress}
                             disabled={
                                 isSearchingLoc || !data.alamat_penjemputan
                             }
-                            className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold text-sm flex justify-center gap-2"
+                            className="mt-2 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs flex justify-center gap-2 transition-colors shadow-sm uppercase tracking-wide"
                         >
                             {isSearchingLoc ? (
-                                <Loader2 className="animate-spin" />
+                                <Loader2 className="animate-spin" size={16} />
                             ) : (
-                                <Search />
+                                <Search size={16} />
                             )}{" "}
-                            Hitung Ongkos Kirim
+                            Cek Lokasi & Hitung Ongkir
                         </button>
                     </div>
 
-                    {/* C. Peta Paten */}
+                    {/* Peta Paten */}
                     {data.latitude && (
-                        <div className="h-48 w-full rounded-xl border border-gray-300 overflow-hidden relative shadow-sm">
+                        <div className="h-40 w-full rounded-lg border border-gray-200 overflow-hidden relative shadow-inner">
                             <LiveMap
                                 isTracking={false}
                                 lat={data.latitude}
                                 lng={data.longitude}
                                 onLocationSelect={() => {}}
                             />
-                            <div className="absolute top-3 right-3 bg-white px-3 py-1 rounded-full text-xs font-bold shadow">
-                                <MapPin
-                                    size={12}
-                                    className="text-red-500 inline"
-                                />{" "}
-                                Lokasi Ditemukan
+                            <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-md text-[10px] font-bold shadow text-gray-700 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>{" "}
+                                Lokasi OK
                             </div>
                         </div>
                     )}
 
-                    {/* D. DROPDOWN PILIHAN CABANG */}
+                    {/* DROPDOWN PILIHAN CABANG */}
                     {shippingOptions.length > 0 && (
-                        <div className="space-y-2 animate-in zoom-in">
+                        <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2">
                             <InputLabel
                                 value="Pilih Lokasi Penyimpanan"
-                                className="text-blue-800"
+                                className="text-gray-600 text-xs uppercase"
                             />
                             <select
                                 value={data.branch_id}
                                 onChange={handleSelectBranch}
-                                className="w-full border-blue-200 rounded-xl text-sm p-3 shadow-sm bg-white"
+                                className="w-full border-gray-200 rounded-lg text-sm p-2.5 shadow-sm bg-white focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
                             >
                                 {shippingOptions.map((opt, i) => (
                                     <option
@@ -575,29 +701,32 @@ export default function FormPenitipan({
                                     >
                                         {opt.branch.name} ({opt.distance} KM) -{" "}
                                         {formatRupiah(opt.shipping_cost)}{" "}
-                                        {i === 0 ? "★ Rekomendasi" : ""}
+                                        {i === 0 ? "(Rekomendasi)" : ""}
                                     </option>
                                 ))}
                             </select>
-                            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex justify-between items-center mt-2 shadow-sm">
+                            <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100 flex justify-between items-center mt-2 shadow-sm">
                                 <div>
-                                    <p className="text-xs text-emerald-600 font-bold uppercase">
-                                        Total Ongkir
+                                    <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
+                                        Ongkos Kirim
                                     </p>
-                                    <p className="text-xs text-gray-500 font-medium">
-                                        Ke: {distanceInfo?.branch?.name}
+                                    <p className="text-xs text-gray-600 font-medium">
+                                        {distanceInfo?.branch?.name}
                                     </p>
                                 </div>
-                                <span className="font-black text-xl text-emerald-700">
+                                <span className="font-black text-base text-emerald-600">
                                     + {formatRupiah(data.shipping_cost)}
                                 </span>
                             </div>
                         </div>
                     )}
 
-                    {/* E. Kontak */}
+                    {/* Kontak */}
                     <div>
-                        <InputLabel value="No HP" className="text-blue-800" />
+                        <InputLabel
+                            value="Nomor WhatsApp"
+                            className="text-gray-600 text-xs uppercase"
+                        />
                         <input
                             type="tel"
                             value={data.telepon}
@@ -607,7 +736,7 @@ export default function FormPenitipan({
                                     telepon: e.target.value,
                                 }))
                             }
-                            className="w-full border-blue-200 rounded-xl text-sm px-4 py-3"
+                            className="w-full border-gray-200 rounded-lg text-sm px-4 py-2.5 focus:ring-blue-500 focus:border-blue-500 shadow-sm bg-gray-50/50"
                             placeholder="08xxx"
                         />
                         <InputError message={errors["form_details.telepon"]} />
@@ -615,72 +744,75 @@ export default function FormPenitipan({
                 </div>
             )}
 
-            {/* 5. Foto Barang (DENGAN PREVIEW) */}
+            {/* 5. Foto Barang */}
             <div>
                 <div className="flex items-center gap-2 mb-2">
-                    <Camera className="w-5 h-5 text-gray-400" />
-                    <InputLabel value="Foto Barang (Opsional)" />
+                    <Camera className="w-4 h-4 text-emerald-600" />
+                    <InputLabel
+                        value="Foto Barang (Opsional)"
+                        className="!mb-0 text-sm font-bold text-gray-800"
+                    />
                 </div>
 
-                {/* Logic Preview Gambar */}
                 {previewUrl ? (
-                    <div className="mt-2 relative group w-full h-48 bg-gray-50 rounded-xl border-2 border-emerald-500 overflow-hidden shadow-sm">
+                    <div className="mt-2 relative group w-full h-48 bg-gray-50 rounded-xl border border-emerald-500 overflow-hidden shadow-sm">
                         <img
                             src={previewUrl}
                             alt="Preview Barang"
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-contain p-2"
                         />
-                        {/* Overlay Gelap saat hover */}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
                             <button
                                 type="button"
                                 onClick={removeImage}
-                                className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-all transform hover:scale-110 shadow-lg flex items-center gap-2 px-4"
+                                className="bg-white text-red-500 px-4 py-2 rounded-full hover:bg-red-50 transition-all font-bold text-xs flex items-center gap-2 shadow-lg uppercase tracking-wide"
                             >
-                                <X size={18} /> Ganti Foto
+                                <X size={14} /> Hapus
                             </button>
                         </div>
-                        <div className="absolute top-2 right-2 bg-emerald-500 text-white text-xs px-2 py-1 rounded-full font-bold shadow">
-                            Foto Terpilih
+                        <div className="absolute top-2 left-2 bg-white/90 backdrop-blur px-2 py-1 rounded-md text-[10px] font-bold shadow text-emerald-600 flex items-center gap-1">
+                            <Camera size={10} /> Terupload
                         </div>
                     </div>
                 ) : (
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:border-emerald-500 transition-colors bg-gray-50 cursor-pointer relative group">
-                        <div className="space-y-1 text-center">
-                            <div className="mx-auto w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-400 group-hover:bg-emerald-100 group-hover:text-emerald-500 transition-colors">
-                                <Camera size={24} />
+                    <div className="mt-1">
+                        <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-white hover:border-emerald-500 transition-all group">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                <div className="p-2.5 bg-white rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform">
+                                    <Camera className="w-5 h-5 text-gray-400 group-hover:text-emerald-500" />
+                                </div>
+                                <p className="mb-0.5 text-xs text-gray-500 font-medium group-hover:text-emerald-600">
+                                    Klik upload foto
+                                </p>
+                                <p className="text-[10px] text-gray-400">
+                                    Max 2MB
+                                </p>
                             </div>
-                            <div className="flex text-sm text-gray-600 justify-center">
-                                <label className="relative cursor-pointer rounded-md font-medium text-emerald-600 hover:text-emerald-500 focus-within:outline-none">
-                                    <span>Upload foto barang</span>
-                                    <input
-                                        type="file"
-                                        className="sr-only"
-                                        accept="image/*"
-                                        onChange={handleFileChange}
-                                    />
-                                </label>
-                            </div>
-                            <p className="text-xs text-gray-500">
-                                PNG, JPG, GIF (Max 2MB)
-                            </p>
-                        </div>
+                            <input
+                                type="file"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                            />
+                        </label>
                     </div>
                 )}
             </div>
 
-            {/* Footer */}
+            {/* Footer Button */}
             <div className="pt-4 border-t border-gray-100">
                 <PrimaryButton
                     disabled={processing}
-                    className="w-full justify-center py-4 text-base font-bold rounded-xl shadow-xl shadow-emerald-200 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transform hover:-translate-y-1 transition-all"
+                    className="w-full justify-center py-3.5 text-sm font-bold rounded-xl shadow-lg shadow-emerald-200 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 transform hover:-translate-y-0.5 active:translate-y-0 transition-all uppercase tracking-wide"
                 >
                     {processing ? (
-                        "Memproses..."
+                        <div className="flex items-center gap-2">
+                            <Loader2 className="animate-spin" size={18} />
+                            <span>Memproses...</span>
+                        </div>
                     ) : (
-                        <span className="flex items-center">
-                            Lanjut Pembayaran{" "}
-                            <ArrowRight className="ml-2 w-5 h-5" />
+                        <span className="flex items-center gap-2">
+                            Lanjut Pembayaran <ArrowRight size={18} />
                         </span>
                     )}
                 </PrimaryButton>

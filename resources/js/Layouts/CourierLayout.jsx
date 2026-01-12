@@ -3,6 +3,7 @@ import { Link } from "@inertiajs/react";
 import CourierSidebar from "./Partials/CourierSidebar";
 import { Menu, X, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import NotificationDropdown from "@/Components/NotificationDropdown"; // [1] Import Lonceng
 
 export default function CourierLayout({ user, header, children }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -11,7 +12,7 @@ export default function CourierLayout({ user, header, children }) {
         <div className="relative flex h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 text-gray-900 overflow-hidden">
             {/* Sidebar untuk Desktop */}
             <div className="hidden md:flex">
-                {/* [PERBAIKAN] Meneruskan prop 'user' ke sidebar */}
+                {/* Meneruskan prop 'user' ke sidebar */}
                 <CourierSidebar user={user} />
             </div>
 
@@ -48,7 +49,6 @@ export default function CourierLayout({ user, header, children }) {
                                 </button>
                             </div>
                             <div className="flex-1 overflow-y-auto">
-                                {/* [PERBAIKAN] Meneruskan prop 'user' ke sidebar */}
                                 <CourierSidebar user={user} />
                             </div>
                         </motion.div>
@@ -88,24 +88,30 @@ export default function CourierLayout({ user, header, children }) {
                                 )}
                             </motion.div>
 
-                            {/* User Info */}
+                            {/* User Info & Notifikasi */}
                             <div className="flex items-center space-x-4">
+                                {/* [2] PASANG NOTIFIKASI DISINI */}
+                                <NotificationDropdown />
+
                                 <motion.span
-                                    className="text-sm text-gray-700 bg-gray-100 px-3 py-1 rounded-full shadow-sm"
+                                    className="text-sm text-gray-700 bg-gray-100 px-3 py-1 rounded-full shadow-sm hidden sm:inline-block" // Hide di mobile kecil biar ga sempit
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: 0.2 }}
                                 >
                                     👋 {user ? user.name : "Kurir"}
                                 </motion.span>
+
                                 <Link
-                                    href={route("logout")}
+                                    href={route("courier.logout")} // Pastikan rute logout kurir benar
                                     method="post"
                                     as="button"
                                     className="flex items-center space-x-1 text-sm text-gray-500 hover:text-red-600 transition-colors"
                                 >
                                     <LogOut size={18} />
-                                    <span>Logout</span>
+                                    <span className="hidden sm:inline">
+                                        Logout
+                                    </span>
                                 </Link>
                             </div>
                         </div>

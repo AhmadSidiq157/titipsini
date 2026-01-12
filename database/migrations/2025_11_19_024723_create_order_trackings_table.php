@@ -13,9 +13,19 @@ return new class extends Migration
     {
         Schema::create('order_trackings', function (Blueprint $table) {
             $table->id();
+            
+            // Relasi ke tabel orders. Jika order dihapus, tracking ikut terhapus (cascade)
             $table->foreignId('order_id')->constrained()->onDelete('cascade');
-            $table->string('status'); // Misal: 'Info', 'On Delivery', 'Arrived'
-            $table->text('description'); // Catatan kurir atau sistem
+            
+            // Status Tracking (Contoh: 'PICKUP SUCCESS', 'OTW', 'COMPLETED')
+            $table->string('status'); 
+            
+            // Deskripsi atau Catatan dari Kurir (Boleh kosong/null)
+            $table->text('description')->nullable(); 
+            
+            // [PENTING] Path Foto Bukti (Boleh kosong/null karena tidak semua status butuh foto)
+            $table->string('evidence_photo_path')->nullable(); 
+            
             $table->timestamps();
         });
     }

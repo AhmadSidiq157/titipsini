@@ -7,8 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\HasMany; 
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
+
+// [PENTING] Import Model lain agar tidak error saat dipanggil di relation/scope
+use App\Models\User;
+use App\Models\ManualPayment;
+use App\Models\OrderTracking;
+use App\Models\Branch;
+use App\Models\MovingPackage;
+use App\Models\Service;
 
 class Order extends Model
 {
@@ -23,6 +31,11 @@ class Order extends Model
         'orderable_type',
         'final_amount',
         'status',
+        
+        // [BARU DITAMBAHKAN] Kolom Detail Order
+        'quantity',  // Jumlah barang
+        'note',      // Catatan user
+        
         'user_form_details', // Kolom JSON penting (menyimpan Alamat, Lat, Lng, Foto, dll)
         'courier_id',        // ID Kurir yang ditugaskan
         'branch_id',         // Opsional: Jika ada sistem cabang
@@ -32,9 +45,10 @@ class Order extends Model
      * Casting tipe data otomatis.
      */
     protected $casts = [
-        // [PENTING] Mengubah JSON di database menjadi Array PHP/JS
-        'user_form_details' => 'array', 
+        // [PENTING] Mengubah JSON di database menjadi Array PHP/JS otomatis
+        'user_form_details' => 'array',
         'final_amount' => 'decimal:2',
+        'quantity' => 'integer', // Pastikan quantity selalu dianggap angka
     ];
 
     // ==========================================
@@ -59,6 +73,7 @@ class Order extends Model
 
     /**
      * Relasi: Produk yang dipesan (Service / MovingPackage).
+     * Menggunakan Polymorphic Relation.
      */
     public function orderable(): MorphTo
     {
@@ -66,7 +81,7 @@ class Order extends Model
     }
 
     /**
-     * Relasi: Bukti pembayaran manual.
+     * Relasi: Bukti pembayaran manual (One to One).
      */
     public function payment(): HasOne
     {
@@ -74,13 +89,14 @@ class Order extends Model
     }
 
     /**
-     * Relasi: Riwayat tracking/status order.
+     * Relasi: Riwayat tracking/status order (One to Many).
+     * Diurutkan dari yang paling baru (latest).
      */
     public function trackings(): HasMany
     {
         return $this->hasMany(OrderTracking::class)->latest();
     }
-    
+
     /**
      * (Opsional) Relasi ke Cabang.
      */
@@ -90,7 +106,7 @@ class Order extends Model
     }
 
     // ==========================================
-    // SCOPES (FILTER QUERY) - KHUSUS TA AGAR RAPI
+    // SCOPES (FILTER QUERY)
     // ==========================================
 
     /**
@@ -123,6 +139,7 @@ class Order extends Model
     // ==========================================
     // ACCESSORS (SHORTCUT DATA JSON)
     // ==========================================
+    // Memudahkan akses data di dalam JSON tanpa ngetik panjang-panjang
 
     /**
      * Shortcut ambil Tanggal Pindahan dari JSON.

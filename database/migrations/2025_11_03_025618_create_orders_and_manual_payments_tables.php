@@ -21,6 +21,11 @@ return new class extends Migration
             $table->morphs('orderable');
 
             $table->bigInteger('final_amount'); // Harga final (disalin dari harga produk saat itu)
+            
+            // [BARU DITAMBAHKAN] Kolom Jumlah Barang & Catatan
+            $table->integer('quantity')->default(1); // Default 1 biar minimal ada 1 barang
+            $table->text('note')->nullable();        // Catatan opsional dari user
+
             $table->text('user_form_details')->nullable(); // JSON untuk data form (cth: tgl mulai, tgl akhir, dll)
 
             // Status pesanan

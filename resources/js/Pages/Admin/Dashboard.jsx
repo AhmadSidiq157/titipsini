@@ -3,28 +3,34 @@ import AdminLayout from "@/Layouts/AdminLayout";
 import { Head, Link } from "@inertiajs/react";
 import {
     Users,
-    Briefcase,
+    ClipboardList,
+    ShieldCheck,
     UserPlus,
     PlusCircle,
-    Settings,
-    ClipboardList,
-    Package,
-    GraduationCap,
-    BookOpen,
-    ArrowRight,
     LogIn,
-    Hourglass,
-    ShieldCheck,
+    DollarSign,
+    Package,
+    Activity, // Icon Baru: Untuk Pesanan Aktif
+    AlertCircle, // Icon Baru: Untuk Status/Perlu Tindakan
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-// Komponen Kartu Statistik yang Didesain Ulang
-const StatCard = ({ icon, title, value, colorClass, delay }) => (
+// --- Helper: Format Rupiah ---
+const formatRupiah = (number) => {
+    return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+    }).format(number || 0);
+};
+
+// Komponen Kartu Statistik
+const StatCard = ({ icon, title, value, colorClass, delay, subtext }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay }}
-        className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 flex items-center space-x-4"
+        className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 flex items-center space-x-4 hover:shadow-xl transition-shadow duration-300"
     >
         <div className={`p-3 rounded-full ${colorClass.bg}`}>
             {React.cloneElement(icon, {
@@ -32,15 +38,16 @@ const StatCard = ({ icon, title, value, colorClass, delay }) => (
             })}
         </div>
         <div>
-            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
                 {title}
             </p>
-            <p className="text-3xl font-bold text-gray-800">{value}</p>
+            <p className="text-2xl font-extrabold text-gray-800">{value}</p>
+            {subtext && <p className="text-xs text-gray-400 mt-1">{subtext}</p>}
         </div>
     </motion.div>
 );
 
-// Komponen Tautan Cepat yang Didesain Ulang
+// Komponen Tautan Cepat
 const QuickLinkCard = ({ href, icon, title, description, colorClass }) => (
     <Link href={href} className="block group">
         <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex items-center">
@@ -61,11 +68,11 @@ const QuickLinkCard = ({ href, icon, title, description, colorClass }) => (
 
 // Komponen Utama Dashboard
 export default function AdminDashboard({ auth, stats, recentActivities }) {
+    // Ikon Aktivitas
     const getActivityIcon = (type) => {
         switch (type) {
             case "user_registered":
                 return <UserPlus className="w-5 h-5 text-green-500" />;
-            // --- [MODIFIKASI] Kita ganti jadi 'order_placed' ---
             case "order_placed":
                 return <PlusCircle className="w-5 h-5 text-blue-500" />;
             case "order_approved":
@@ -88,55 +95,71 @@ export default function AdminDashboard({ auth, stats, recentActivities }) {
             >
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     {/* --- Pesan Selamat Datang --- */}
-                    <div className="bg-gradient-to-r from-green-600 to-teal-500 text-white overflow-hidden shadow-xl sm:rounded-2xl mb-8 p-8">
-                        <h3 className="text-3xl font-bold">
-                            Selamat Datang Kembali, {auth.user.name}!
-                        </h3>
-                        <p className="mt-2 opacity-90">
-                            Berikut adalah ringkasan data terbaru dari platform
-                            Titipsini.
-                        </p>
+                    <div className="bg-gradient-to-r from-slate-800 to-slate-700 text-white overflow-hidden shadow-xl sm:rounded-2xl mb-8 p-8 relative">
+                        <div className="relative z-10">
+                            <h3 className="text-3xl font-bold">
+                                Halo, {auth.user.name}! 👋
+                            </h3>
+                            <p className="mt-2 opacity-90 text-slate-200">
+                                Berikut adalah ringkasan performa bisnis dan
+                                status pesanan terkini.
+                            </p>
+                        </div>
+                        {/* Hiasan Background */}
+                        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white opacity-5 rounded-full blur-3xl"></div>
+                        <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-green-500 opacity-10 rounded-full blur-3xl"></div>
                     </div>
 
-                    {/* --- [MODIFIKASI] Kartu Statistik diganti --- */}
+                    {/* --- [MODIFIKASI UTAMA] Grid Statistik Baru --- */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        {/* 1. Total Semua Pesanan */}
                         <StatCard
-                            title="Total User"
-                            value={stats.total_users}
-                            icon={<Users />}
+                            title="Total Pesanan"
+                            value={stats.total_orders || 0}
+                            subtext="Semua riwayat pesanan"
+                            icon={<Package />}
                             colorClass={{
                                 bg: "bg-blue-100",
                                 text: "text-blue-600",
                             }}
                             delay={0.1}
                         />
+
+                        {/* 2. Total Pendapatan (Revenue) */}
                         <StatCard
-                            title="Pesanan Masuk"
-                            value={stats.total_orders} // <-- Butuh data baru
-                            icon={<ClipboardList />}
+                            title="Total Pendapatan"
+                            value={formatRupiah(stats.revenue || 0)}
+                            subtext="Akumulasi pendapatan sukses"
+                            icon={<DollarSign />}
                             colorClass={{
-                                bg: "bg-green-100",
-                                text: "text-green-600",
+                                bg: "bg-emerald-100",
+                                text: "text-emerald-600",
                             }}
                             delay={0.2}
                         />
+
+                        {/* 3. [UBAH] Pesanan Aktif (Menggantikan Armada Siap) */}
                         <StatCard
-                            title="Pesanan Pending"
-                            value={stats.pending_orders} // <-- Butuh data baru
-                            icon={<Hourglass />}
+                            title="Pesanan Aktif"
+                            value={stats.active_orders || 0} // Pastikan backend mengirim key ini
+                            subtext="Sedang diproses / berjalan"
+                            icon={<Activity />}
                             colorClass={{
-                                bg: "bg-yellow-100",
-                                text: "text-yellow-600",
+                                bg: "bg-indigo-100", // Warna Indigo (Ungu Kebiruan)
+                                text: "text-indigo-600",
                             }}
                             delay={0.3}
                         />
+
+                        {/* 4. [UBAH] Menunggu Verifikasi (Menggantikan Armada Rusak) */}
                         <StatCard
-                            title="Verifikasi Pending"
-                            value={stats.pending_verifications} // <-- Butuh data baru
-                            icon={<ShieldCheck />}
+                            title="Menunggu Verifikasi"
+                            value={stats.pending_orders || 0} // Pastikan backend mengirim key ini
+                            subtext="Butuh tindakan admin"
+                            icon={<AlertCircle />}
                             colorClass={{
-                                bg: "bg-orange-100",
-                                text: "text-orange-600",
+                                bg: "bg-amber-100", // Warna Amber (Oranye) untuk Warning/Alert
+                                text: "text-amber-600",
                             }}
                             delay={0.4}
                         />
@@ -146,36 +169,29 @@ export default function AdminDashboard({ auth, stats, recentActivities }) {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Kolom Tautan Cepat */}
                         <div className="lg:col-span-1 space-y-4">
-                            <h3 className="text-xl font-bold text-gray-800 px-1 mb-2">
-                                Tautan Cepat
+                            <h3 className="text-xl font-bold text-gray-800 px-1 mb-2 flex items-center gap-2">
+                                <ShieldCheck
+                                    size={20}
+                                    className="text-gray-400"
+                                />{" "}
+                                Akses Cepat
                             </h3>
 
-                            {/* --- [MODIFIKASI] Tautan Cepat diganti --- */}
                             <QuickLinkCard
                                 href={route("admin.orders.index")}
                                 icon={<ClipboardList />}
-                                title="Manajemen Pesanan"
-                                description="Review, setujui, atau tolak pesanan"
+                                title="Kelola Pesanan"
+                                description="Cek pesanan baru masuk"
                                 colorClass={{
-                                    bg: "bg-cyan-100",
-                                    text: "text-cyan-600",
+                                    bg: "bg-blue-100",
+                                    text: "text-blue-600",
                                 }}
                             />
                             <QuickLinkCard
                                 href={route("admin.verification.index")}
-                                icon={<ShieldCheck />}
-                                title="Verifikasi User"
-                                description="Setujui atau tolak data KTP user"
-                                colorClass={{
-                                    bg: "bg-rose-100",
-                                    text: "text-rose-600",
-                                }}
-                            />
-                            <QuickLinkCard
-                                href={route("admin.users.index")}
                                 icon={<Users />}
-                                title="Manajemen User"
-                                description="Kelola pengguna & hak akses"
+                                title="Verifikasi User"
+                                description="Validasi KTP pengguna baru"
                                 colorClass={{
                                     bg: "bg-orange-100",
                                     text: "text-orange-600",
@@ -184,32 +200,51 @@ export default function AdminDashboard({ auth, stats, recentActivities }) {
                         </div>
 
                         {/* Kolom Aktivitas Terbaru */}
-                        <div className="lg:col-span-2 bg-white overflow-hidden shadow-lg sm:rounded-2xl">
+                        <div className="lg:col-span-2 bg-white overflow-hidden shadow-lg sm:rounded-2xl border border-gray-100">
                             <div className="p-6">
                                 <h3 className="text-xl font-bold text-gray-800 border-b pb-4 mb-4">
                                     Aktivitas Terbaru
                                 </h3>
                                 <ul className="space-y-4 text-sm text-gray-700">
-                                    {recentActivities.map((activity, index) => (
-                                        <motion.li
-                                            key={index}
-                                            initial={{ opacity: 0, x: -10 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{
-                                                duration: 0.5,
-                                                delay: 0.5 + index * 0.1,
-                                            }}
-                                            className="flex items-center"
-                                        >
-                                            <div className="flex-shrink-0 mr-3">
-                                                {getActivityIcon(activity.type)}
-                                            </div>
-                                            <span>{activity.description}</span>
-                                            <span className="ml-auto text-xs text-gray-400 whitespace-nowrap">
-                                                {activity.time}
-                                            </span>
-                                        </motion.li>
-                                    ))}
+                                    {recentActivities.length > 0 ? (
+                                        recentActivities.map(
+                                            (activity, index) => (
+                                                <motion.li
+                                                    key={index}
+                                                    initial={{
+                                                        opacity: 0,
+                                                        x: -10,
+                                                    }}
+                                                    animate={{
+                                                        opacity: 1,
+                                                        x: 0,
+                                                    }}
+                                                    transition={{
+                                                        duration: 0.5,
+                                                        delay:
+                                                            0.5 + index * 0.1,
+                                                    }}
+                                                    className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                                                >
+                                                    <div className="flex-shrink-0 mr-3 bg-gray-100 p-2 rounded-full">
+                                                        {getActivityIcon(
+                                                            activity.type
+                                                        )}
+                                                    </div>
+                                                    <span className="font-medium text-gray-600">
+                                                        {activity.description}
+                                                    </span>
+                                                    <span className="ml-auto text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
+                                                        {activity.time}
+                                                    </span>
+                                                </motion.li>
+                                            )
+                                        )
+                                    ) : (
+                                        <p className="text-gray-400 text-center py-4">
+                                            Belum ada aktivitas tercatat.
+                                        </p>
+                                    )}
                                 </ul>
                             </div>
                         </div>

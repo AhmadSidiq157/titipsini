@@ -14,8 +14,8 @@ import {
     AlertCircle,
     CheckCircle,
     Phone,
-    X, // Import Icon X untuk tombol hapus gambar
-    ImageIcon, // Icon Gambar
+    X,
+    ImageIcon,
 } from "lucide-react";
 import axios from "axios";
 
@@ -28,7 +28,7 @@ export default function VerificationModal({
 }) {
     const [view, setView] = useState("form");
 
-    // [BARU] State untuk menyimpan URL preview gambar
+    // State untuk menyimpan URL preview gambar
     const [previewUrl, setPreviewUrl] = useState(null);
 
     useEffect(() => {
@@ -41,7 +41,7 @@ export default function VerificationModal({
         }
     }, [status, show]);
 
-    // [BARU] Cleanup memory saat komponen unmount atau preview berubah
+    // Cleanup memory saat komponen unmount atau preview berubah
     useEffect(() => {
         return () => {
             if (previewUrl) {
@@ -87,7 +87,7 @@ export default function VerificationModal({
             id_card_path: null,
         });
 
-    // [MODIFIKASI] Logic saat file dipilih untuk generate preview
+    // Logic saat file dipilih untuk generate preview
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -98,7 +98,7 @@ export default function VerificationModal({
         }
     };
 
-    // [BARU] Fungsi untuk menghapus gambar yang dipilih
+    // Fungsi untuk menghapus gambar yang dipilih
     const removeImage = () => {
         setData("id_card_path", null);
         setPreviewUrl(null);
@@ -114,7 +114,7 @@ export default function VerificationModal({
             preserveScroll: true,
             onSuccess: () => {
                 setView("pending");
-                setPreviewUrl(null); // Reset preview saat sukses
+                setPreviewUrl(null);
                 reset();
             },
         });
@@ -342,7 +342,7 @@ export default function VerificationModal({
                         />
                     </div>
 
-                    {/* [MODIFIKASI UTAMA] Foto KTP dengan Preview */}
+                    {/* Foto KTP dengan Preview */}
                     <div>
                         <InputLabel
                             htmlFor="id_card_path"
